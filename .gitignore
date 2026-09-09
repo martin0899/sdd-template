@@ -1,0 +1,12 @@
+# Dependencias locales
+node_modules/
+
+# Salidas de herramientas
+graphify-out/
+
+# Backups del instalador SDD
+.sdd-backup-*/
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
