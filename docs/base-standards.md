@@ -20,7 +20,6 @@ alwaysApply: true
     - Jira tickets (titles, descriptions, comments)
     - Data schemas and database names
     - Configuration files and scripts
-    - Git commit messages
     - Test names and descriptions
 
 - **Spanish for User Interactions**: All user-facing interactions must be in Spanish, including:
@@ -29,6 +28,7 @@ alwaysApply: true
     - Status updates and progress reports
     - Error messages shown to the user
     - Summaries and results presentation
+    - Git commit messages, Pull Request titles and descriptions
     - Documentation explanations (while keeping technical terms in English when appropriate)
 
 ## 3. Specific standards

@@ -547,7 +547,7 @@ export default defineConfig({
 ## Development Workflow
 
 - **Feature Branches**: Develop features in separate branches, adding descriptive suffix "-frontend" to allow working in parallel and avoid conflicts or collisions
-- **Descriptive Commits**: Write descriptive commit messages in English
+- **Descriptive Commits**: Write descriptive commit messages
 - **Code Review**: Code review before merging
 - **Small Branches**: Keep branches small and focused
 

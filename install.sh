@@ -120,6 +120,11 @@ report_recognition() {
   else
     log "  openspec/            no existe (se creará con openspec init)"
   fi
+  if [[ -f "$TARGET/graphify-out/graph.json" ]]; then
+    log "  graphify-out/        EXISTE (grafo de conocimiento presente)"
+  else
+    log "  graphify-out/        no existe (crea el grafo después: graphify update .)"
+  fi
   log "  -- payload nuevo:"
   for p in "${NEW_DIRS[@]:-}";   do [[ -n "$p" ]] && log "     + $p/ (copia directa)"; done
   for p in "${NEW_FILES[@]:-}";  do [[ -n "$p" ]] && log "     + $p"; done
@@ -345,6 +350,8 @@ post_checks() {
   [[ -f "$TARGET/.agents/skills/commit/SKILL.md" ]] || warn "Falta .agents/skills/commit/SKILL.md en el destino"
   [[ -f "$TARGET/.opencode/package.json" ]] || warn "Falta .opencode/package.json en el destino"
   [[ -d "$TARGET/docs" ]] || warn "Falta docs/ en el destino"
+  [[ -f "$TARGET/graphify-out/graph.json" ]] \
+    || warn "El grafo de conocimiento no existe: créalo en el destino con 'graphify update .' (skill sdd-onboard-project)"
   [[ -e "$TARGET/install.sh" ]] && warn "install.sh no debía copiarse al destino"
   log ""
   log "Pasos manuales pendientes en el destino:"

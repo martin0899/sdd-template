@@ -1244,7 +1244,7 @@ export async function getCandidate(req: Request, res: Response) {
 ### Git Workflow
 
 - **Feature Branches**: Develop features in separate branches using clear descriptive names to allow working in parallel and avoid conflicts or collisions
-- **Descriptive Commits**: Write descriptive commit messages in English
+- **Descriptive Commits**: Write descriptive commit messages
 - **Code Review**: Code review before merging
 - **Small Branches**: Keep branches small and focused
 

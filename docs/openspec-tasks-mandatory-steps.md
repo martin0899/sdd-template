@@ -19,10 +19,10 @@ When creating or updating `tasks.md` artifacts in OpenSpec changes, you MUST:
 
 All implementation tasks MUST include these steps in the correct order:
 
-### Step 0: Create Feature Branch (MUST BE FIRST)
-- **Location**: Must be the very first step (Step 0)
+### Step 0: Create Feature Branch (MANDATORY - FIRST STEP, only from the base branch)
+- **Location**: Must be the very first step (Step 0) — applies only when the current branch is the base branch.
 - **Branch naming**: `feature/[ticket-id]` or `feature/[change-name]`
-- **Action**: Create and switch to feature branch before any code changes
+- **Action**: If the current branch is `main`/`master`/`develop`, create and switch to the feature branch before any code changes. If already on another branch, do NOT create or switch one: note in the tasks that work continues on the current branch and suggest it to the user — that branch can accumulate multiple changes/specs whose commits may share one commit/PR. Create a separate branch only when the user explicitly asks.
 
 ### Mandatory Steps (Must Be Included):
 - **Step N**: Review and Update Existing Unit Tests (MANDATORY)
@@ -233,11 +233,11 @@ All implementation tasks MUST include these steps in the correct order:
 ## 4. Verification Checklist
 
 Before finalizing any `tasks.md` file, verify:
-- [ ] Step 0 (Create Feature Branch) is the FIRST step
+- [ ] Step 0 (Create Feature Branch) is the FIRST step — or, when already on a non-base branch, its conditional variant is recorded (continue on the current branch and suggest it to the user)
 - [ ] All mandatory steps from config.yaml are included
 - [ ] Steps are numbered sequentially
 - [ ] Mandatory steps are clearly marked with "(MANDATORY)" label
-- [ ] Branch naming follows the convention: `feature/[name]-backend`
+- [ ] Branch naming follows the convention: `feature/[name]-backend` (only when a new branch is created from the base branch)
 - [ ] Step N+1 includes report path and naming convention in `specs/<change-name>/reports/`
 - [ ] Manual testing steps explicitly state "AGENT MUST EXECUTE"
 - [ ] Tasks include database state restoration steps
@@ -255,10 +255,10 @@ This rule applies when:
 ## 6. Example Structure
 
 ```markdown
-## 0. Setup: Create Feature Branch (MANDATORY - FIRST STEP)
+## 0. Setup: Create Feature Branch (MANDATORY - FIRST STEP, only if on base branch)
 
-- [ ] 0.1 Create feature branch `feature/update-position-backend` from main/master branch
-- [ ] 0.2 Verify branch creation and current branch status
+- [ ] 0.1 If current branch is main/master, create feature branch `feature/update-position-backend`; if already on another branch, record "continuing on current branch (multi-spec allowed)" and suggest it to the user
+- [ ] 0.2 Verify branch creation/current branch status and report which case applied
 
 ## 1. Backend: Validator Tests (TDD)
 ...
