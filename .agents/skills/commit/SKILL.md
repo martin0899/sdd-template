@@ -2,7 +2,7 @@
 name: commit
 description: Create focused commits and pull requests following repository standards.
 author: LIDR.co
-version: 1.2.0
+version: 1.4.0
 ---
 # commit Skill
 
@@ -20,6 +20,24 @@ You are an expert in version control and release workflows. You create clear, co
 
 - **Nothing (empty)**: Treat all relevant changes in the working tree as the scope, run the review gate (step 4) and execute `git add`/`git commit`/`git push` and open a single PR **only after explicit user confirmation**.
 - **Feature/ticket identifiers**: e.g. ticket IDs (e.g. `SCRUM-123`), branch names, or short feature labels. When provided, propose and commit **only** the changes that belong to those features; leave all other changes unstaged and uncommitted.
+- **Branch creation**: If the user asks to create a branch (for example, "crear rama", "nueva rama", "branch" or "feature branch"), create `feature/<ticket-or-feature-slug>` from the current branch. The ticket or feature name is required to derive the branch name; ask for it if it was not provided or cannot be inferred from the request.
+- **Combined branch and commit flow**: If the user asks for a branch and a commit in the same request (for example, "crear rama y commit" or "rama + commit"), create and switch to the feature branch first, then continue with the normal commit review gate and commit flow on that branch.
+- **Version selection**: Do not infer or modify a product version during a branch or commit operation. If a version is explicitly provided, preserve it for the release metadata or commit context. Otherwise, detect it from the project's canonical version file or package manifest only when the request is explicitly about a release or version bump. If no canonical version exists, ask for the target version instead of inventing one. Use Semantic Versioning (`MAJOR.MINOR.PATCH`) for release versions.
+- **Release creation**: If the user asks to create a release, first inspect the current version from the canonical version file, package manifest, or latest release/tag. Report the detected version and stop for the user's decision: keep it, update it to an explicit target version, or provide a version if none exists. Do not modify version metadata or create the release until the user confirms the decision.
+
+Branch-name rules:
+
+- Prefer the explicit ticket identifier, then the explicit feature name, then a concise slug inferred from the request.
+- Normalize the slug to lowercase, replace spaces and punctuation with hyphens, and remove duplicate separators.
+- Preserve the ticket identifier's meaningful characters when possible, for example `SCRUM-123` becomes `feature/scrum-123-add-login` when a feature name is also provided.
+- Do not include a version in a feature branch name unless the user explicitly requests it or the branch is a release branch.
+
+Version precedence for release or version-bump requests:
+
+1. An explicit version in the user's request, for example `1.4.0`.
+2. The project's canonical version file or package manifest.
+3. The current release/tag metadata, if available.
+4. Ask the user for the target version; never guess it.
 - **Description-only / no-git mode (explicit user override)**: If the user **explicitly** says something like "no PR", "only commit" (meaning only produce the commit text), "only description", "don't touch git", "just the message", or "dry run", then do **not** run any git commands or create a PR. Produce directly the handoff artifact defined in step 4 (staging list + copy-pasteable message) and stop; the user can run the git commands themselves.
 
 # Goal
@@ -43,9 +61,23 @@ If the user **explicitly** requested no git operations (e.g. "no PR", "only comm
 
 - Run `git status` and `git diff` (and `git diff --staged` if needed) to list all modified, added, and deleted files.
 - Identify the current branch:
-  - **If on the base branch** (`main`, `master` or `develop`): create and switch to a feature branch (`feature/<ticket-id>` or `feature/<change-name>`) before staging.
-  - **If already on any other branch: do NOT create or switch branches.** Continue on the current branch and surface this in the review gate (step 4): the branch may accumulate several changes/specs whose commits share one PR. Only create a new branch from the base if the user explicitly asks for one.
-- Apart from the branch creation above (only when on base), this step is read-only: no staging happens yet.
+  - **If the user requested branch creation**: create and switch to `feature/<ticket-or-feature-slug>` from the current branch, regardless of whether the current branch is `main`, `master`, `develop`, or another feature branch.
+  - **If branch creation was not requested and the current branch is a base branch** (`main`, `master` or `develop`): create and switch to `feature/<ticket-or-feature-slug>` before staging, using the ticket or feature argument. Ask for the name if it cannot be inferred.
+  - **If branch creation was not requested and the current branch is not a base branch**: do not create or switch branches. Continue on the current branch and surface this in the review gate (step 4).
+  - When the request combines branch creation and commit, complete the branch operation before resolving scope or presenting the review gate. The review proposal must identify the new branch and its source branch.
+- Apart from the branch creation explicitly required by the request or by the base-branch rule, this step is read-only: no staging happens yet.
+
+## 1.5 Release version gate
+
+When the request includes release creation (for example, "crear release", "crear versión" or "publicar release"), perform this gate after inspecting the repository and before changing files or creating Git metadata:
+
+- Detect the current version using the precedence defined above. Report the source and value, or explicitly report that no canonical version was found.
+- Ask the user one direct question in Spanish:
+  - If a version exists: `La versión detectada es <version> desde <source>. ¿Quieres mantenerla o actualizarla? Si deseas actualizarla, indica la nueva versión.`
+  - If no version exists: `No se encontró una versión canónica. ¿Qué versión SemVer deseas usar para esta release?`
+- If the user chooses to update, validate the target as `MAJOR.MINOR.PATCH`, identify the exact metadata file to change, and include that file in the later review proposal.
+- If the user chooses to keep the version, do not modify version metadata.
+- Do not continue to release creation until the user has answered this version question. The normal review gate and explicit confirmation remain mandatory before `git add`, `git commit`, `git push`, tag creation, or `gh release create`.
 
 ## 2. Resolve scope: full commit vs feature-scoped commit
 
@@ -78,7 +110,7 @@ Before executing `git add`, `git commit`, or `git push`, present to the user a s
    - **(b) Ajenos al alcance**: modified files that do not belong to this scope — they are **never** staged here; they remain in the working tree for a separate commit or PR.
    - **(c) Sensibles o generados**: `.env` files, credentials or tokens, build artifacts, local config, generated outputs. The agent MUST exclude bucket (c) from the proposal unconditionally: a generic `[s/N]` confirmation does **not** include them; only a separate, explicit user instruction naming those specific files may do so.
 2. **Mensaje de commit propuesto** — the complete message from step 3 in a copy-pasteable code block (subject + body).
-3. **Nota de rama (condicional)** — when the session is continuing on a pre-existing non-base branch (no branch was created in step 1), state it explicitly so the user can decide: this commit will land on the current branch, where several changes/specs may share a single commit/PR. The user can request a fresh branch instead.
+3. **Nota de rama** — state the current branch and its source branch. If a new feature branch was created, identify its name and the branch from which it was created. If the session continues on a pre-existing non-base branch, state that explicitly so the user can decide whether to request a fresh branch.
 4. **Pregunta**: `¿Confirmas? [s/N] — responde "s" para que el agente ejecute add/commit/push, o "N" para hacerlo tú mismo.`
 
 The agent MUST NOT run `git add`, `git commit`, `git push`, or any `gh` command before the user replies with an explicit "s" (or equivalent unambiguous affirmative). No step before this gate performs write operations on the repository.
@@ -96,6 +128,12 @@ The agent MUST NOT run `git add`, `git commit`, `git push`, or any `gh` command 
   - **Title**: **In Spanish**, clear, aligned with the commit subject (e.g. include ticket ID if applicable: `[SCRUM-123] Añadir filtros de candidatura a la lista de posiciones`).
   - **Description**: **In Spanish**. Summarize the change set, link to the ticket if relevant, and note any testing or follow-ups. Preserve technical terms in English when appropriate.
 - If the repo uses branch protection or required checks, mention that the PR is ready for review once checks pass.
+
+### 6.1 Release
+
+- For a release request, use the confirmed version to create or update the version metadata only if the user chose `actualizar` during the release version gate.
+- After the normal review gate and any required commit/push, create the GitHub release with `gh release create <tag>`, using a `v<version>` tag unless the repository already uses another documented tag convention.
+- If the requested tag or release already exists, do not overwrite it. Report the conflict and ask whether to update the existing release or choose another version.
 
 ## 7. Summary for the user
 

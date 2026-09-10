@@ -35,4 +35,4 @@ When a user requests documentation about how a component or feature works:
 
 | Manual | Description |
 |--------|-------------|
-| *(Add manuals here as they are created)* | |
+| [Git Workflow Requests](git-workflow.md) | How to request branches, commits, pull requests, and releases |

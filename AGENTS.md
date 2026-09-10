@@ -16,3 +16,4 @@ Rules:
 - If graphify-out/wiki/index.md exists, use it for broad navigation instead of raw source browsing.
 - Read graphify-out/GRAPH_REPORT.md only for broad architecture review or when query/path/explain do not surface enough context.
 - After modifying code, run `graphify update .` to keep the graph current (AST-only, no API cost).
+- graphify-out/ is machine-local: NEVER commit it to the repository (the managed .gitignore block excludes it). Rebuild it with `graphify update .` after cloning the project or changing machines — it is regenerable at no API cost. The search instructions above are unaffected by this policy.
