@@ -35,16 +35,19 @@ alwaysApply: true
 
 For detailed standards and guidelines specific to different areas of the project, refer to:
 
-- [Backend Standards](./backend-standards.md) - API development, database patterns, testing, security and backend best practices
-- [Frontend Standards](./frontend-standards.md) - React components, UI/UX guidelines, and frontend architecture
+- [Backend Standards](./backend-standards.md) - API development, database patterns, testing, security and backend best practices (composed at install time from the template's stack variant: `spring-boot`, `express-node`, or `generic`)
+- [Frontend Standards](./frontend-standards.md) - UI/UX guidelines and frontend architecture (composed at install time from the template's stack variant: `react` or `generic`; omitted for backend-only projects)
 - [Documentation Standards](./documentation-standards.md) - Technical documentation structure, formatting, and maintenance guidelines, including AI standards like this document
 - [OpenSpec Tasks Mandatory Steps](./openspec-tasks-mandatory-steps.md) - Required checklist and execution rules when creating or updating OpenSpec `tasks.md` files
 
 ## 4. Project Skills
 
-- Skills live in `.agents/skills`.
+- Skills live in `.agents/skills` (this template repository is the canonical registry).
 - When a request matches a skill, load and follow the corresponding `SKILL.md` automatically before continuing.
 - Also load any referenced files in the skill folder (for example, `references/*.md`) when the skill requires them.
+- **Vendor exemption**: OpenSpec CLI skills (`openspec-*`) are managed exclusively in `.opencode/skills/` by the OpenSpec CLI. Never keep copies, mirrors, or symlinks of them in `.agents/skills/` — duplicates already diverged once (v1.3.1 vs v1.11.0) and served stale instructions.
+- **Project-local policy**: in installed destination projects, skills, commands, plugins, and `skills-lock.json` are machine-local and never committed (the installer-managed `.gitignore` block enforces this). Only `AGENTS.md` and `openspec/` (specs) are project content and remain versioned.
+- **Promotion flow**: a skill created locally in a destination stays local until promoted — copy it into this template's `.agents/skills/`, then distribute it via `install.sh` or the update flow.
 
 ## 5. Planning Model Requirement
 
@@ -61,6 +64,7 @@ This requirement applies to:
 - **Update Safety**: Whenever a file is renamed, moved, or its suffix changes, verify and update all symlinks that target it before considering the change complete.
 - **New Artifact Linking**: Whenever creating a new artifact that requires multi-agent exposure (for example new agents or skills in `.agents`), create the corresponding symlinks from the expected agent-specific reference paths.
 - **External Customization Review**: Whenever customization is introduced outside `.agents`, evaluate whether it should be moved into `.agents` and replaced with symlinks from the original locations.
+- **Vendor-managed exceptions**: artifacts owned by external CLIs (for example `.opencode/skills/openspec-*`, generated and updated by the OpenSpec CLI) are exempt from `.agents` canonicalization — do not duplicate or symlink them into `.agents`.
 - **Completion Gate**: A change is incomplete if it leaves broken symlinks, stale targets, or duplicated canonical artifacts across agent-specific folders.
 
 ## 7. Mandatory OpenSpec Artifact Updates for Post-Apply Changes

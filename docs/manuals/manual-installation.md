@@ -35,7 +35,7 @@ Copy **exactly** these items into your project root (File Explorer drag-and-drop
 | `.opencode/.gitignore` | `.opencode/.gitignore` |
 | `docs/` | `docs/` |
 
-**Never copy**: `install.sh`, `README.md`, `openspec/changes/`, `node_modules/`, `graphify-out/`, `.sdd-backup-*/`.
+**Never copy**: `install.sh`, `README.md`, `openspec/changes/`, `docs-variants/`, `node_modules/`, `graphify-out/`, `.sdd-backup-*/`.
 
 With `robocopy` (run from the template root, adjust paths):
 
@@ -48,6 +48,17 @@ copy .opencode\package-lock.json C:\path\to\your-project\.opencode\
 copy .opencode\.gitignore C:\path\to\your-project\.opencode\
 robocopy docs C:\path\to\your-project\docs /E
 ```
+
+### 2b. Compose the stack standards (replaces what install.sh automates)
+
+The scripted installer detects your stack and composes `docs/backend-standards.md` and `docs/frontend-standards.md` from the template's `docs-variants/`. In a manual installation, do it by hand:
+
+1. Check your project for stack indicators (`pom.xml`, `package.json`, `requirements.txt`, `go.mod`, ...).
+2. Pick the matching variant from the template repo:
+   - Backend: `docs-variants/backend/spring-boot.md` (pom.xml/Gradle + Spring Boot), `docs-variants/backend/nestjs.md` (package.json with `@nestjs/core`), `docs-variants/backend/express-node.md` (package.json with express/fastify), or `docs-variants/backend/generic.md`.
+   - Frontend: `docs-variants/frontend/react.md` (package.json with react), `docs-variants/frontend/angular.md` (package.json with `@angular/core`), `docs-variants/frontend/generic.md` (other/no framework). For a backend-only project, skip `frontend-standards.md`.
+3. Copy the chosen variant into your project as `docs/backend-standards.md` / `docs/frontend-standards.md` (back up an existing file first — see step 3).
+4. Replace the `{{PROJECT_NAME}}`, `{{LANGUAGE}}`, `{{LANGUAGE_VERSION}}`, `{{FRAMEWORK}}`, `{{FRAMEWORK_VERSION}}`, `{{BUILD_TOOL}}`, `{{TEST_FRAMEWORK}}` placeholders with your real values; leave unknown ones visible — the onboarding skill refines them later.
 
 ### 3. Handle existing files (backup before replacing)
 
@@ -103,14 +114,53 @@ python -c "import yaml; yaml.safe_load(open('openspec/config.yaml')); print('YAM
 
 Your own rules (and your `# ` title) stay untouched. Skip this step if your `AGENTS.md` already contains the graphify-first rules.
 
+### 6b. Add the managed `.gitignore` block (agent tooling policy)
+
+Agent tooling and generated artifacts stay **out of your repository**: skills, commands, plugins, the skills lock, dated backups, and the graphify graph are machine-local — you keep them on disk, but git never versions them. If your project has no `.gitignore`, create one; then append this marked block (add only the entries your own rules do not already cover):
+
+```gitignore
+# BEGIN: SDD managed gitignore (agregado por install.sh; no editar a mano)
+graphify-out/
+.sdd-backup-*/
+.agents/
+.opencode/
+skills-lock.json
+# END: SDD managed gitignore
+```
+
+Policy summary:
+
+- **Versioned project content**: `AGENTS.md`, `openspec/` (specs and changes), and your source code.
+- **Machine-local (never committed)**: `.agents/`, `.opencode/` (skills, commands, plugins), `skills-lock.json`, `.sdd-backup-*/`, and `graphify-out/`.
+- **No opencode plugins**: the graphify reminder lives in the `AGENTS.md` rules; the template ships no plugin and mutates no bash commands.
+- `graphify-out/` lifecycle: rebuild it with `graphify update .` after cloning the project or changing machines (AST-only, no API cost). Never commit it.
+
 ### 7. Finish up
 
 ```bash
 cd .opencode && npm install && cd ..
 ```
 
+- Optional, recommended: run `npx autoskills` in your project (Node >= 22) to auto-install curated skills for your detected stack.
 - Optional, only for Claude Code: run `npx skills` in your project (see template README).
 - Onboarding: run `graphify update .` and follow the `sdd-onboard-project` skill with your agent.
+
+### 8. Update an Existing Installation
+
+Run the update from the template root. Use dry-run first:
+
+```bash
+./install.sh C:\path\to\your-project --update --dry-run
+./install.sh C:\path\to\your-project --update
+```
+
+The update compares managed files by hash and reports new, unchanged, updateable, customized, retired, and excluded paths before writing. A customized file is never replaced without an explicit decision. Existing files are backed up under `.sdd-backup-YYYYMMDD-HHMMSS/` before replacement.
+
+Each confirmed installation or update writes `.sdd-manifest.json` in the project root. It contains the template source, version, timestamp, managed paths, and hashes, but no file contents or secrets. Projects installed before the manifest existed are detected through their SDD markers and are reported as legacy installations with limited confidence.
+
+Retired template paths are reported only and are not deleted automatically. If an update fails partway through, keep the backup directory, resolve the reported error, and run the same `--update` command again.
+
+The update also keeps the managed `.gitignore` block idempotent (no duplicated entries) and warns if your repository already tracks agent tooling or generated artifacts (for example `graphify-out/`), printing the `git rm -r --cached` commands to untrack them. Already-tracked files are never untracked automatically.
 
 ## Parity Checklist
 
@@ -119,12 +169,15 @@ Confirm all items to match the scripted installation:
 - [ ] `openspec/config.yaml` exists and contains the three Spanish `Language preference` lines (YAML valid)
 - [ ] `.agents/skills/` contains the 13 template skills (no `sync-agent-symlinks`, no `sdd-bootstrap-docs`)
 - [ ] `.opencode/` contains `commands/`, `skills/`, `package.json`, `package-lock.json`, `.gitignore` — and no `node_modules/`
-- [ ] `docs/` is complete (standards, manuals)
-- [ ] No `install.sh` in your project root
+- [ ] `docs/` is complete (standards composed from the detected stack variants, manuals)
+- [ ] Standards placeholders resolved where detectable (or left visible for onboarding refinement)
+- [ ] No `install.sh`, no `docs-variants/` in your project root
 - [ ] `AGENTS.md` present with the SDD rules (full copy if it did not exist, or appended block between BEGIN/END markers — never duplicated)
+- [ ] `.gitignore` contains the managed SDD block with the five exclusions (`graphify-out/`, `.sdd-backup-*/`, `.agents/`, `.opencode/`, `skills-lock.json`)
+- [ ] No `.opencode/plugins/` directory in your project (the template ships no plugins; `skills-lock.json` is local to the machine that ran `npx autoskills`)
 - [ ] Your own pre-existing files were preserved or backed up under `.sdd-backup-<date>/`
 - [ ] `npm install` done inside `.opencode/`
 
 ## Rollback
 
-Delete the copied payload items and restore originals from `.sdd-backup-<date>/`. The template adds configuration only; it never touches your project's source code.
+Restore originals from `.sdd-backup-<date>/` while preserving their relative paths. Remove `.sdd-manifest.json` only if reverting the complete SDD installation; otherwise keep it and rerun `--update` after restoring. Retired files are never removed by the updater. The template adds configuration only; it never touches your project's source code.
