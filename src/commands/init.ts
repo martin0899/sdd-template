@@ -19,6 +19,8 @@ import { resolveAgent } from '../agents/profiles';
 import { buildInitPlan } from './plan';
 import { decideAutoskills } from './autoskills';
 import { makeConfirm } from '../util/prompt';
+import { currentPalette, phaseLine, printBanner, promptMark, red as uiRed } from '../util/ui';
+import { parseNodeMajor as _keep } from '../core/prereqs';
 
 export interface InitOptions {
   destino?: string;
@@ -78,6 +80,9 @@ function composeOneStandard(
 
 export async function runInit(opts: InitOptions = {}): Promise<number> {
   const root = templateRoot();
+  const version = pkgVersion();
+  const pal = currentPalette();
+  console.log(printBanner(version, version, pal));
   const profile = resolveAgent(opts.agent);
   const confirmFn = (opts.confirmFactory ?? makeConfirm)(Boolean(opts.yes));
 
@@ -89,14 +94,17 @@ export async function runInit(opts: InitOptions = {}): Promise<number> {
   }
 
   // 1. Prerequisites gate: nothing is written when something is missing.
+  let steps = 0;
+  const step = (label: string, result: string) =>
+    console.log(phaseLine(++steps, 10, label, result, pal));
   const prereqs = checkPrereqs(realProbe, process.platform);
   if (!prereqs.ok) {
-    console.log('Missing prerequisites:');
+    console.log(pal.bold('Missing prerequisites:'));
     for (const r of prereqs.results.filter((r) => !r.ok)) {
-      console.log(`  [MISS] ${r.tool}: ${r.problem}`);
-      console.log(`         -> ${installHint(r.tool, process.platform)}`);
+      console.log(`  ${pal.cross} ${uiRed(r.tool)}: ${r.problem}`);
+      console.log(pal.dim(`         -> ${installHint(r.tool, process.platform)}`));
     }
-    console.error('Aborting: nothing has been written to the destination.');
+    console.log('Aborting: nothing has been written to the destination.');
     return 1;
   }
 
@@ -111,7 +119,7 @@ export async function runInit(opts: InitOptions = {}): Promise<number> {
   console.log(`== spectralis init: ${target} ==`);
   console.log(`   agent profile: ${profile.name} (opencode payload: ${profile.includeOpencode ? 'yes' : 'no'})`);
   console.log(`   backend: ${stack.backend}${stack.framework ? ` | ${stack.framework}` : ''} | frontend: ${stack.frontend}${stack.frameworkFe ? ` | ${stack.frameworkFe}` : ''}`);
-  if (!confirmFn('Continue with the installation?')) {
+  if (!confirmFn(promptMark('Continue with the installation?'))) {
     console.error('Installation cancelled by the user. Nothing was written.');
     return 1;
   }
@@ -128,16 +136,16 @@ export async function runInit(opts: InitOptions = {}): Promise<number> {
       console.error('[ERROR] openspec init failed. Check the CLI version and run again.');
       return 1;
     }
-    console.log('[OK] OpenSpec root created.');
+    console.log(`  ${pal.green('✔')} openspec init ...... created (tools: ${profile.openspecTools})`);
   } else {
-    console.log('[OK] openspec/ already exists: preserved as-is.');
+    console.log(`  ${pal.check} openspec init ...... preserved`);
   }
 
   // 4. Spanish context injection (APPEND semantics).
   const configFile = join(target, 'openspec/config.yaml');
   if (existsSync(configFile)) {
     writeFileSync(configFile, injectSpanishContext(readFileSync(configFile, 'utf8')));
-    console.log('[OK] Spanish context injected into openspec/config.yaml.');
+    console.log(`  ${pal.green('✔')} Spanish context ..... injected`);
   } else {
     console.error('[ERROR] openspec/config.yaml not found; cannot inject context.');
     return 1;
@@ -145,10 +153,10 @@ export async function runInit(opts: InitOptions = {}): Promise<number> {
 
   // 5. Managed blocks: AGENTS.md and .gitignore (idempotent).
   const agentsResult = manageAgentsMd(root, target, { confirmFn });
-  console.log(`[OK] AGENTS.md: ${agentsResult.status}.`);
+  console.log(`  ${pal.green('✔')} AGENTS.md managed block .: ${agentsResult.status}`);
   for (const w of agentsResult.warnings) console.log(`  [WARN] ${w}`);
   const giResult = manageGitignore(target, { confirmFn });
-  console.log(`[OK] .gitignore: ${giResult.status}.`);
+  console.log(`  ${pal.green('✔')} managed .gitignore ..: ${giResult.status}`);
   for (const w of giResult.warnings) console.log(`  [WARN] ${w}`);
 
   // 6. Payload + docs copy with anti-corruption policy.
@@ -162,7 +170,7 @@ export async function runInit(opts: InitOptions = {}): Promise<number> {
     console.error(`[ERROR] Partial installation: ${copyReport.failed.length} file(s) failed. Backups preserved in ${String(copyReport.backupRoot)}`);
     return 1;
   }
-  console.log(`[OK] Payload copied (${copyReport.created.length} new, ${copyReport.conflicts.length} conflicts, ${copyReport.kept.length} kept).`);
+  console.log(`  ${pal.green('✔')} payload copy ........ ${copyReport.created.length} new, ${copyReport.conflicts.length} conflicts, ${copyReport.kept.length} kept`);
 
   // 7. Standards composed from docs-variants per detected stack.
   let composedCount = 0;
@@ -186,10 +194,9 @@ export async function runInit(opts: InitOptions = {}): Promise<number> {
       ...(stack.frontend !== 'none' ? [COMPOSED_STANDARDS[1]] : [])
     ])
   );
-  const version = pkgVersion();
   writeManifest(target, managedPaths, version, version);
-  console.log(`[OK] Installed with spectralis ${version} (template ${version})`);
-  console.log('[OK] SDD manifest written: .sdd-manifest.json');
+  console.log(`  ${pal.green('✔')} manifest ............ ${managedPaths.length} files hashed`);
+  console.log(pal.bold(`Installed with spectralis ${version} (template ${version})`));
 
   // 9. autoskills (opt-in).
   const nodeVersion = realProbe('node').version;
