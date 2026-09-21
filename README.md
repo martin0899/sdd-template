@@ -117,5 +117,6 @@ Re-ejecuta el instalador tras clonar la plantilla actualizada: los archivos nuev
 ## Mantenimiento del repo plantilla
 
 - Este repo usa su propio workflow SDD: los cambios se gestionan con `/opsx:propose`, `/opsx:apply`, `/opsx:archive`.
+- Las exploraciones nuevas deben pasar el briefing gate antes de `openspec new change` (protocolo: `.agents/skills/exploration-briefing/SKILL.md`).
 - Los skills nuevos van en `.agents/skills/<nombre>/SKILL.md` (frontmatter: `name`, `description`, `author`, `version`).
 - Después de cambios de código: `graphify update .`

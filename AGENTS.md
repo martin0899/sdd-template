@@ -4,6 +4,14 @@
 
 > **IMPORTANT**: [`docs/base-standards.md`](./docs/base-standards.md) contains the general rules and is the **core of development rules** for this project. Always read and consider it **first** before any task. It takes precedence over all other guidelines.
 
+## Skills Index
+
+**Before invoking any project skill under `.agents/skills/`, consult [`.agents/skills/INDEX.md`](./.agents/skills/INDEX.md) to choose the right skill from its trigger, and load ONLY the chosen skill's `SKILL.md` — never other skills' files. Skills under `.opencode/skills/` (vendor OpenSpec) always load as usual.**
+
+## Exploration Briefing Gate
+
+**When an OpenSpec exploration crystallizes or the user asks to proceed/capture it: ALWAYS return a briefing proactively (closed decisions, code-grounded findings, open questions, proposed change scope) and NEVER run `openspec new change` or write change artifacts before the user explicitly confirms.** Protocol detail: `.agents/skills/exploration-briefing/SKILL.md`.
+
 ## graphify
 
 This project has a knowledge graph at graphify-out/ with god nodes, community structure, and cross-file relationships.
