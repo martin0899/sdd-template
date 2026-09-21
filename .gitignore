@@ -10,3 +10,7 @@ graphify-out/
 # Sistema operativo
 .DS_Store
 Thumbs.db
+
+# Salidas del CLI spectralis
+dist/
+dist-test/

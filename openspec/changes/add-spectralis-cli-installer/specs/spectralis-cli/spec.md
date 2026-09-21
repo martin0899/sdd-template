@@ -37,6 +37,12 @@ El comando `spectralis init <destino>` DEBE (MUST) ejecutar la instalación fres
 - **THEN** el destino queda con el payload completo según el manifiesto (equivalente a `install.sh`)
 - **AND** el resultado satisface los requisitos de `sdd-template-install` (contexto español, AGENTS.md, .gitignore gestionado, manifiesto)
 
+#### Scenario: Init sin argumento usa el directorio actual
+
+- **WHEN** `spectralis init` se ejecuta sin indicar destino
+- **THEN** la instalación se aplica al directorio de trabajo actual (estilo `git init`)
+- **AND** los prerequisitos se verifican y la política anti-corrupción se aplica igual que con destino explícito
+
 #### Scenario: Init con conflicto
 
 - **WHEN** un archivo del payload ya existe en el destino con contenido distinto
@@ -80,3 +86,52 @@ Hasta que el port a TypeScript alcance paridad con el modo `--update` del instal
 
 - **WHEN** el usuario necesita actualizar una instalación existente durante el port
 - **THEN** `install.sh --update` sigue operativo con todos sus requisitos vigentes
+
+### Requirement: Registro de versiones en el destino
+
+El comando `init` DEBE (MUST) registrar en el manifiesto del destino la versión del CLI (`spectralisVersion`) y la versión de la plantilla (`templateVersion`) como campos separados, de modo que en cualquier momento se pueda saber con qué versión del arnés y de la plantilla se instaló el proyecto. La salida de `init` DEBE (MUST) reportar ambas versiones al completar. El comando `--version` reporta la versión del arnés (CLI).
+
+#### Scenario: Manifiesto con versiones separadas
+
+- **WHEN** `spectralis init` completa la instalación
+- **THEN** `.sdd-manifest.json` contiene `spectralisVersion` y `templateVersion` como campos independientes
+- **AND** ambos campos reflejan la versión vigente del paquete en el momento del init
+
+#### Scenario: Reporte de versiones en la salida
+
+- **WHEN** `spectralis init` termina
+- **THEN** la salida menciona la versión de spectralis y la versión de la plantilla utilizadas
+
+#### Scenario: Consulta de la versión del arnés
+
+- **WHEN** el usuario ejecuta `spectralis --version`
+- **THEN** la salida reporta la versión del arnés (CLI), sin confundirla con la versión de la plantilla registrada en los destinos
+
+### Requirement: Versionado SemVer de la plantilla
+
+El paquete `spectralis` DEBE (MUST) nacer en la versión `1.0.0`. Cada conjunto de cambios con especificaciones aprobadas DEBE (MUST) reflejarse en un bump de `MINOR` (nuevos requisitos o capabilities en specs — el salto escala según la cantidad de cambios y el riesgo del contrato) o de `PATCH` (correcciones sin cambio de contrato). El bump de `MAJOR` SOLO DEBE (MUST) proceder con confirmación explícita del usuario; el agente PUEDE sugerirlo cuando la cantidad acumulada de cambios del proyecto lo justifique. El CLI DEBE (MUST) reportar su versión (`--version` y `doctor`) y el manifiesto `.sdd-manifest.json` DEBE (MUST) registrarla como `templateVersion`.
+
+#### Scenario: Instalación inicial
+
+- **WHEN** el paquete se genera por primera vez
+- **THEN** `package.json` declara `version: "1.0.0"` y `spectralis --version` reporta `1.0.0`
+
+#### Scenario: Spec con requisitos nuevos
+
+- **WHEN** se aprueban especificaciones que añaden requisitos o capabilities (cantidad de cambios y riesgo del contrato)
+- **THEN** la versión incrementa `MINOR` y el manifiesto registra la nueva versión como `templateVersion`
+
+#### Scenario: Corrección sin cambio de contrato
+
+- **WHEN** se corrige un defecto sin añadir ni modificar requisitos de specs
+- **THEN** la versión incrementa `PATCH`
+
+#### Scenario: Major sin confirmación
+
+- **WHEN** el agente propone un bump de `MAJOR` sin confirmación explícita del usuario
+- **THEN** el bump no se aplica y la versión `MAJOR` vigente se mantiene
+
+#### Scenario: Major sugerido por acumulación
+
+- **WHEN** la cantidad acumulada de cambios del proyecto justifica un `MAJOR`
+- **THEN** el agente lo sugiere con su justificación y espera la confirmación explícita del usuario antes de aplicarlo

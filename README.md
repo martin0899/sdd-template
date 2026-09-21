@@ -26,7 +26,75 @@ Fuente canónica de la configuración SDD (OpenSpec + skills + comandos + están
 
 Si falta alguna, el instalador aborta sin escribir nada y te indica qué instalar.
 
-## Instalación en un proyecto (nuevo o existente)
+## Instalación rápida con spectralis (CLI)
+
+La forma recomendada de instalar la plantilla es el CLI **spectralis**, que viaja dentro de este repositorio (nunca se publica en npm):
+
+```bash
+# 1. Clonar la plantilla
+git clone https://github.com/martin0899/sdd-template.git
+cd sdd-template
+
+# 2. Instalar el CLI global (compila y empaqueta la plantilla; el clone puede borrarse después)
+npm i -g .
+
+# 3. Diagnóstico de prerrequisitos (git, node >= 22, openspec, graphify) — opcional pero recomendado
+spectralis doctor
+
+# 4. Instalar en tu proyecto: parado en el proyecto, o pasando la ruta
+cd /ruta/a/tu-proyecto && spectralis init
+# o: spectralis init /ruta/a/tu-proyecto
+```
+
+Matriz de agentes (`--agent`):
+
+| Agente | Valor | Payload |
+|--------|-------|---------|
+| OpenCode (por defecto) | `opencode` | `.agents/` + `.opencode/` + docs + AGENTS.md + openspec |
+| Antigravity | `antigravity` | `.agents/` + docs + AGENTS.md + openspec (sin `.opencode/`) |
+| Claude Code | `claude` | igual que `antigravity` (ver `npx skills` más abajo) |
+| Todos | `all` | `.agents/` + `.opencode/` + docs + AGENTS.md + openspec |
+
+- `spectralis init --dry-run` muestra el plan completo sin escribir nada.
+- `spectralis update` aún no está disponible (port en fase 2): usa el fallback canónico `./install.sh <destino> --update`.
+- **Versionado**: spectralis nace en `1.0.0`; los bumps `MINOR`/`PATCH` siguen los deltas de especificaciones aprobados (cantidad de cambios y riesgo); `MAJOR` solo a petición explícita del usuario (el agente puede sugerirlo). `spectralis --version` reporta la versión del arnés (CLI); el manifiesto `.sdd-manifest.json` del destino registra `spectralisVersion` y `templateVersion` como campos separados para saber con qué se instaló.
+- La política anti-corrupción es idéntica a la del instalador bash: backups en `.sdd-backup-<fecha>/`, confirmación por archivo, bloques idempotentes y manifiesto con hashes.
+- Uso estándar completo (comandos, opciones, matrix, versionado): ver el manual [docs/manuals/spectralis-cli.md](docs/manuals/spectralis-cli.md).
+
+### Cómo funciona spectralis init
+
+El proceso respeta tu proyecto en todo momento: primero lee, luego pregunta, y solo entonces escribe.
+
+```
+1. Prerrequisitos (gate)    verifica git, node >= 22, openspec y graphify;
+                            si falta algo, aborta sin escribir nada y te dice cómo instalarlo
+2. Reconocimiento (lectura) escanea tu proyecto (pom.xml, package.json, requirements.txt,
+                            go.mod, ...) SIN escribir: detecta backend y frontend
+3. --dry-run (opcional)     muestra el plan completo y deja tu proyecto bit a bit idéntico
+4. Confirmación             pregunta antes de escribir nada
+5. openspec init            crea la raíz OpenSpec si no existe (--tools según --agent)
+6. Contexto español         se inyecta por APPEND en openspec/config.yaml
+                            (preserva comentarios y tu contexto propio)
+7. Bloques gestionados      AGENTS.md: se crea o se añade/refresca el bloque SDD con
+                            marcadores (tu contenido queda intacto, idempotente)
+                            .gitignore: bloque gestionado con graphify-out/, .sdd-backup-*/,
+                            .agents/, .opencode/, skills-lock.json y .claude/
+8. Payload                  copia .agents/, .opencode/ (según --agent) y docs/;
+                            conflicto -> backup + pregunta; idéntico -> skip
+9. Estándares compuestos    docs/backend-standards.md y docs/frontend-standards.md se
+                            generan desde la variante detectada con los placeholders rellenados
+10. Manifiesto              .sdd-manifest.json con hashes de cada archivo gestionado
+11. autoskills (opt-in)     te pregunta si instalar skills curadas del stack (Node >= 22)
+12. Verificación final      reporta advertencias y los pasos manuales pendientes
+```
+
+Puntos clave:
+
+- **Cero escritura antes de tu confirmación** y re-ejecuciones idempotentes (los archivos idénticos se saltan, sin backups fantasma).
+- **Conflictos**: tu versión se respalda en `.sdd-backup-<fecha>/` y decides si reemplazarla; el contrato detallado vive en `openspec/specs/sdd-template-install`.
+- Cualquier cambio no previsto aborta y el destino conserva los backups en `.sdd-backup-<fecha>/`.
+
+## Instalación en un proyecto (instalador bash)
 
 ```bash
 # 1. Clonar la plantilla a un directorio temporal

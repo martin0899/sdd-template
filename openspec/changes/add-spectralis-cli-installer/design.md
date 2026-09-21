@@ -54,6 +54,10 @@ La inyección del contexto español DEBE preservar comentarios y formato del `co
 ### D5: Versión de plantilla = `version` del package.json (semver), no SHA de git
 El manifiesto hoy registra el SHA de git (`template_version()`). En el paquete instalado globalmente el clone puede no existir; el semver del paquete es la fuente de versión. Impacto aceptado: `.sdd-manifest.json` registra `templateVersion` semver en instalaciones spectralis; la clasificación de updates usa hashes, no la versión, por lo que no hay cambio de comportamiento. Alternativa descartada: hornear el SHA en el build (inestable fuera del clone).
 
+Gobernanza del semver (ver spec "Versionado SemVer de la plantilla"): el paquete nace en `1.0.0`; los bumps de `MINOR`/`PATCH` derivan del delta de specs aprobados (requisitos/capabilities nuevos según cantidad de cambios y riesgo → `MINOR`; correcciones sin cambio de contrato → `PATCH`); el bump de `MAJOR` es user-driven o sugerido por el agente por acumulación de cambios, siempre con confirmación explícita.
+
+Dualidad de versiones (decisión posterior de hoja de ruta): el arnés CLI y la plantilla son versiones conceptualmente distintas que hoy coinciden (`1.0.0` al nacer ambos). El manifiesto del destino las registra como campos separados (`spectralisVersion` + `templateVersion`) para que init deje trazabilidad de "con qué se instaló", y `--version` reporta la versión del arnés. La evolución de ambas puede desacoplarse en el futuro sin cambiar el schema del manifiesto.
+
 ### D6: Tests con `node:test` (runner nativo) + suite de integración espejo
 TDD por base-standards: unit tests por función porteada (`core/*`) y una suite de integración que ejecuta el CLI compilado contra directorios temporales con bins falsos (patrón de `tests/test-install-update.sh`: fake `openspec`, fake `graphify`, `SDD_FAIL_COPY` para interrupciones). Runner nativo = cero dependencias extra en el repo plantilla. Alternativa descartada: vitest (DX superior, pero introduce toolchain pesada en un repo cuyo producto no es código de aplicación).
 

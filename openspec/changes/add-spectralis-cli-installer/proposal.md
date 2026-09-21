@@ -16,6 +16,7 @@ The SDD template currently requires cloning the repo and running a bash installe
 - Agent matrix: `--agent opencode` (default) | `antigravity` | `claude` | `all`. Payload adjusts accordingly (`.opencode/` only ships for opencode; `.agents/skills/` is the common base all agents load).
 - Distribution contract: `git clone` → `npm i -g .` → `spectralis init <destino>`. The npm registry is never used (`npm publish` is out of scope).
 - Anti-corruption policy carries over unchanged: dated `.sdd-backup-*/` backups, per-file confirmation, idempotent managed blocks, manifest with hashes.
+- Versioning policy: the package is born at `1.0.0`; `MINOR`/`PATCH` bumps follow the approved spec deltas (new requirements/capabilities scaled by change count and risk → `MINOR`; contract-preserving fixes → `PATCH`); `MAJOR` only on explicit user confirmation (the agent may suggest it when accumulated project changes justify it).
 
 ## Capabilities
 
@@ -31,6 +32,7 @@ The SDD template currently requires cloning the repo and running a bash installe
 ## Impact
 
 - **New code**: npm package root (e.g., `cli/`) with `package.json` (`bin: spectralis`, `engines: node >= 22`), TypeScript sources, and embedded template references.
+- **Version**: package starts at `1.0.0` (see versioning policy under What Changes).
 - **Unchanged**: `install.sh` (remains canonical fallback until TS parity is proven), `docs-variants/`, `.agents/`, `.opencode/`, existing tests.
 - **Tests**: existing `tests/test-install-update.sh` covers the update path well (conflicts, idempotency, partial failure, retired paths, legacy installs) but fresh install only shallowly — TDD for the TypeScript port must add fresh-install coverage.
 - **Docs**: README gains a spectralis quickstart (clone → `npm i -g .` → `spectralis init`); GitHub repo may be renamed to `spectralis` for naming coherence (optional, non-blocking).
