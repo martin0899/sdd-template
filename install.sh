@@ -76,7 +76,7 @@ AGENTS_SENTINEL="ALWAYS use graphify first"
 GITIGNORE_MARKER_BEGIN="# BEGIN: SDD managed gitignore (agregado por install.sh; no editar a mano)"
 GITIGNORE_MARKER_END="# END: SDD managed gitignore"
 GITIGNORE_SENTINEL="SDD managed gitignore"
-GITIGNORE_ENTRIES=( 'graphify-out/' '.sdd-backup-*/' '.agents/' '.opencode/' 'skills-lock.json' )
+GITIGNORE_ENTRIES=( 'graphify-out/' '.sdd-backup-*/' '.agents/' '.opencode/' '.claude/' 'skills-lock.json' )
 
 DRY_RUN=false
 AUTO_YES=false
@@ -661,6 +661,10 @@ update_dry_run_plan() {
   log "  1. Prerrequisitos verificados."
   report_update
   log "  2. Se conservarán AGENTS.md y openspec/config.yaml mediante operaciones idempotentes."
+  log "     Si el bloque gestionado de reglas SDD en AGENTS.md difiere de la plantilla,"
+  log "     se refrescará con backup previo y confirmación (contenido propio intacto)."
+  log "     Si al bloque gestionado de .gitignore le faltan entradas vigentes (ej. .claude/),"
+  log "     se refrescará con backup previo y confirmación."
   log "  3. Los conflictos requieren decisión por archivo; los retirados solo se reportan."
   log "  4. El manifiesto se actualizaría al finalizar una aplicación confirmada."
   log "  5. El .gitignore gestionado del destino se mantiene idempotente (sin duplicados)."
@@ -730,21 +734,76 @@ inject_spanish_context() {
 }
 
 # ---------------------------------------------------------------------------
-# Reglas de agentes: crear AGENTS.md si falta; APPEND marcado si existe.
-# Idempotente: marcador BEGIN/END o sentencia graphify ya presente => skip.
+# Reglas de agentes: crear AGENTS.md si falta; APPEND marcado si existe;
+# en actualización, refrescar el bloque gestionado si difiere de la plantilla.
+# Idempotente: bloque idéntico => skip; sentinel sin marcadores => skip+warn.
 # ---------------------------------------------------------------------------
 manage_agents_md() {
   local dest="$TARGET/AGENTS.md"
   [[ -f "$TEMPLATE_ROOT/AGENTS.md" ]] || die "Falta $TEMPLATE_ROOT/AGENTS.md (fuente de las reglas de agentes)."
   if [[ ! -f "$dest" ]]; then
-    log "  -> AGENTS.md no existe: se crea con las reglas de la plantilla"
+    log "  -> AGENTS.md no existe: se crea con las reglas de la plantilla (bloque gestionado)"
     $DRY_RUN && return 0
-    cp "$TEMPLATE_ROOT/AGENTS.md" "$dest"
+    { printf '%s\n' "$AGENTS_MARKER_BEGIN"; cat "$TEMPLATE_ROOT/AGENTS.md"; printf '%s\n' "$AGENTS_MARKER_END"; } > "$dest"
     log "[OK] AGENTS.md creado."
     return 0
   fi
-  if grep -qF "$AGENTS_MARKER_BEGIN" "$dest" || grep -qF "$AGENTS_SENTINEL" "$dest"; then
-    log "[OK] AGENTS.md ya contiene las reglas SDD: no se duplica."
+  local begin_count end_count
+  begin_count="$(grep -cF "$AGENTS_MARKER_BEGIN" "$dest" || true)"
+  end_count="$(grep -cF "$AGENTS_MARKER_END" "$dest" || true)"
+  if (( begin_count == 1 && end_count == 1 )); then
+    # Bloque gestionado presente: comparar con la plantilla y refrescar si difiere.
+    # Dos variantes validas: plantilla completa (destino nacido gestionado) y
+    # sin titulo (APPEND en archivo con titulo propio).
+    local block_file tpl_full tpl_noheader before_file after_file dest_block
+    block_file="$(mktemp)" tpl_full="$(mktemp)" tpl_noheader="$(mktemp)" before_file="$(mktemp)" after_file="$(mktemp)" dest_block="$(mktemp)"
+    { printf '%s\n' "$AGENTS_MARKER_BEGIN"; cat "$TEMPLATE_ROOT/AGENTS.md"; printf '%s\n' "$AGENTS_MARKER_END"; } > "$tpl_full"
+    { printf '%s\n' "$AGENTS_MARKER_BEGIN"; tail -n +2 "$TEMPLATE_ROOT/AGENTS.md"; printf '%s\n' "$AGENTS_MARKER_END"; } > "$tpl_noheader"
+    awk -v b="$AGENTS_MARKER_BEGIN" 'index($0,b){f=1} f{print}' "$dest" | awk -v e="$AGENTS_MARKER_END" '{print} index($0,e){exit}' > "$dest_block"
+    if cmp -s "$tpl_full" "$dest_block" || cmp -s "$tpl_noheader" "$dest_block"; then
+      log "[OK] AGENTS.md: bloque de reglas SDD ya sincronizado con la plantilla."
+      rm -f "$block_file" "$tpl_full" "$tpl_noheader" "$before_file" "$after_file" "$dest_block"
+      return 0
+    fi
+    log "  -> AGENTS.md: bloque de reglas SDD difiere de la plantilla; se refrescará (contenido propio intacto)"
+    $DRY_RUN && rm -f "$block_file" "$tpl_full" "$tpl_noheader" "$before_file" "$after_file" "$dest_block" && return 0
+    backup_file "AGENTS.md"
+    if confirm "       ¿Reemplazar el bloque de reglas SDD en AGENTS.md con la versión de la plantilla?"; then
+      awk -v b="$AGENTS_MARKER_BEGIN" 'index($0,b){exit} {print}' "$dest" > "$before_file"
+      awk -v e="$AGENTS_MARKER_END" 'p; index($0,e){p=1}' "$dest" > "$after_file"
+      # Variante: bloque que abarca TODO el archivo -> plantilla completa;
+      # bloque embebido con contenido propio -> sin titulo (evita H1 duplicado).
+      if [[ ! -s "$before_file" && ! -s "$after_file" ]]; then
+        cat "$before_file" "$tpl_full" "$after_file" > "$block_file"
+      else
+        cat "$before_file" "$tpl_noheader" "$after_file" > "$block_file"
+      fi
+      cp "$block_file" "$dest"
+      log "[OK] Bloque de reglas SDD refrescado en AGENTS.md (contenido propio intacto)."
+    else
+      log "       [mantenido] AGENTS.md (se conserva la versión del destino)"
+    fi
+    rm -f "$block_file" "$tpl_full" "$tpl_noheader" "$before_file" "$after_file" "$dest_block"
+    return 0
+  fi
+  if (( begin_count > 1 || end_count > 1 )); then
+    warn "AGENTS.md tiene marcadores SDD duplicados: el bloque requiere revisión manual (no se modifica)."
+    return 0
+  fi
+  if (( begin_count == 1 || end_count == 1 )); then
+    warn "AGENTS.md tiene el bloque SDD incompleto (falta BEGIN o END): requiere revisión manual (no se modifica)."
+    return 0
+  fi
+  if grep -qF "$AGENTS_SENTINEL" "$dest"; then
+    if cmp -s "$dest" "$TEMPLATE_ROOT/AGENTS.md"; then
+      log "  -> AGENTS.md contiene la plantilla sin marcadores (instalación previa): se reescribirá envuelto en bloque gestionado"
+      $DRY_RUN && return 0
+      backup_file "AGENTS.md"
+      { printf '%s\n' "$AGENTS_MARKER_BEGIN"; cat "$TEMPLATE_ROOT/AGENTS.md"; printf '%s\n' "$AGENTS_MARKER_END"; } > "$dest"
+      log "[OK] AGENTS.md reescrito con bloque gestionado (contenido idéntico a la plantilla)."
+    else
+      warn "AGENTS.md contiene reglas SDD sin marcadores (instalación legacy): el bloque no puede refrescarse automáticamente; requiere revisión manual."
+    fi
     return 0
   fi
   log "  -> AGENTS.md existe: se añadirá el bloque de reglas SDD por APPEND"
@@ -773,7 +832,34 @@ manage_gitignore() {
   local gi="$TARGET/.gitignore"
   warn_tracked_agent_paths
   if [[ -f "$gi" ]] && grep -qF "$GITIGNORE_SENTINEL" "$gi"; then
-    log "[OK] .gitignore ya contiene el bloque gestionado SDD: no se duplica."
+    # Bloque gestionado presente: recalcular entradas aplicables y refrescar si faltan.
+    local tmp before_file after_file entry missing=()
+    before_file="$(mktemp)" after_file="$(mktemp)" tmp="$(mktemp)"
+    awk -v b="$GITIGNORE_MARKER_BEGIN" 'index($0,b){exit} {print}' "$gi" > "$before_file"
+    awk -v e="$GITIGNORE_MARKER_END" 'p; index($0,e){p=1}' "$gi" > "$after_file"
+    cat "$before_file" "$after_file" > "$tmp"
+    for entry in "${GITIGNORE_ENTRIES[@]}"; do
+      grep -qxF -- "$entry" "$gi" || missing+=("$entry")
+    done
+    if (( ${#missing[@]} == 0 )); then
+      log "[OK] .gitignore: bloque gestionado ya sincronizado con las entradas vigentes."
+      rm -f "$before_file" "$after_file" "$tmp"
+      return 0
+    fi
+    log "  -> .gitignore: faltan entradas en el bloque gestionado: ${missing[*]}"
+    $DRY_RUN && rm -f "$before_file" "$after_file" "$tmp" && return 0
+    backup_file ".gitignore"
+    if confirm "       ¿Añadir las entradas faltantes al bloque gestionado de .gitignore?"; then
+      { cat "$before_file"; printf '%s\n' "$GITIGNORE_MARKER_BEGIN"
+        for entry in "${GITIGNORE_ENTRIES[@]}"; do
+          grep -qxF -- "$entry" "$tmp" || printf '%s\n' "$entry"
+        done
+        printf '%s\n' "$GITIGNORE_MARKER_END"; cat "$after_file"; } > "$gi"
+      log "[OK] Bloque gestionado de .gitignore refrescado (${#missing[@]} entradas añadidas)."
+    else
+      log "       [mantenido] .gitignore (se conserva la versión del destino)"
+    fi
+    rm -f "$before_file" "$after_file" "$tmp"
     return 0
   fi
   local missing=() entry
@@ -781,7 +867,7 @@ manage_gitignore() {
     if [[ -f "$gi" ]] && grep -qxF -- "$entry" "$gi"; then continue; fi
     missing+=("$entry")
   done
-  if [[ ${#missing[@]} -eq 0 ]]; then
+  if [[ ${#missing[@]} == 0 ]]; then
     log "[OK] .gitignore ya excluye las rutas gestionadas; no se añade bloque."
     return 0
   fi
@@ -813,6 +899,7 @@ prepare_backup_root() {
 }
 
 backup_file() {  # $1 = ruta relativa del original en el destino
+  [[ -n "$BACKUP_ROOT" ]] || prepare_backup_root
   local rel="$1" dest="$BACKUP_ROOT/$1"
   mkdir -p "$(dirname "$dest")"
   if ! cp -p "$TARGET/$rel" "$dest"; then
@@ -1048,6 +1135,8 @@ post_checks() {
   [[ -f "$TARGET/.opencode/package.json" ]] || warn "Falta .opencode/package.json en el destino"
   [[ -d "$TARGET/docs" ]] || warn "Falta docs/ en el destino"
   [[ -s "$TARGET/.sdd-manifest.json" ]] || warn "Falta .sdd-manifest.json en el destino"
+  [[ -f "$TARGET/.agents/skills/INDEX.md" ]] || warn "Falta .agents/skills/INDEX.md en el destino (índice de enrutado de skills)"
+  [[ -f "$TARGET/.agents/skills/spec-from-note/SKILL.md" ]] || warn "Falta .agents/skills/spec-from-note/SKILL.md en el destino"
   if [[ -f "$TARGET/.sdd-manifest.json" ]]; then
     grep -q '"schemaVersion": 1' "$TARGET/.sdd-manifest.json" \
       || warn "El manifiesto SDD no declara un schemaVersion válido"
@@ -1079,6 +1168,9 @@ post_checks() {
   $AUTOSKILLS_PENDING && log "  3. (Opcional) npx autoskills en el destino: skills curadas de tu stack (Node >= 22)"
   log "  4. Onboarding: graphify update . y flujo de la skill sdd-onboard-project"
   log "     (refina los estándares genéricos, resuelve placeholders pendientes)"
+  log "  5. Al primer uso de la skill spec-from-note: registrar en"
+  log "     docs/requirements/REGISTRY.md la ruta de la plantilla de notas"
+  log "     (Requerimiento para Specs.md) del vault de Obsidian"
   return 0
 }
 
