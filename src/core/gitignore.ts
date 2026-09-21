@@ -11,6 +11,7 @@ export const GITIGNORE_ENTRIES = [
   '.agents/',
   '.opencode/',
   'skills-lock.json',
+  'openspec/',
   '.claude/'
 ];
 

@@ -106,7 +106,7 @@ run_installer_into() {
 run_installer_into "$GI_TARGET" --yes > /tmp/sdd-gi-fresh.log 2>&1
 grep -qF '# BEGIN: SDD managed gitignore' "$GI_TARGET/.gitignore"
 grep -qF '# END: SDD managed gitignore' "$GI_TARGET/.gitignore"
-for gi_entry in 'graphify-out/' '.sdd-backup-*/' '.agents/' '.opencode/' 'skills-lock.json'; do
+for gi_entry in 'graphify-out/' '.sdd-backup-*/' '.agents/' '.opencode/' 'skills-lock.json' 'openspec/'; do
   [[ "$(grep -cxF "$gi_entry" "$GI_TARGET/.gitignore")" -eq 1 ]]
 done
 
