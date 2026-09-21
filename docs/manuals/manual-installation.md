@@ -2,6 +2,8 @@
 
 Use this guide when `install.sh` cannot run on your system (e.g., native Windows without WSL or Git Bash). Following these steps produces the **same result** as the scripted installation: an OpenSpec root with the Spanish language context and the complete SDD payload copied into your project, without overwriting your files.
 
+> **Note:** on hosts with Node >= 22, the `spectralis` CLI replaces this manual path entirely (it runs natively on Windows, macOS and Linux). Clone the template, run `npm i -g .`, then `spectralis init <destino>`. Keep this guide for environments where Node is not available.
+
 ## Prerequisites
 
 | Tool | Check | Notes |

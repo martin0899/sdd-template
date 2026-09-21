@@ -35,5 +35,6 @@ When a user requests documentation about how a component or feature works:
 
 | Manual | Description |
 |--------|-------------|
+| [spectralis CLI](spectralis-cli.md) | Standard usage of the SDD installer CLI: commands, options, agent matrix, versioning and anti-corruption guarantees |
 | [Git Workflow Requests](git-workflow.md) | How to request branches, commits, pull requests, and releases |
 | [Spec-from-Note Workflow](spec-from-note-workflow.md) | How Obsidian requirement notes become OpenSpec changes and specs |
