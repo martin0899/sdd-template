@@ -1,20 +1,22 @@
 import { checkPrereqs, installHint, realProbe } from '../core/prereqs';
+import { currentPalette, dim, green, red } from '../util/ui';
 
 export function printDoctorReport(): boolean {
+  const pal = currentPalette();
   const report = checkPrereqs(realProbe, process.platform);
-  console.log('== spectralis doctor: host prerequisites ==');
+  console.log(`  ${pal.bold('spectralis doctor')} · host prerequisites`);
   for (const r of report.results) {
     if (r.ok) {
-      console.log(`  [OK]   ${r.tool}${r.version ? ` (${r.version})` : ''}`);
+      console.log(`  ${pal.check} ${green(r.tool, pal)}${r.version ? dim(` (${r.version})`, pal) : ''}`);
     } else {
-      console.log(`  [MISS] ${r.tool}: ${r.problem}`);
-      console.log(`         -> ${installHint(r.tool, process.platform)}`);
+      console.log(`  ${pal.cross} ${red(`${r.tool}: ${r.problem}`, pal)}`);
+      console.log(dim(`         -> ${installHint(r.tool, process.platform)}`, pal));
     }
   }
   console.log(
     report.ok
-      ? 'Host is ready. Run: spectralis init <destino>'
-      : 'Fix the missing tools above before running: spectralis init'
+      ? `\n${pal.check} ${pal.bold('Host is ready. Run:')} spectralis init`
+      : `\n${pal.cross} Fix the missing tools above before running: spectralis init`
   );
   return report.ok;
 }

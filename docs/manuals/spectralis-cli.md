@@ -29,6 +29,8 @@ spectralis init <destino>          (anywhere; template is embedded in the global
 
 Installs the SDD template into a project. With no argument, the destination is the current working directory (git-init style). `--dry-run` shows the complete plan without writing anything.
 
+**Output styling:** init prints a brand banner with the dual version (arnes + template), styled phase lines (`[nn/12] phase ...... result` with check marks when color is available) and `diamond` (◆) prompt markers. On non-TTY streams, `NO_COLOR`, or non-ANSI Windows consoles, the output falls back to plain `[OK]` / `[FAIL]` markers with zero escape sequences - behavior and exit codes are identical in both modes.
+
 **Workflow (phases):**
 
 1. Prerequisites gate — aborts without writing when a tool is missing
@@ -110,6 +112,7 @@ $ head -5 <project>/.sdd-manifest.json
 - Any existing file that differs is backed up to `.sdd-backup-<fecha>/` before being questioned.
 - Idempotent re-runs: identical files are skipped, managed blocks are never duplicated.
 - `.sdd-manifest.json` inventories every managed file with a SHA-256 hash — the exact payload that traveled to the destination.
+- Managed `.gitignore` block includes `openspec/` and `.claude/`: the SDD spec/changes tree is machine-local and never committed.
 - `install.sh` and `docs-variants/` never leak into the destination.
 
 ## Relationship with the bash installer

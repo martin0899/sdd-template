@@ -76,7 +76,7 @@ AGENTS_SENTINEL="ALWAYS use graphify first"
 GITIGNORE_MARKER_BEGIN="# BEGIN: SDD managed gitignore (agregado por install.sh; no editar a mano)"
 GITIGNORE_MARKER_END="# END: SDD managed gitignore"
 GITIGNORE_SENTINEL="SDD managed gitignore"
-GITIGNORE_ENTRIES=( 'graphify-out/' '.sdd-backup-*/' '.agents/' '.opencode/' '.claude/' 'skills-lock.json' )
+GITIGNORE_ENTRIES=( 'graphify-out/' '.sdd-backup-*/' '.agents/' '.opencode/' '.claude/' 'skills-lock.json' 'openspec/' )
 
 DRY_RUN=false
 AUTO_YES=false
