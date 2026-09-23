@@ -120,8 +120,8 @@ Actualizar la configuración SDD del proyecto /ruta/al/proyecto
 The equivalent commands are:
 
 ```bash
-./install.sh /ruta/al/proyecto --update --dry-run
-./install.sh /ruta/al/proyecto --update
+spectralis update --dry-run
+spectralis update
 ```
 
-Use `--dry-run` first. The updater compares the managed files, preserves customized files after an explicit decision, creates dated backups before replacements, and records the resulting inventory in `.sdd-manifest.json`. Retired files are reported but not deleted automatically.
+Use `--dry-run` (alias `--demo` or `--d`) first. The updater compares the managed files, preserves customized files after an explicit decision, creates dated backups before replacements, and records the resulting inventory in `.sdd-manifest.json`. Retired files are reported but not deleted automatically.

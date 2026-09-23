@@ -3,7 +3,7 @@ import { dirname, join, relative } from 'node:path';
 
 export const PAYLOAD_DIRS = ['.agents/skills', '.opencode/commands', '.opencode/skills'];
 export const PAYLOAD_FILES = ['.opencode/package.json', '.opencode/package-lock.json', '.opencode/.gitignore'];
-export const PAYLOAD_DOCS_EXCLUDE = ['graphify-out'];
+export const PAYLOAD_DOCS_EXCLUDE = ['graphify-out', 'manuals'];
 export const COMPOSED_STANDARDS = ['docs/backend-standards.md', 'docs/frontend-standards.md'];
 
 export function isExcludedPath(rel: string): boolean {
@@ -87,38 +87,8 @@ function backupFile(target: string, rel: string, backupRoot: string): string {
   return join(backupRoot, rel);
 }
 
-function copyOne(rel: string, opts: CopyOptions, report: CopyReport, backupRoot: string): void {
-  const { templateRoot, target, dryRun, confirmFn, failCopy } = opts;
-  const src = join(templateRoot, rel);
-  const dest = join(target, rel);
-  if (!existsSync(dest)) {
-    if (dryRun) return;
-    if (failCopy?.(rel)) {
-      report.failed.push(rel);
-      return;
-    }
-    mkdirSync(dirname(dest), { recursive: true });
-    copyFileSync(src, dest);
-    report.created.push(rel);
-    return;
-  }
-  if (readFileSync(src).equals(readFileSync(dest))) return; // identical -> skip
-  report.conflicts.push(rel);
-  if (dryRun) return;
-  report.backups.push(backupFile(target, rel, backupRoot));
-  if (!confirmFn(`Replace ${rel} with the template version?`)) {
-    report.kept.push(rel);
-    return;
-  }
-  if (failCopy?.(rel)) {
-    report.failed.push(rel);
-    return;
-  }
-  copyFileSync(src, dest);
-}
-
 export function copyPayload(opts: CopyOptions): CopyReport {
-  const { templateRoot, target } = opts;
+  const { templateRoot, target, dryRun, confirmFn, failCopy } = opts;
   const report: CopyReport = { created: [], conflicts: [], kept: [], backups: [], failed: [] };
   const rels = [...listPayloadFiles(templateRoot, opts.includeOpencode), ...listDocsFiles(templateRoot)];
   const backupRoot = `.sdd-backup-${new Date()
@@ -126,8 +96,73 @@ export function copyPayload(opts: CopyOptions): CopyReport {
     .replace(/[-:T]/g, '')
     .slice(0, 14)}-${process.pid}`;
   report.backupRoot = backupRoot;
+
+  // Phase 1: Classify without copying.
+  const newFiles: string[] = [];
+  const conflictFiles: string[] = [];
+  const identicalFiles: string[] = [];
+
   for (const rel of rels) {
-    copyOne(rel, opts, report, backupRoot);
+    const src = join(templateRoot, rel);
+    const dest = join(target, rel);
+    if (!existsSync(dest)) {
+      newFiles.push(rel);
+    } else if (readFileSync(src).equals(readFileSync(dest))) {
+      identicalFiles.push(rel);
+    } else {
+      conflictFiles.push(rel);
+    }
   }
+
+  // Phase 2: Copy new files (no confirmation needed).
+  for (const rel of newFiles) {
+    if (dryRun) continue;
+    if (failCopy?.(rel)) {
+      report.failed.push(rel);
+      continue;
+    }
+    mkdirSync(dirname(join(target, rel)), { recursive: true });
+    copyFileSync(join(templateRoot, rel), join(target, rel));
+    report.created.push(rel);
+  }
+
+  // Phase 3: Handle conflicts (single summary, per-file decision).
+  if (conflictFiles.length > 0) {
+    report.conflicts = [...conflictFiles];
+
+    if (!dryRun) {
+      // Backup all conflicts first.
+      for (const rel of conflictFiles) {
+        try {
+          report.backups.push(backupFile(target, rel, backupRoot));
+        } catch {
+          report.failed.push(rel);
+        }
+      }
+
+      // Ask once if there are conflicts, then per-file.
+      if (conflictFiles.length > 0) {
+        const proceed = confirmFn(
+          `${conflictFiles.length} file(s) conflict with the template. Replace them? (y/n per file follows)`
+        );
+        if (proceed) {
+          for (const rel of conflictFiles) {
+            if (failCopy?.(rel)) {
+              report.failed.push(rel);
+              continue;
+            }
+            if (!confirmFn(`  Replace ${rel}?`)) {
+              report.kept.push(rel);
+              continue;
+            }
+            copyFileSync(join(templateRoot, rel), join(target, rel));
+          }
+        } else {
+          report.kept.push(...conflictFiles);
+        }
+      }
+    }
+  }
+
   return report;
 }

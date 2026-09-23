@@ -18,7 +18,7 @@ function buildTarget(complete: boolean): string {
     writeFileSync(join(dst, '.opencode/package.json'), '{}');
     writeFileSync(join(dst, 'docs/backend-standards.md'), 'x');
     writeFileSync(join(dst, 'docs/frontend-standards.md'), 'x');
-    writeFileSync(join(dst, '.sdd-manifest.json'), '{"schemaVersion": 1, "files": []}');
+    writeFileSync(join(dst, '.sdd-manifest.json'), '{"schemaVersion": 2, "files": []}');
     writeFileSync(join(dst, 'graphify-out/graph.json'), '{}');
   }
   return dst;

@@ -1,7 +1,7 @@
 import { readFileSync, writeFileSync, existsSync, mkdirSync, copyFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-export const AGENTS_MARKER_BEGIN = '<!-- BEGIN: SDD template rules (agregado por install.sh) -->';
+export const AGENTS_MARKER_BEGIN = '<!-- BEGIN: SDD template rules (agregado por spectralis) -->';
 export const AGENTS_MARKER_END = '<!-- END: SDD template rules -->';
 export const AGENTS_SENTINEL = 'ALWAYS use graphify first';
 

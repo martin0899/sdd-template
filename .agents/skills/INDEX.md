@@ -5,6 +5,8 @@ Carga SOLO el `SKILL.md` de la skill elegida; evita leer otros archivos de skill
 
 Cuando añadas, edites o elimines una skill, actualiza esta tabla manualmente.
 
+**Regla de destino: toda skill nueva se crea bajo `.agents/skills/<nombre>/SKILL.md` (o el directorio del agente seleccionado). NUNCA bajo `.opencode/skills/` (vendor-managed por OpenSpec).**
+
 | skill                               | trigger / description que la detona                                                                                             | ruta completa                                                    |
 |-------------------------------------|----------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------|
 | adversarial-review                  | Revisión adversarial / red-team / verificación independiente antes de archivar un cambio OpenSpec                                 | .agents/skills/adversarial-review/SKILL.md                        |
@@ -21,3 +23,4 @@ Cuando añadas, edites o elimines una skill, actualiza esta tabla manualmente.
 | update-docs                         | Identificar y actualizar documentación técnica requerida tras cambios implementados                                               | .agents/skills/update-docs/SKILL.md                               |
 | using-git-worktrees                 | Aislar el workspace al iniciar trabajo de features o antes de ejecutar planes de implementación                                   | .agents/skills/using-git-worktrees/SKILL.md                       |
 | writing-skills                      | Crear, editar o verificar skills antes de desplegarlas (TDD aplicado a documentación de proceso)                                  | .agents/skills/writing-skills/SKILL.md                            |
+| openspec-gate                       | Gatekeeper que verifica que exista un change OpenSpec activo antes de implementar. Rutea a workflows de OpenSpec cuando no existe. | .agents/skills/openspec-gate/SKILL.md                             |

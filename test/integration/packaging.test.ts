@@ -14,7 +14,7 @@ test('packed tarball installs globally and resolves the embedded template withou
     const pack = spawnSync('npm', ['pack', '--pack-destination', work], { cwd: REPO, encoding: 'utf8' });
     assert.equal(pack.status, 0, pack.stderr);
     const tarball = join(work, (pack.stdout.trim().split('\n').pop() ?? '').trim());
-    assert.match(tarball, /spectralis-1\.0\.0\.tgz$/);
+    assert.match(tarball, /spectralis-1\.2\.0\.tgz$/);
 
     // 2. global install from the tarball into an isolated prefix
     const prefix = join(work, 'prefix');

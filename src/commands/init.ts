@@ -16,6 +16,7 @@ import { fillPlaceholders, resolveVariantFile } from '../core/compose-standards'
 import { writeManifest } from '../core/manifest';
 import { runPostChecks } from '../core/post-checks';
 import { resolveAgent } from '../agents/profiles';
+import { selectTools } from '../core/tool-selector';
 import { buildInitPlan } from './plan';
 import { decideAutoskills } from './autoskills';
 import { makeConfirm } from '../util/prompt';
@@ -111,13 +112,18 @@ export async function runInit(opts: InitOptions = {}): Promise<number> {
   // 2. Read-only recognition.
   const stack = detectStack(target);
 
+  // 3. Tool selection (interactive menu or flag-based).
+  const toolSelection = await selectTools({ target, agentFlag: opts.agent, yes: opts.yes });
+  const includeOpencode = toolSelection.selected.includes('opencode');
+
   if (opts.dryRun) {
     for (const line of buildInitPlan(target, stack, profile, root)) console.log(line);
+    console.log(`  tools: ${toolSelection.selected.join(', ')} (via ${toolSelection.source})`);
     return 0;
   }
 
   console.log(`== spectralis init: ${target} ==`);
-  console.log(`   agent profile: ${profile.name} (opencode payload: ${profile.includeOpencode ? 'yes' : 'no'})`);
+  console.log(`   tools: ${toolSelection.selected.join(', ')} (via ${toolSelection.source})`);
   console.log(`   backend: ${stack.backend}${stack.framework ? ` | ${stack.framework}` : ''} | frontend: ${stack.frontend}${stack.frameworkFe ? ` | ${stack.frameworkFe}` : ''}`);
   if (!confirmFn(promptMark('Continue with the installation?'))) {
     console.error('Installation cancelled by the user. Nothing was written.');
@@ -163,7 +169,7 @@ export async function runInit(opts: InitOptions = {}): Promise<number> {
   const copyReport = copyPayload({
     templateRoot: root,
     target,
-    includeOpencode: profile.includeOpencode,
+    includeOpencode: includeOpencode,
     confirmFn
   });
   if (copyReport.failed.length > 0) {
@@ -186,7 +192,7 @@ export async function runInit(opts: InitOptions = {}): Promise<number> {
   // 8. Manifest.
   const managedPaths = Array.from(
     new Set([
-      ...listPayloadFiles(root, profile.includeOpencode),
+      ...listPayloadFiles(root, includeOpencode),
       ...listDocsFiles(root),
       'AGENTS.md',
       'openspec/config.yaml',
@@ -194,7 +200,7 @@ export async function runInit(opts: InitOptions = {}): Promise<number> {
       ...(stack.frontend !== 'none' ? [COMPOSED_STANDARDS[1]] : [])
     ])
   );
-  writeManifest(target, managedPaths, version, version);
+  writeManifest(target, managedPaths, version, version, toolSelection.selected);
   console.log(`  ${pal.green('✔')} manifest ............ ${managedPaths.length} files hashed`);
   console.log(pal.bold(`Installed with spectralis ${version} (template ${version})`));
 
@@ -215,7 +221,7 @@ export async function runInit(opts: InitOptions = {}): Promise<number> {
   const post = runPostChecks(target, {
     backendVariant: stack.backend,
     frontendVariant: stack.frontend,
-    includeOpencode: profile.includeOpencode,
+    includeOpencode: includeOpencode,
     autoskillsPending: autoskills.pending
   });
   for (const w of post.warnings) console.log(`  [WARN] ${w}`);
