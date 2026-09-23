@@ -48,3 +48,28 @@ When a user request involves any of the following, it is a requirement and must 
 4. **Verify before implementing** — Before writing code, confirm that an active OpenSpec change exists with updated tasks.
 
 **Enforcement:** The `openspec-gate` skill verifies these conditions before allowing implementation. If no active change exists, the gate blocks code changes and routes to the appropriate OpenSpec workflow.
+
+## Obsidian Integration (Second Brain + Wiki)
+
+**All requirement-related work MUST be documented in Obsidian for cross-machine portability.** OpenSpec files stay in the repository; Obsidian provides the portable wiki.
+
+When working with requirements and specifications:
+
+1. **Capture in Obsidian** — Use `second-brain` skill to capture ideas and notes in `00_Notas/`.
+2. **Document requirements** — Use `requirements-discovery` to create requirement notes in Obsidian.
+3. **Generate summaries** — Use `obsidian-summary` to create wiki-style summaries after completing specifications.
+4. **Document tests** — Use `obsidian-tests` to create test documentation for regression testing.
+5. **Technical briefings** — Use `obsidian-briefing` to create portable technical summaries.
+
+**Obsidian Vault Location:** `/home/martinmartinez/Documentos/obsidian_sync_git`
+
+**Required workflow for Obsidian documentation:**
+
+1. **After completing a specification** — Generate a summary in Obsidian using `obsidian-summary`.
+2. **After creating tests** — Document tests in Obsidian using `obsidian-tests`.
+3. **When technical decisions are made** — Create a briefing in Obsidian using `obsidian-briefing`.
+4. **When ideas arise** — Capture in Obsidian using `second-brain`.
+
+**Templates location:** `{vault_root}/09_Plantilla/`
+
+**Enforcement:** The `openspec-gate` skill verifies that documentation exists in Obsidian before allowing archiving. If no documentation exists, the gate routes to the appropriate Obsidian skill.
