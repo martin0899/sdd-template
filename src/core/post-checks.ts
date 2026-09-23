@@ -37,7 +37,7 @@ export function runPostChecks(target: string, ctx: PostChecksContext): PostCheck
     warnings.push('Missing .sdd-manifest.json');
   } else {
     const manifest = readFileSync(manifestFile, 'utf8');
-    if (!manifest.includes('"schemaVersion": 1')) {
+    if (!manifest.includes('"schemaVersion": 2') && !manifest.includes('"schemaVersion": 1')) {
       warnings.push('Manifest does not declare a valid schemaVersion');
     }
     if (!manifest.includes('"files":')) {

@@ -1,7 +1,7 @@
 {
   "name": "spectralis",
-  "version": "1.0.0",
-  "description": "SDD template installer CLI: init, update and doctor for Spec-Driven Development projects",
+  "version": "1.2.0",
+  "description": "SDD template installer CLI: init, update, status, config and doctor for Spec-Driven Development projects",
   "bin": {
     "spectralis": "dist/bin/spectralis.js"
   },

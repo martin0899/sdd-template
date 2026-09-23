@@ -4,7 +4,7 @@ import { mkdtempSync, writeFileSync, mkdirSync, existsSync, readFileSync, rmSync
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { copyPayload, isExcludedPath } from '../../src/core/copy-payload';
-import { writeManifest } from '../../src/core/manifest';
+import { writeManifest, readManifest } from '../../src/core/manifest';
 
 function scratch(prefix: string): string {
   return mkdtempSync(join(tmpdir(), `spectralis-${prefix}-`));
@@ -34,7 +34,7 @@ test('fresh copy creates payload, docs and a valid manifest', () => {
     assert.ok(existsSync(join(dst, 'docs/base.md')));
     assert.ok(!existsSync(join(dst, 'AGENTS.md')), 'AGENTS.md is managed by core/agents-md');
     assert.equal(report.failed.length, 0);
-    assert.equal(report.created.length, 5);
+    assert.equal(report.created.length, 4);
 
     writeManifest(dst, ['.agents/skills/commit/SKILL.md', 'docs/base.md'], '1.0.0', '1.0.0');
     const manifest = JSON.parse(readFileSync(join(dst, '.sdd-manifest.json'), 'utf8')) as {
@@ -43,9 +43,10 @@ test('fresh copy creates payload, docs and a valid manifest', () => {
       templateVersion: string;
       files: { path: string; hash: string }[];
     };
-    assert.equal(manifest.schemaVersion, 1);
+    assert.equal(manifest.schemaVersion, 2);
     assert.equal(manifest.spectralisVersion, '1.0.0');
     assert.equal(manifest.templateVersion, '1.0.0');
+    assert.deepEqual((manifest as any).tools, []);
     assert.equal(manifest.files.length, 2);
     assert.match(manifest.files[0].hash, /^[0-9a-f]{64}$/);
   } finally {
@@ -167,4 +168,36 @@ test('isExcludedPath blocks sensitive and generated paths', () => {
     assert.equal(isExcludedPath(rel), true, rel);
   }
   assert.equal(isExcludedPath('docs/base.md'), false);
+});
+
+test('readManifest tolerates v1 manifest without tools field', () => {
+  const dst = scratch('v1');
+  try {
+    writeFileSync(
+      join(dst, '.sdd-manifest.json'),
+      JSON.stringify({ schemaVersion: 1, spectralisVersion: '0.9.0', templateVersion: '0.9.0', files: [{ path: 'x', hash: 'abc' }] })
+    );
+    const m = readManifest(dst);
+    assert.ok(m);
+    assert.equal(m.schemaVersion, 1);
+    assert.deepEqual(m.tools, ['opencode']);
+    assert.equal(m.files.length, 1);
+  } finally {
+    rmSync(dst, { recursive: true, force: true });
+  }
+});
+
+test('writeManifest produces v2 with tools', () => {
+  const dst = scratch('v2');
+  try {
+    mkdirSync(join(dst, 'docs'), { recursive: true });
+    writeFileSync(join(dst, 'docs/base.md'), 'x');
+    writeManifest(dst, ['docs/base.md'], '1.0.0', '1.0.0', ['opencode', 'claude']);
+    const m = readManifest(dst);
+    assert.ok(m);
+    assert.equal(m.schemaVersion, 2);
+    assert.deepEqual(m.tools, ['opencode', 'claude']);
+  } finally {
+    rmSync(dst, { recursive: true, force: true });
+  }
 });

@@ -2,7 +2,7 @@ import { readFileSync, writeFileSync, existsSync, mkdirSync, copyFileSync } from
 import { join } from 'node:path';
 
 export const GITIGNORE_MARKER_BEGIN =
-  '# BEGIN: SDD managed gitignore (agregado por install.sh; no editar a mano)';
+  '# BEGIN: SDD managed gitignore (agregado por spectralis; no editar a mano)';
 export const GITIGNORE_MARKER_END = '# END: SDD managed gitignore';
 export const GITIGNORE_SENTINEL = 'SDD managed gitignore';
 export const GITIGNORE_ENTRIES = [
@@ -106,7 +106,7 @@ export function manageGitignore(target: string, opts: ManageOptions): GitignoreR
   if (!content) {
     writeFileSync(
       giFile,
-      `# Tooling de agente y artefactos generados (gestionado por install.sh)\n${buildBlock(missing)}\n`
+      `# Tooling de agente y artefactos generados (gestionado por spectralis)\n${buildBlock(missing)}\n`
     );
     return { status: 'created', warnings };
   }

@@ -17,3 +17,6 @@ dist-test/
 
 # Maquinaria OpenSpec local (specs y changes no se versionan)
 openspec/
+
+# Archivos temporales de testing
+.test-tmp/

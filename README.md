@@ -5,16 +5,17 @@ Fuente canónica de la configuración SDD (OpenSpec + skills + comandos + están
 ## Qué contiene
 
 ```
-├── install.sh          ← instalador no destructivo (NO viaja al destino)
+├── dist/               ← compiled CLI (npm i -g . compiles and installs)
+├── src/                ← CLI source (TypeScript)
 ├── openspec/           ← raíz OpenSpec: config con reglas de idioma español
-├── .agents/skills/     ← 13 skills portables (estándar Agent Skills)
+├── .agents/skills/     ← 13+ skills portables (estándar Agent Skills)
 ├── .opencode/          ← comandos opsx-* y skills del workflow OpenSpec
 ├── docs/               ← estándares neutrales (base, api, data-model) + manuales
 └── docs-variants/      ← variantes de estándares por stack (fuente del instalador)
 ```
 
-**Qué viaja al destino**: `openspec/` (creada con `openspec init` + contexto español inyectado), `.agents/skills/`, `.opencode/` (sin `node_modules`), `docs/` — con `backend-standards.md` y `frontend-standards.md` **compuestos según el stack detectado** en tu proyecto.
-**Qué NO viaja**: `install.sh`, este README, `docs-variants/`, `openspec/changes/` del repo plantilla.
+**Qué viaja al destino**: `openspec/` (creada con `openspec init` + contexto español inyectado), `.agents/skills/`, `.opencode/` (sin `node_modules`), `docs/` — con `backend-standards.md` y `frontend-standards.md` **compuestos según el stack detectado** en tu proyecto. Los manuales (`docs/manuals/`) **NO viajan al destino**; quedan exclusivamente en el repo plantilla para consulta.
+**Qué NO viaja**: este README, `docs-variants/`, `openspec/changes/` del repo plantilla, `docs/manuals/`.
 
 ## Prerrequisitos
 
@@ -46,6 +47,21 @@ cd /ruta/a/tu-proyecto && spectralis init
 # o: spectralis init /ruta/a/tu-proyecto
 ```
 
+**Aliases de flags:**
+
+| Flag | Alias | Descripción |
+|------|-------|-------------|
+| `--dry-run` | `--demo`, `--dd` | Muestra el plan sin escribir nada |
+| `--version` | `--v` | Muestra la versión del CLI |
+
+**Comandos útiles post-instalación:**
+
+```bash
+spectralis update --check   # Verificar si hay actualizaciones disponibles
+spectralis status           # Ver estado del arnés instalado
+spectralis config           # Ver configuración del arnés
+```
+
 Matriz de agentes (`--agent`):
 
 | Agente | Valor | Payload |
@@ -56,9 +72,8 @@ Matriz de agentes (`--agent`):
 | Todos | `all` | `.agents/` + `.opencode/` + docs + AGENTS.md + openspec |
 
 - `spectralis init --dry-run` muestra el plan completo sin escribir nada.
-- `spectralis update` aún no está disponible (port en fase 2): usa el fallback canónico `./install.sh <destino> --update`.
 - **Versionado**: spectralis nace en `1.0.0`; los bumps `MINOR`/`PATCH` siguen los deltas de especificaciones aprobados (cantidad de cambios y riesgo); `MAJOR` solo a petición explícita del usuario (el agente puede sugerirlo). `spectralis --version` reporta la versión del arnés (CLI); el manifiesto `.sdd-manifest.json` del destino registra `spectralisVersion` y `templateVersion` como campos separados para saber con qué se instaló.
-- La política anti-corrupción es idéntica a la del instalador bash: backups en `.sdd-backup-<fecha>/`, confirmación por archivo, bloques idempotentes y manifiesto con hashes.
+- La política anti-corrupción es idéntica a la del instalador bash original: backups en `.sdd-backup-<fecha>/`, confirmación por archivo, bloques idempotentes y manifiesto con hashes.
 - Uso estándar completo (comandos, opciones, matrix, versionado): ver el manual [docs/manuals/spectralis-cli.md](docs/manuals/spectralis-cli.md).
 
 ### Cómo funciona spectralis init
@@ -94,18 +109,88 @@ Puntos clave:
 - **Conflictos**: tu versión se respalda en `.sdd-backup-<fecha>/` y decides si reemplazarla; el contrato detallado vive en `openspec/specs/sdd-template-install`.
 - Cualquier cambio no previsto aborta y el destino conserva los backups en `.sdd-backup-<fecha>/`.
 
+## Implementación en proyectos locales
+
+Guía paso a paso para instalar y validar spectralis en tus proyectos locales.
+
+### Paso 1: Instalar spectralis globalmente (una vez por máquina)
+
+```bash
+cd /ruta/al/repo/spectralis
+npm i -g .
+```
+
+### Paso 2: Verificar la instalación
+
+```bash
+spectralis --v          # Debe mostrar la versión (ej. 1.2.0)
+spectralis doctor       # Verifica prerrequisitos (git, node, openspec, graphify)
+```
+
+### Paso 3: Instalar en un proyecto existente
+
+```bash
+cd /ruta/a/tu-proyecto
+spectralis init         # Instala SDD en el proyecto actual
+```
+
+Para simular primero sin escribir nada:
+
+```bash
+spectralis init --demo  # Muestra el plan sin escribir (alias de --dry-run)
+```
+
+### Paso 4: Validar los comandos nuevos
+
+```bash
+# Verificar estado del arnés instalado
+spectralis status
+
+# Ver configuración del arnés (tools, directorios, versiones)
+spectralis config
+
+# Verificar si hay actualizaciones disponibles
+spectralis update --check
+```
+
+### Paso 5: Tabla de validación rápida
+
+| Comando | Qué verifica |
+|---------|--------------|
+| `spectralis --v` | Versión instalada |
+| `spectralis doctor` | Prerrequisitos (git, node, openspec, graphify) |
+| `spectralis status` | Estado del arnés en el proyecto |
+| `spectralis config` | Configuración y tools |
+| `spectralis update --check` | Actualizaciones pendientes |
+
+### Paso 6: Mantenimiento de proyectos instalados
+
+```bash
+# Para cada proyecto con SDD instalado:
+cd /ruta/al/proyecto
+spectralis status            # Verificar que está instalado
+spectralis update --check    # Verificar actualizaciones
+
+# Si hay actualizaciones:
+spectralis update --demo     # Ver el plan sin escribir
+spectralis update            # Aplicar cambios
+```
+
 ## Instalación en un proyecto (instalador bash)
 
 ```bash
-# 1. Clonar la plantilla a un directorio temporal
+# 1. Clonar la plantilla
 git clone https://github.com/martin0899/sdd-template.git sdd-template
 cd sdd-template
 
-# 2. Simulación (recomendado en proyectos existentes): muestra el plan sin escribir
-./install.sh /ruta/a/tu-proyecto --dry-run
+# 2. Instalar el CLI global
+npm i -g .
 
-# 3. Instalar (confirma interactivamente; nada se sobrescribe sin backup)
-./install.sh /ruta/a/tu-proyecto
+# 3. Simulación (recomendado en proyectos existentes): muestra el plan sin escribir
+spectralis init /ruta/a/tu-proyecto --dry-run
+
+# 4. Instalar (confirma interactivamente; nada se sobrescribe sin backup)
+spectralis init /ruta/a/tu-proyecto
 ```
 
 Política anti-corrupción:
@@ -128,18 +213,24 @@ npx autoskills    # en tu proyecto destino (detecta el stack e instala skills)
 
 ### Instalación sin bash
 
-¿Windows sin WSL ni Git Bash, o cualquier entorno donde el script no pueda ejecutarse? Sigue la guía manual equivalente: **[docs/manuals/manual-installation.md](docs/manuals/manual-installation.md)** — incluye pasos con `robocopy`, manejo de conflictos con backup y lista de verificación de paridad.
+¿Windows sin WSL ni Git Bash? `spectralis` corre nativamente en cualquier plataforma con Node >= 22. Ver la guía de instalación/actualización manual: **[docs/manuals/manual-installation.md](docs/manuals/manual-installation.md)**.
 
 ### Actualizar proyectos existentes
 
-Cuando la plantilla tenga skills, comandos o definiciones más recientes, ejecuta desde la raíz de esta plantilla:
+Cuando la plantilla tenga skills, comandos o definiciones más recientes, ejecuta en el proyecto destino:
 
 ```bash
-./install.sh /ruta/a/tu-proyecto --update --dry-run
-./install.sh /ruta/a/tu-proyecto --update
+spectralis update --check     # solo verifica si hay actualizaciones
+spectralis update --demo      # muestra el plan sin escribir (alias de --dry-run)
+spectralis update             # aplica los cambios
 ```
 
-La primera ejecución solo muestra el plan. La actualización compara hashes, clasifica archivos nuevos, actualizables, personalizados y retirados, y conserva los cambios del proyecto mediante `.sdd-backup-<fecha>/`. Los archivos retirados se reportan, pero no se eliminan automáticamente. Cada instalación o actualización confirmada mantiene un inventario en `.sdd-manifest.json`.
+**Exit codes de `--check`:**
+- `0`: el destino está al día
+- `1`: hay actualizaciones disponibles
+- `2`: error (destino no instalado)
+
+La actualización compara hashes, clasifica archivos (nuevos, actualizables, conflictos, retirados), respalda antes de reemplazar y conserva los cambios del proyecto en `.sdd-backup-<fecha>/`. Los archivos retirados se reportan, pero no se eliminan automáticamente.
 
 Para restaurar un archivo, copia su versión desde el backup fechado conservando su ruta relativa. Si una actualización queda parcial, corrige el problema indicado y vuelve a ejecutar `--update`; los backups anteriores no se eliminan.
 
@@ -176,7 +267,7 @@ npx skills    # en el proyecto destino (solo Claude Code; con lockfile)
 
 Alternativa manual sin dependencias: copiar `.agents/skills/<skill>/` a `.claude/skills/<skill>/`. No uses symlinks: Claude Code los corrompe con archivos internos `.system/`.
 
-**Skills propias (promoción)**: una skill que crees en un proyecto destino permanece local (nunca se versiona ahí). Para distribuirla a todos tus proyectos, cópiala a `.agents/skills/<nombre>/` en este repo plantilla y re-ejecuta `install.sh` (o `--update`) en los destinos. Excepción: las skills `openspec-*` son vendor-managed por el CLI de OpenSpec en `.opencode/skills/` y nunca se duplican en `.agents/`.
+**Skills propias (promoción)**: una skill que crees en un proyecto destino permanece local (nunca se versiona ahí). Para distribuirla a todos tus proyectos, cópiala a `.agents/skills/<nombre>/` en este repo plantilla y re-ejecuta `spectralis init` o `spectralis update` en los destinos. Excepción: las skills `openspec-*` son vendor-managed por el CLI de OpenSpec en `.opencode/skills/` y nunca se duplican en `.agents/`.
 
 ## Actualizar la configuración en proyectos instalados
 

@@ -62,9 +62,9 @@ test('fresh install into clean destination matches the anti-corruption contract'
     assert.ok(existsSync(join(dst, '.opencode/package.json')));
     assert.ok(existsSync(join(dst, 'docs/base-standards.md')));
     const manifest = JSON.parse(readFileSync(join(dst, '.sdd-manifest.json'), 'utf8'));
-    assert.equal(manifest.schemaVersion, 1);
-    assert.equal(manifest.spectralisVersion, '1.0.0', 'arnés version recorded separately');
-    assert.equal(manifest.templateVersion, '1.0.0', 'template version recorded separately');
+    assert.equal(manifest.schemaVersion, 2);
+    assert.equal(manifest.spectralisVersion, '1.2.0', 'arnés version recorded separately');
+    assert.equal(manifest.templateVersion, '1.2.0', 'template version recorded separately');
     assert.ok(manifest.files.length > 0);
   } finally {
     rmSync(dst, { recursive: true, force: true });
@@ -147,13 +147,13 @@ test('init without an argument applies to the current working directory', () => 
   }
 });
 
-test('update command prints the bash fallback instruction and writes nothing', () => {
+test('update without manifest prints error and writes nothing', () => {
   const dst = mkdtempSync(join(tmpdir(), 'spectralis-it-'));
   try {
     const before = dirFingerprint(dst);
-    const r = runCli(['update']);
-    assert.equal(r.status, 0);
-    assert.match(r.stdout, /install\.sh --update/);
+    const r = runCli(['update', dst]);
+    assert.equal(r.status, 2);
+    assert.match(r.stderr, /spectralis init/);
     assert.equal(dirFingerprint(dst), before);
   } finally {
     rmSync(dst, { recursive: true, force: true });

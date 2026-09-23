@@ -47,7 +47,7 @@ For detailed standards and guidelines specific to different areas of the project
 - Also load any referenced files in the skill folder (for example, `references/*.md`) when the skill requires them.
 - **Vendor exemption**: OpenSpec CLI skills (`openspec-*`) are managed exclusively in `.opencode/skills/` by the OpenSpec CLI. Never keep copies, mirrors, or symlinks of them in `.agents/skills/` — duplicates already diverged once (v1.3.1 vs v1.11.0) and served stale instructions.
 - **Project-local policy**: in installed destination projects, skills, commands, plugins, `skills-lock.json` and the `openspec/` tree (main specs, changes, planning artifacts) are machine-local and never committed (the installer-managed `.gitignore` block enforces this). Only `AGENTS.md` and `docs/` are project content and remain versioned. The OpenSpec SDD workflow keeps working locally (`openspec/` stays on disk; it just travels with the local machine, not the repository).
-- **Promotion flow**: a skill created locally in a destination stays local until promoted — copy it into this template's `.agents/skills/`, then distribute it via `install.sh` or the update flow.
+- **Promotion flow**: a skill created locally in a destination stays local until promoted — copy it into this template's `.agents/skills/`, then distribute it via `spectralis init` or `spectralis update`.
 
 ## 5. Planning Model Requirement
 

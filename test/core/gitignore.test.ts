@@ -64,7 +64,7 @@ test('entries already covered outside the block are not duplicated', () => {
 test('old block missing .claude and openspec is refreshed with backup; rest intact', () => {
   const dst = scratch();
   const oldBlock =
-    '# BEGIN: SDD managed gitignore (agregado por install.sh; no editar a mano)\ngraphify-out/\n.sdd-backup-*/\n.agents/\n.opencode/\nskills-lock.json\n# END: SDD managed gitignore\n';
+    '# BEGIN: SDD managed gitignore (agregado por spectralis; no editar a mano)\ngraphify-out/\n.sdd-backup-*/\n.agents/\n.opencode/\nskills-lock.json\n# END: SDD managed gitignore\n';
   writeFileSync(join(dst, '.gitignore'), `own stuff\n${oldBlock}more own stuff\n`);
   try {
     const r = manageGitignore(dst, { confirmFn: () => true });
@@ -97,7 +97,7 @@ test('complete block reports sync without writes (idempotent)', () => {
 test('refresh with confirm=false keeps the old block', () => {
   const dst = scratch();
   const oldBlock =
-    '# BEGIN: SDD managed gitignore (agregado por install.sh; no editar a mano)\ngraphify-out/\n.sdd-backup-*/\n.agents/\n.opencode/\nskills-lock.json\n# END: SDD managed gitignore\n';
+    '# BEGIN: SDD managed gitignore (agregado por spectralis; no editar a mano)\ngraphify-out/\n.sdd-backup-*/\n.agents/\n.opencode/\nskills-lock.json\n# END: SDD managed gitignore\n';
   writeFileSync(join(dst, '.gitignore'), oldBlock);
   try {
     const r = manageGitignore(dst, { confirmFn: () => false });
