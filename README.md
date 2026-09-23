@@ -109,6 +109,73 @@ Puntos clave:
 - **Conflictos**: tu versión se respalda en `.sdd-backup-<fecha>/` y decides si reemplazarla; el contrato detallado vive en `openspec/specs/sdd-template-install`.
 - Cualquier cambio no previsto aborta y el destino conserva los backups en `.sdd-backup-<fecha>/`.
 
+## Implementación en proyectos locales
+
+Guía paso a paso para instalar y validar spectralis en tus proyectos locales.
+
+### Paso 1: Instalar spectralis globalmente (una vez por máquina)
+
+```bash
+cd /ruta/al/repo/spectralis
+npm i -g .
+```
+
+### Paso 2: Verificar la instalación
+
+```bash
+spectralis --v          # Debe mostrar la versión (ej. 1.2.0)
+spectralis doctor       # Verifica prerrequisitos (git, node, openspec, graphify)
+```
+
+### Paso 3: Instalar en un proyecto existente
+
+```bash
+cd /ruta/a/tu-proyecto
+spectralis init         # Instala SDD en el proyecto actual
+```
+
+Para simular primero sin escribir nada:
+
+```bash
+spectralis init --demo  # Muestra el plan sin escribir (alias de --dry-run)
+```
+
+### Paso 4: Validar los comandos nuevos
+
+```bash
+# Verificar estado del arnés instalado
+spectralis status
+
+# Ver configuración del arnés (tools, directorios, versiones)
+spectralis config
+
+# Verificar si hay actualizaciones disponibles
+spectralis update --check
+```
+
+### Paso 5: Tabla de validación rápida
+
+| Comando | Qué verifica |
+|---------|--------------|
+| `spectralis --v` | Versión instalada |
+| `spectralis doctor` | Prerrequisitos (git, node, openspec, graphify) |
+| `spectralis status` | Estado del arnés en el proyecto |
+| `spectralis config` | Configuración y tools |
+| `spectralis update --check` | Actualizaciones pendientes |
+
+### Paso 6: Mantenimiento de proyectos instalados
+
+```bash
+# Para cada proyecto con SDD instalado:
+cd /ruta/al/proyecto
+spectralis status            # Verificar que está instalado
+spectralis update --check    # Verificar actualizaciones
+
+# Si hay actualizaciones:
+spectralis update --demo     # Ver el plan sin escribir
+spectralis update            # Aplicar cambios
+```
+
 ## Instalación en un proyecto (instalador bash)
 
 ```bash
