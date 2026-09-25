@@ -12,7 +12,7 @@ function scratch(): string {
 test('entries include .claude and openspec per local policy', () => {
   assert.ok(GITIGNORE_ENTRIES.includes('.claude/'));
   assert.ok(GITIGNORE_ENTRIES.includes('openspec/'));
-  assert.equal(GITIGNORE_ENTRIES.length, 7);
+  assert.equal(GITIGNORE_ENTRIES.length, 8);
 });
 
 test('missing file is created with the full managed block', () => {
@@ -49,7 +49,7 @@ test('entries already covered outside the block are not duplicated', () => {
   const dst = scratch();
   writeFileSync(
     join(dst, '.gitignore'),
-    'node_modules/\n.agents/\n.opencode/\n.claude/\nopenspec/\nskills-lock.json\ngraphify-out/\n.sdd-backup-*/\n'
+    'node_modules/\n.agents/\n.opencode/\n.claude/\nopenspec/\nskills-lock.json\ngraphify-out/\n.sdd-backup-*/\n05_wiki/\n'
   );
   try {
     const r = manageGitignore(dst, { confirmFn: () => true });

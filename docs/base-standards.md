@@ -14,22 +14,58 @@ alwaysApply: true
 - **Pattern Detection**: Detect and highlight repeated code patterns.
 
 ## 2. Language Standards
-- **English Only for Technical Artifacts**: All technical artifacts must always use English, including:
-    - Code (variables, functions, classes, comments, error messages, log messages)
-    - Documentation (README, guides, API docs)
-    - Jira tickets (titles, descriptions, comments)
-    - Data schemas and database names
-    - Configuration files and scripts
-    - Test names and descriptions
 
-- **Spanish for User Interactions**: All user-facing interactions must be in Spanish, including:
-    - AI responses and explanations
-    - Questions and prompts to the user
-    - Status updates and progress reports
-    - Error messages shown to the user
-    - Summaries and results presentation
-    - Git commit messages, Pull Request titles and descriptions
-    - Documentation explanations (while keeping technical terms in English when appropriate)
+### Guiding Principle
+
+- **English** → Everything technical: code, skills, internal docs, configuration, development tools.
+- **Spanish** → Everything the user reads or reviews: Obsidian, OpenSpec, README, agent interactions.
+
+### Language Matrix
+
+| Content | Language | Reason |
+|---|---|---|
+| **Source code** (`.ts`, `.js`, `.py`) | **English** | Industry standard |
+| Code comments | **English** | Development convention |
+| Variable / function names | **English** | Development convention |
+| Error messages / logs (internal) | **English** | Technical standard |
+| `package.json`, `tsconfig.json`, configs | **English** | npm/node convention |
+| Data schemas / database names | **English** | Technical standard |
+| Test names / descriptions | **English** | Testing convention |
+| **Skills** (`SKILL.md`) — built-in and user-created | **English** | Development tools, not vault content |
+| **`docs/`** (usage guides, manuals) | **English** | Internal technical documentation |
+| **`AGENTS.md`** | **English** | Agent technical configuration |
+| API docs / technical docs | **English** | International technical reference |
+| **README.md** | **Spanish** | User-facing entry point |
+| **Obsidian notes** (`00_Notas/` – `03_Recursos/`) | **Spanish** | Second Brain content |
+| **Documentation exported to Obsidian** | **Spanish** | Lives in the vault, reviewed by user |
+| **OpenSpec** (specs, tasks, reports) | **Spanish** | User reviews directly |
+| **Agent prompts / responses** | **Spanish** | Agent operates in Spanish with user |
+| **Git commit messages / PR titles** | **Spanish** | User-facing, reviewed by user |
+| **Error messages shown to user** | **Spanish** | User-facing |
+| **Summaries / results** | **Spanish** | User-facing |
+| Jira tickets (titles, descriptions, comments) | **English** | Technical management artifact |
+
+### Why
+
+- **English tokens are cheaper** than Spanish in most models.
+- **Skills and docs are development tools** → English (even if user-created).
+- **What lives in Obsidian and OpenSpec is review content** → Spanish.
+- **README is the user's entry point** → Spanish.
+- **Commits, PRs, user errors** → Spanish because the user reads them.
+
+### Example Flow
+
+```
+spectralis init
+  → Detects project stack
+  → Generates config files in ENGLISH
+  → Generates skills with SKILL.md in ENGLISH
+  → Generates internal docs/ in ENGLISH
+  → Creates Obsidian notes in SPANISH
+  → Generates OpenSpec specs in SPANISH
+  → Generates README in SPANISH
+  → Commits and PRs in SPANISH
+```
 
 ## 3. Specific standards
 

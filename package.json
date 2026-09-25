@@ -14,16 +14,19 @@
     ".opencode/",
     "docs/",
     "docs-variants/",
+    "scripts/",
     "AGENTS.md",
     "README.md"
   ],
   "scripts": {
     "prepare": "tsc -p tsconfig.json",
+    "setup-hooks": "cp scripts/post-merge .git/hooks/post-merge && chmod +x .git/hooks/post-merge && echo '✅ post-merge hook installed'",
     "test": "tsc -p tsconfig.test.json && node --test 'dist-test/**/*.test.js'"
   },
   "license": "MIT",
   "dependencies": {
     "commander": "^12.1.0",
+    "gray-matter": "^4.0.3",
     "yaml": "^2.5.0"
   },
   "devDependencies": {
