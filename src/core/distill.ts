@@ -37,6 +37,8 @@ export function writeOptimizedNote(
   }
   const fileContent = matter.stringify(content, filtered);
   const absolutePath = join(wikiRoot, '05_wiki', projectName, filePath);
+  const dir = join(absolutePath, '..');
+  mkdirSync(dir, { recursive: true });
   writeFileSync(absolutePath, fileContent, 'utf8');
 }
 
@@ -47,6 +49,7 @@ export function writeOptimizedNote(
  */
 export interface WikiIndex {
   [projectName: string]: {
+    id?: string;
     name: string;
     path: string;
     content: string[];
@@ -213,37 +216,81 @@ export function buildCandidatePlan(ambiguousEntries: AmbiguousEntry[]): string {
 
 export type LLMClassification = 'ADR' | 'post-mortem' | 'log' | 'noise';
 
+export interface LlmOptions {
+  host: string;
+  model: string;
+  enabled: boolean;
+}
+
 /**
- * Invokes LLM to classify ambiguous entries.
- * TODO: Replace with actual LLM integration.
- * For now, returns 'noise' for all entries (placeholder).
+ * Invokes LLM to classify ambiguous entries via Ollama /api/generate.
+ * Returns a Map of entryPath to classification. Entries not in the map are discarded.
  */
-export function classifyWithLLM(candidatePlan: string): Map<string, LLMClassification> {
-  // Placeholder implementation - returns noise for all
-  // In real implementation, this would call an LLM API
+export async function classifyWithLLM(
+  candidatePlan: string,
+  llm: LlmOptions
+): Promise<Map<string, LLMClassification>> {
   const result = new Map<string, LLMClassification>();
-  // We don't have access to original entries here, so we return empty map
-  // The hybridExtract will handle mapping
+  if (!llm.enabled || !llm.model) return result;
+
+  const prompt = `Classify each entry as exactly one of: ADR, post-mortem, log, or noise.
+Respond with one line per entry in the format: <path> = <classification>
+Entries:
+${candidatePlan}`;
+
+  try {
+    const res = await fetch(`${llm.host}/api/generate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model: llm.model, prompt, stream: false }),
+      signal: AbortSignal.timeout(30000)
+    });
+    if (!res.ok) return result;
+    const data = await res.json() as { response?: string };
+    const text = data.response ?? '';
+    for (const line of text.split('\n')) {
+      const m = line.match(/^(.+?)\s*=\s*(ADR|post-mortem|log|noise)/i);
+      if (m) {
+        const key = m[1].trim();
+        const cls = m[2].toLowerCase() as LLMClassification;
+        result.set(key, cls);
+      }
+    }
+  } catch {
+    // LLM unreachable — return empty (ambiguous entries discarded)
+  }
   return result;
 }
 
 /**
  * Combines Level 1 + Level 2 results.
  * Deterministic entries are not sent to LLM.
+ * Ambiguous entries are classified by LLM if enabled, otherwise discarded.
  */
-export function hybridExtract(sourceFiles: SourceFile[]): DeterministicResult {
+export async function hybridExtract(
+  sourceFiles: SourceFile[],
+  llm: LlmOptions
+): Promise<DeterministicResult> {
   const { classified, ambiguous } = deterministicExtract(sourceFiles);
-  
-  // If there are ambiguous entries, we would send them to LLM
-  if (ambiguous.length > 0) {
+
+  if (ambiguous.length > 0 && llm.enabled) {
     const candidatePlan = buildCandidatePlan(ambiguous);
-    const llmClassifications = classifyWithLLM(candidatePlan);
-    
-    // For now, since classifyWithLLM returns empty map, we keep ambiguous as ambiguous
-    // In real implementation, we would map classifications and move from ambiguous to classified
+    const llmClassifications = await classifyWithLLM(candidatePlan, llm);
+
+    for (const entry of ambiguous) {
+      const cls = llmClassifications.get(entry.sourcePath);
+      if (cls && cls !== 'noise') {
+        classified.push({
+          sourcePath: entry.sourcePath,
+          classification: cls,
+          content: entry.content,
+          frontmatter: entry.frontmatter
+        });
+      }
+    }
   }
-  
-  return { classified, ambiguous };
+
+  return { classified, ambiguous: [] };
 }
 
 /**

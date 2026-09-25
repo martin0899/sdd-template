@@ -1,4 +1,4 @@
-import { readdirSync, readFileSync, existsSync } from 'node:fs';
+import { readdirSync, readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { join, basename } from 'node:path';
 
 export type BackendVariant = 'spring-boot' | 'express-node' | 'nestjs' | 'generic' | 'none';
@@ -98,7 +98,81 @@ function pomParentVersion(file: string): string | undefined {
   return match ? match[1] : undefined;
 }
 
+export interface StackCacheEntry {
+  backend: BackendVariant;
+  frontend: FrontendVariant;
+  language: string;
+  languageVersion: string;
+  buildTool: string;
+  testFramework: string;
+  framework: string;
+  frameworkVersion: string;
+  frameworkFe: string;
+  frameworkVersionFe: string;
+  projectName: string;
+  detected_at: string;
+}
+
+export function loadStackCache(projectRoot: string): StackCacheEntry | null {
+  const path = join(projectRoot, 'stack.json');
+  if (!existsSync(path)) return null;
+  try {
+    const raw = JSON.parse(readFileSync(path, 'utf8'));
+    return {
+      backend: raw.backend ?? 'generic',
+      frontend: raw.frontend ?? 'generic',
+      language: raw.language ?? '',
+      languageVersion: raw.languageVersion ?? '',
+      buildTool: raw.buildTool ?? '',
+      testFramework: raw.testFramework ?? '',
+      framework: raw.framework ?? '',
+      frameworkVersion: raw.frameworkVersion ?? '',
+      frameworkFe: raw.frameworkFe ?? '',
+      frameworkVersionFe: raw.frameworkVersionFe ?? '',
+      projectName: raw.projectName ?? '',
+      detected_at: raw.detected_at ?? ''
+    };
+  } catch {
+    return null;
+  }
+}
+
+export function saveStackCache(projectRoot: string, info: StackInfo): void {
+  const entry: StackCacheEntry = {
+    backend: info.backend,
+    frontend: info.frontend,
+    language: info.language ?? '',
+    languageVersion: info.languageVersion ?? '',
+    buildTool: info.buildTool ?? '',
+    testFramework: info.testFramework ?? '',
+    framework: info.framework ?? '',
+    frameworkVersion: info.frameworkVersion ?? '',
+    frameworkFe: info.frameworkFe ?? '',
+    frameworkVersionFe: info.frameworkVersionFe ?? '',
+    projectName: info.projectName,
+    detected_at: new Date().toISOString()
+  };
+  writeFileSync(join(projectRoot, 'stack.json'), JSON.stringify(entry, null, 2) + '\n', 'utf8');
+}
+
 export function detectStack(target: string): StackInfo {
+  // Check cache first
+  const cached = loadStackCache(target);
+  if (cached) {
+    return {
+      backend: cached.backend,
+      frontend: cached.frontend,
+      language: cached.language || undefined,
+      languageVersion: cached.languageVersion || undefined,
+      buildTool: cached.buildTool || undefined,
+      testFramework: cached.testFramework || undefined,
+      framework: cached.framework || undefined,
+      frameworkVersion: cached.frameworkVersion || undefined,
+      frameworkFe: cached.frameworkFe || undefined,
+      frameworkVersionFe: cached.frameworkVersionFe || undefined,
+      projectName: cached.projectName || target.split('/').pop() || ''
+    };
+  }
   const info: StackInfo = { backend: 'generic', frontend: 'generic', projectName: basename(target) };
   let pkgFile: string | undefined;
 
@@ -241,5 +315,6 @@ export function detectStack(target: string): StackInfo {
       /* keep basename */
     }
   }
+  saveStackCache(target, info);
   return info;
 }

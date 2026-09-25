@@ -273,6 +273,19 @@ Alternativa manual sin dependencias: copiar `.agents/skills/<skill>/` a `.claude
 
 Re-ejecuta el instalador tras clonar la plantilla actualizada: los archivos nuevos se copian, los cambiados se respaldan y se pregunta, los idénticos se saltan.
 
+## Herramientas de Terceros
+
+> Las siguientes herramientas son desarrolladas por terceros y se utilizan bajo sus respectivas licencias.
+
+| Herramienta | Uso en Spectralis | Licencia | Repositorio |
+|---|---|---|---|
+| [graphify](https://github.com/cysalguero/graphify) | Grafo de conocimiento del proyecto | MIT | [GitHub](https://github.com/cysalguero/graphify) |
+| [OpenSpec](https://github.com/cysalguero/openspec) | Gestión de especificaciones SDD | MIT | [GitHub](https://github.com/cysalguero/openspec) |
+| [Commander.js](https://github.com/tj/commander.js) | CLI parsing | MIT | [GitHub](https://github.com/tj/commander.js) |
+| [gray-matter](https://github.com/jonschlinkert/gray-matter) | Frontmatter YAML parsing | MIT | [GitHub](https://github.com/jonschlinkert/gray-matter) |
+
+**Nota:** Spectralis no es propietario ni está afiliado a estos proyectos. Las licencias originales aplican.
+
 ## Mantenimiento del repo plantilla
 
 - Este repo usa su propio workflow SDD: los cambios se gestionan con `/opsx:propose`, `/opsx:apply`, `/opsx:archive`.
