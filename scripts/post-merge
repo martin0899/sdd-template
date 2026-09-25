@@ -1,0 +1,14 @@
+#!/bin/sh
+# Rebuild dist/ after git pull/merge so new commands/aliases are available
+# without requiring a manual `pnpm prepare`.
+
+# Only rebuild if TypeScript source files exist
+if [ -f "tsconfig.json" ] && command -v npx >/dev/null 2>&1; then
+  echo "[post-merge] Rebuilding dist/ ..."
+  npx tsc -p tsconfig.json
+  if [ $? -eq 0 ]; then
+    echo "[post-merge] dist/ rebuilt successfully."
+  else
+    echo "[post-merge] WARNING: dist/ rebuild failed. Run 'pnpm prepare' manually."
+  fi
+fi

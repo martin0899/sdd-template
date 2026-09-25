@@ -27,8 +27,7 @@ function buildTarget(complete: boolean): string {
 const completeCtx = {
   backendVariant: 'spring-boot' as const,
   frontendVariant: 'react' as const,
-  includeOpencode: true,
-  autoskillsPending: false
+  includeOpencode: true
 };
 
 test('complete destination produces no warnings and full manual steps', () => {
@@ -85,17 +84,6 @@ test('pure backend omits frontend standard checks; generic warns about onboardin
     const text = r.warnings.join('\n');
     assert.match(text, /generic/i);
     assert.equal(r.warnings.filter((w) => w.includes('frontend-standards')).length, 0);
-  } finally {
-    rmSync(dst, { recursive: true, force: true });
-  }
-});
-
-test('autoskills pending surfaces in warnings and manual steps', () => {
-  const dst = buildTarget(true);
-  try {
-    const r = runPostChecks(dst, { ...completeCtx, autoskillsPending: true });
-    assert.ok(r.warnings.some((w) => w.includes('autoskills')));
-    assert.ok(r.manualSteps.some((s) => s.includes('npx autoskills')));
   } finally {
     rmSync(dst, { recursive: true, force: true });
   }

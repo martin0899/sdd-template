@@ -138,6 +138,26 @@ Shows the installed SDD harness configuration (read-only). Displays tool directo
 | Installed | 0 |
 | Not installed (no manifest) | 2 |
 
+### `spectralis distill <project>`
+
+Extracts knowledge from completed specifications in `01_Proyectos/<project>/` and writes distilled, optimized notes to `05_wiki/<project>/`. Uses a hybrid deterministic + semantic approach to minimize LLM token usage. The command is idempotent and supports `--dry-run`.
+
+**Output files:**
+- `05_wiki/<project>/arquitectura.md` — system overview (overwrite)
+- `05_wiki/<project>/decisiones/<spec-id>.md` — architecture decisions (merge by spec-id)
+- `05_wiki/<project>/errores/<spec-id>.md` — post-mortems (merge by spec-id)
+- `05_wiki/<project>/log/YYYY-MM.md` — significant changes (append-only)
+- `05_wiki/<project>/restricciones.md` — hard constraints (overwrite)
+- `05_wiki/_INDEX.json` — metadata index for external projects
+- `01_Proyectos/<project>/_README.md` — auto-generated project summary
+
+**Options:**
+
+| Option | Effect |
+|--------|--------|
+| `-d, --dry-run` | Show what would be written without modifying files |
+| `--demo`, `--dd` | Alias for `--dry-run` |
+
 ### `spectralis --version`
 
 Reports the arnés (CLI) version. Use `--v` as a shorthand alias.
@@ -180,7 +200,7 @@ $ head -5 <project>/.sdd-manifest.json
 - Any existing file that differs is backed up to `.sdd-backup-<fecha>/` before being questioned.
 - Idempotent re-runs: identical files are skipped, managed blocks are never duplicated.
 - `.sdd-manifest.json` inventories every managed file with a SHA-256 hash — the exact payload that traveled to the destination.
-- Managed `.gitignore` block includes `openspec/` and `.claude/`: the SDD spec/changes tree is machine-local and never committed.
+- Managed `.gitignore` block includes `openspec/`, `.claude/`, and `05_wiki/`: the SDD spec/changes tree and LLM Wiki layer are machine-local and never committed.
 - `docs/manuals/` (this file, and all other manuals in the template) never leak into the destination — they remain in the template repository for reference only.
 - `install.sh` (removed) and `docs-variants/` never leak into the destination.
 
@@ -205,6 +225,7 @@ $ head -5 <project>/.sdd-manifest.json
 | `spectralis status` | Show installed harness status |
 | `spectralis config` | Show harness configuration |
 | `spectralis doctor` | Verify host prerequisites |
+| `spectralis distill` | Extract knowledge from specs into 05_wiki/ |
 
 ### Common Flags
 

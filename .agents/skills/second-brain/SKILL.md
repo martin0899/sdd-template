@@ -1,6 +1,6 @@
 ---
 name: second-brain
-description: Use when the user asks to save/capture/annotate a note ("guarda esta nota", "apunta esto", "brain dump", "captura"), OR to "depurar"/organize/clean notes ("depura", "organiza las notas", "limpia el inbox") by moving them from 00_Notas to their PARA destination (01_Proyectos, 02_Ideas, 03_Recursos, 04_archivado). Manages the Obsidian vault as a Tiago Forte Second Brain (CODE + PARA methodology).
+description: Use when the user asks to save/capture/annotate a note ("guarda esta nota", "apunta esto", "brain dump", "captura"), OR to "depurar"/organize/clean notes ("depura", "organiza las notas", "limpia el inbox") by moving them from 00_Notas to their PARA destination (01_Proyectos, 02_Ideas, 03_Recursos, 04_archivado). Manages the Obsidian vault as a Tiago Forte Second Brain (CODE + PARA methodology) and the LLM Wiki layer (05_wiki/) for external consumption.
 ---
 
 # Second Brain (Obsidian)
@@ -16,6 +16,7 @@ Maneja el vault como un Second Brain (metodología CODE + PARA de Tiago Forte) a
 | `02_Ideas/` | Ideas / someday | Posibles proyectos futuros, brainstorms, cosas incubando sin compromiso |
 | `03_Recursos/` | **Recursos** | Referencia por tema: `01_Documentacion/` (Lenguajes, Programas, PC_fedora, PC_Trabajo, Portafolio), `02_Sistemas_info/` (APIs, arquitectura), `Files/` |
 | `04_archivado/` | **Archivo** | Notas de proyectos terminados o sin relevancia actual |
+| `05_wiki/` | **LLM Wiki** | Capa de conocimiento consumida por proyectos externos (generada por `spectralis distill`, machine-local, no se commitea) |
 | `09_Plantilla/` | — | Solo plantillas; nunca mover notas aquí |
 
 ## Flujo 1 — Capturar (comportamiento por defecto)
