@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { classifyByHeaders, classifyByKeywords, classifyByFrontmatter, deterministicExtract, SourceFile } from '../../src/core/distill';
+import { classifyByHeaders, classifyByKeywords, classifyByFrontmatter, deterministicExtract, classifyWithLLM, hybridExtract, SourceFile } from '../../src/core/distill';
 
 test('classifyByHeaders detects Decisiones', () => {
   const content = '## Decisiones\nSome text';
@@ -88,4 +88,22 @@ test('deterministicExtract classifies files correctly', () => {
   assert.equal(result.ambiguous.length, 1);
   assert.equal(result.classified[0].classification, 'ADR');
   assert.equal(result.classified[1].classification, 'post-mortem');
+});
+test('classifyWithLLM returns empty when disabled', async () => {
+  const result = await classifyWithLLM('some plan', { host: 'http://localhost:1', model: 'test', enabled: false });
+  assert.equal(result.size, 0);
+});
+
+test('classifyWithLLM returns empty when host unreachable', async () => {
+  const result = await classifyWithLLM('some plan', { host: 'http://localhost:1', model: 'test', enabled: true });
+  assert.equal(result.size, 0);
+});
+
+test('hybridExtract discards ambiguous when LLM disabled', async () => {
+  const files: SourceFile[] = [
+    { path: 'a.md', content: 'some random content', frontmatter: {} }
+  ];
+  const result = await hybridExtract(files, { host: 'http://localhost:1', model: '', enabled: false });
+  assert.equal(result.classified.length, 0);
+  assert.equal(result.ambiguous.length, 0);
 });

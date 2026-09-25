@@ -3,6 +3,7 @@ import { resolve, join } from 'node:path';
 import { readManifest, sha256File } from '../core/manifest';
 import { classifyFiles, countByStatus, hasChanges, type ClassifiedFile } from '../core/classify-update';
 import { makeConfirm } from '../util/prompt';
+import { readGlobalConfig } from '../core/config';
 import { currentPalette, phaseLine, printBanner, promptMark } from '../util/ui';
 
 export interface UpdateOptions {
@@ -10,6 +11,7 @@ export interface UpdateOptions {
   dryRun?: boolean;
   check?: boolean;
   yes?: boolean;
+  auto?: boolean;
 }
 
 function templateRoot(): string {
@@ -116,8 +118,9 @@ export async function runUpdate(opts: UpdateOptions = {}): Promise<number> {
   }
 
   // Confirm.
-  const confirmFn = makeConfirm(Boolean(opts.yes));
-  if (!confirmFn(promptMark('Apply this update?'))) {
+  const shouldAuto = opts.auto || opts.yes || readGlobalConfig().autoUpdate === true;
+  const confirmFn = makeConfirm(shouldAuto);
+  if (!shouldAuto && !confirmFn(promptMark('Apply this update?'))) {
     console.log('Update cancelled by the user.');
     return 0;
   }
@@ -180,6 +183,17 @@ export async function runUpdate(opts: UpdateOptions = {}): Promise<number> {
     const { writeManifest } = require('../core/manifest');
     writeManifest(target, allManaged, version, version, manifest.tools);
     console.log(`\n[OK] Update complete. ${updatedPaths.length} file(s) updated.`);
+
+    // LLM detection (Ollama).
+    const { detectOllama, configureLlm } = require('../core/ollama');
+    const ollama = await detectOllama();
+    if (ollama.available && ollama.models.length > 0) {
+      const modelName = ollama.models[0].name;
+      await configureLlm(modelName);
+      console.log(`[OK] LLM: Ollama detected, model: ${modelName}`);
+    } else {
+      console.log('[--] LLM: Ollama not detected (LLM classification disabled)');
+    }
   } else {
     console.error(`\n[WARN] Partial update. Backups preserved in ${backupRoot}.`);
   }

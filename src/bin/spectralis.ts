@@ -23,6 +23,9 @@ import { runStatus } from '../commands/status';
 import { runConfig } from '../commands/config';
 import { runDistill } from '../commands/distill';
 import { runSkills } from '../commands/skills';
+import { runSpecInit, runSpecComplete } from '../commands/spec';
+import { runProjects } from '../commands/projects';
+import { runSeed } from '../commands/seed';
 
 const pkg = require('../../package.json') as { version: string };
 
@@ -75,20 +78,21 @@ program
 
 program
   .command('update [destino]')
-  .description('Re-sync an installed destination with the current template')
+  .description('Update an installed SDD harness to the latest template')
   .option('-d, --dry-run', 'show the update plan without writing anything')
   .option('--demo', 'alias for --dry-run')
   .option('--dd', 'alias for --dry-run')
-  .option('--check', 'check for updates without applying (exit 0=up-to-date, 1=updates available, 2=error)')
+  .option('-c, --check', 'check for updates without writing (exit 0=up-to-date, 1=updates, 2=error)')
   .option('--yes', 'non-interactive mode (always with backup)')
+  .option('-a, --auto', 'apply all updates without asking (alias for --yes + autoUpdate config)')
   .option('--agent <agente>', 'target agent profile (opencode | antigravity | claude | all)')
   .action(
     async (
       destino: string | undefined,
-      opts: { dryRun?: boolean; demo?: boolean; dd?: boolean; check?: boolean; yes?: boolean; agent?: string }
+      opts: { dryRun?: boolean; demo?: boolean; dd?: boolean; check?: boolean; yes?: boolean; auto?: boolean; agent?: string }
     ) => {
       if (opts.agent) resolveAgent(opts.agent);
-      const code = await runUpdate({ destino, dryRun: opts.dryRun || opts.demo || opts.dd, check: opts.check, yes: opts.yes });
+      const code = await runUpdate({ destino, dryRun: opts.dryRun || opts.demo || opts.dd, check: opts.check, yes: opts.yes, auto: opts.auto });
       process.exitCode = code;
     }
   );
@@ -111,9 +115,14 @@ program
 
 program
   .command('config [destino]')
-  .description('Show installed SDD harness configuration (read-only)')
-  .action(async (destino: string | undefined) => {
-    const code = await runConfig({ destino });
+  .description('Show or modify SDD harness configuration')
+  .option('-l, --list', 'list all effective routes with origin')
+  .option('-g, --get <key>', 'get value of a route key')
+  .option('-v, --vault <path>', 'set vault_root (use --global for machine-wide)')
+  .option('-s, --set <key=value>', 'set a route key=value (use --global for machine-wide)')
+  .option('--global', 'apply to global config (machine-wide)')
+  .action(async (destino: string | undefined, opts: { list?: boolean; get?: string; vault?: string; set?: string; global?: boolean }) => {
+    const code = await runConfig({ destino, ...opts });
     process.exitCode = code;
   });
 
@@ -123,12 +132,14 @@ program
   .option('-d, --dry-run', 'show the distillation plan without writing anything')
   .option('--demo', 'alias for --dry-run')
   .option('--dd', 'alias for --dry-run')
+  .option('-p, --project-root <path>', 'path to the real project code for stack detection')
+  .option('-v, --vault-root <path>', 'vault root path (default: from config)')
   .action(
     async (
       project: string,
-      opts: { dryRun?: boolean; demo?: boolean; dd?: boolean }
+      opts: { dryRun?: boolean; demo?: boolean; dd?: boolean; projectRoot?: string; vaultRoot?: string }
     ) => {
-      const code = await runDistill({ project, dryRun: opts.dryRun || opts.demo || opts.dd });
+      const code = await runDistill({ project, dryRun: opts.dryRun || opts.demo || opts.dd, projectRoot: opts.projectRoot, vaultRoot: opts.vaultRoot });
       process.exitCode = code;
     }
   );
@@ -148,6 +159,52 @@ program
       process.exitCode = code;
     }
   );
+
+program
+  .command('spec <action> <project> <specId>')
+  .description('Spec workflow: init creates folder structure, complete validates and distills')
+  .option('-v, --vault-root <path>', 'vault root path (default: from config)')
+  .option('-p, --project-root <path>', 'project root for REGISTRY.md (default: from config)')
+  .action(
+    async (
+      action: string,
+      project: string,
+      specId: string,
+      opts: { vaultRoot?: string; projectRoot?: string }
+    ) => {
+      if (action === 'init') {
+        const code = await runSpecInit({ project, specId, vaultRoot: opts.vaultRoot });
+        process.exitCode = code;
+      } else if (action === 'complete') {
+        const code = await runSpecComplete({ project, specId, vaultRoot: opts.vaultRoot, projectRoot: opts.projectRoot });
+        process.exitCode = code;
+      } else {
+        console.error(`[ERROR] Unknown action: ${action}. Use "init" or "complete".`);
+        process.exitCode = 1;
+      }
+    }
+  );
+
+program
+  .command('projects')
+  .description('Show OpenSpec status across all local projects')
+  .option('--json', 'output as JSON')
+  .action(async (opts: { json?: boolean }) => {
+    const code = await runProjects(opts);
+    process.exitCode = code;
+  });
+
+program
+  .command('seed')
+  .description('Initial load: populate 05_wiki/ from discovered projects')
+  .option('-p, --project <name>', 'seed only a specific project')
+  .option('-d, --dry-run', 'show what would be seeded')
+  .option('--demo', 'alias for --dry-run')
+  .option('--dd', 'alias for --dry-run')
+  .action(async (opts: { project?: string; dryRun?: boolean; demo?: boolean; dd?: boolean }) => {
+    const code = await runSeed({ project: opts.project, dryRun: opts.dryRun || opts.demo || opts.dd });
+    process.exitCode = code;
+  });
 
 program.parseAsync(process.argv).catch((err: Error) => {
   console.error(`[ERROR] ${err.message}`);

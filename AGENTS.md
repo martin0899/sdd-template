@@ -63,6 +63,12 @@ When working with requirements and specifications:
 
 **Obsidian Vault Location:** `/home/martinmartinez/Documentos/obsidian_sync_git`
 
+**Vault Structure Rule (MANDATORY):**
+- `00_Notas/` = **inbox** — ALL notes arrive here first (proposals, ideas, pendientes)
+- `01_Proyectos/<Proyecto>/` = **ONLY spec folders** (`<spec-id>/` with briefing.md, tests.md, resumen.md) + `_README.md` + `_INDEX.md`. **NEVER loose notes.**
+- When a note becomes a spec: create `01_Proyectos/<Proyecto>/<spec-id>/`, archive the source note to `04_archivado/`
+- `05_wiki/` = distilled knowledge (machine-local, not committed)
+
 **Required workflow for Obsidian documentation:**
 
 1. **After completing a specification** — Generate a summary in Obsidian using `obsidian-summary`.

@@ -2,7 +2,9 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   fillPlaceholders,
-  resolveVariantFile
+  resolveVariantFile,
+  findUnresolvedPlaceholders,
+  reportUnresolved
 } from '../../src/core/compose-standards';
 import { StackInfo } from '../../src/core/detect-stack';
 
@@ -63,4 +65,26 @@ test('frontend kind takes the framework from frontend fields', () => {
 test('resolveVariantFile joins template root with variant kind', () => {
   const p = resolveVariantFile('/tpl', 'backend', 'spring-boot');
   assert.equal(p, '/tpl/docs-variants/backend/spring-boot.md');
+});
+
+test('findUnresolvedPlaceholders detects remaining patterns', () => {
+  const content = 'Line 1\n{{DATABASE_TYPE}} is here\nLine 3 {{OTHER_TOKEN}}';
+  const results = findUnresolvedPlaceholders('test.md', content);
+  assert.equal(results.length, 2);
+  assert.equal(results[0].placeholder, '{{DATABASE_TYPE}}');
+  assert.equal(results[0].line, 2);
+});
+
+test('findUnresolvedPlaceholders returns empty when all resolved', () => {
+  const content = 'Line 1\nAll resolved here';
+  const results = findUnresolvedPlaceholders('test.md', content);
+  assert.equal(results.length, 0);
+});
+
+test('reportUnresolved formats error message', () => {
+  const results = [{ file: 'a.md', line: 5, placeholder: '{{X}}' }];
+  const msg = reportUnresolved(results);
+  assert.ok(msg.includes('[ERROR]'));
+  assert.ok(msg.includes('a.md:5'));
+  assert.ok(msg.includes('{{X}}'));
 });

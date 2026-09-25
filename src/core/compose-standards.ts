@@ -50,4 +50,33 @@ export function fillPlaceholders(
   return out;
 }
 
+export interface UnresolvedPlaceholder {
+  file: string;
+  line: number;
+  placeholder: string;
+}
+
+export function findUnresolvedPlaceholders(
+  filePath: string,
+  content: string
+): UnresolvedPlaceholder[] {
+  const results: UnresolvedPlaceholder[] = [];
+  const lines = content.split('\n');
+  for (let i = 0; i < lines.length; i++) {
+    const matches = lines[i].match(/\{\{[A-Z_]+\}\}/g);
+    if (matches) {
+      for (const m of matches) {
+        results.push({ file: filePath, line: i + 1, placeholder: m });
+      }
+    }
+  }
+  return results;
+}
+
+export function reportUnresolved(all: UnresolvedPlaceholder[]): string {
+  if (all.length === 0) return '';
+  const lines = all.map(p => `  ${p.file}:${p.line} → ${p.placeholder}`);
+  return `[ERROR] Unresolved placeholders in composed standards:\n${lines.join('\n')}\n\nFix: run sdd-onboard-project to resolve remaining placeholders.`;
+}
+
 export { NOTE_LINE };

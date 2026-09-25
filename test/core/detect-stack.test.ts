@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { detectStack } from '../../src/core/detect-stack';
+import { detectStack, loadStackCache, saveStackCache, StackInfo } from '../../src/core/detect-stack';
 
 function scratch(): string {
   return mkdtempSync(join(tmpdir(), 'spectralis-stack-'));
@@ -92,7 +92,7 @@ test('no indicators -> generic/generic, nothing written', () => {
   }
 });
 
-test('detection is read-only (no files created)', () => {
+test('detection is read-only (only stack.json cache created)', () => {
   const dir = scratch();
   try {
     writeFileSync(join(dir, 'go.mod'), 'module demo\nrequire github.com/gin-gonic/gin v1.9.0\n');
@@ -102,7 +102,8 @@ test('detection is read-only (no files created)', () => {
     detectStack(dir);
     const after: string[] = [];
     readdirSync(dir).forEach((f) => after.push(f));
-    assert.deepEqual(after.sort(), before.sort());
+    const unexpected = after.filter(f => f !== 'stack.json' && !before.includes(f));
+    assert.deepEqual(unexpected, []);
     const s = detectStack(dir);
     assert.equal(s.language, 'Go');
     assert.equal(s.framework, 'Gin');
@@ -137,4 +138,21 @@ test('package.json is not picked from .opencode or node_modules', () => {
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
+});
+
+test('loadStackCache returns null when no cache exists', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'sp-cache-'));
+  const result = loadStackCache(dir);
+  assert.equal(result, null);
+  rmSync(dir, { recursive: true, force: true });
+});
+
+test('saveStackCache and loadStackCache round-trip', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'sp-cache-'));
+  const info: StackInfo = { backend: 'spring-boot', frontend: 'react', language: 'Java', languageVersion: '17', buildTool: 'Maven', testFramework: 'JUnit', framework: 'Spring Boot', frameworkVersion: '3.2', frameworkFe: 'React', frameworkVersionFe: '18', projectName: 'test' };
+  saveStackCache(dir, info);
+  const cached = loadStackCache(dir);
+  assert.equal(cached?.backend, 'spring-boot');
+  assert.equal(cached?.frontend, 'react');
+  rmSync(dir, { recursive: true, force: true });
 });

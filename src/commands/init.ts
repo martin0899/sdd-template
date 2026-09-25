@@ -12,10 +12,12 @@ import {
   listDocsFiles,
   COMPOSED_STANDARDS
 } from '../core/copy-payload';
-import { fillPlaceholders, resolveVariantFile } from '../core/compose-standards';
+import { fillPlaceholders, resolveVariantFile, findUnresolvedPlaceholders, reportUnresolved } from '../core/compose-standards';
 import { writeManifest } from '../core/manifest';
 import { runPostChecks } from '../core/post-checks';
 import { installGitHooks } from '../core/git-hooks';
+import { detectOllama, configureLlm } from '../core/ollama';
+import { detectVaultRoot, readGlobalConfig, writeGlobalConfig } from '../core/config';
 import { resolveAgent } from '../agents/profiles';
 import { selectTools } from '../core/tool-selector';
 import { buildInitPlan } from './plan';
@@ -52,6 +54,12 @@ function composeOneStandard(
   }
   const dest = join(target, destRel);
   const rendered = fillPlaceholders(kind, readFileSync(src, 'utf8'), info);
+
+  // Check for unresolved placeholders (warn here, abort at init level)
+  const unresolved = findUnresolvedPlaceholders(destRel, rendered);
+  if (unresolved.length > 0) {
+    console.warn(reportUnresolved(unresolved));
+  }
   if (!existsSync(dest)) {
     console.log(`  -> ${destRel} (variant ${kind}/${variant})`);
     if (!dryRun) {
@@ -86,6 +94,19 @@ export async function runInit(opts: InitOptions = {}): Promise<number> {
   const profile = resolveAgent(opts.agent);
   const confirmFn = (opts.confirmFactory ?? makeConfirm)(Boolean(opts.yes));
 
+  // Vault auto-detection
+  const detectedVault = detectVaultRoot();
+  const globalCfg = readGlobalConfig();
+  if (!globalCfg.vault_root && detectedVault) {
+    console.log(`  ${pal.green('✔')} vault detected ..... ${detectedVault}`);
+    globalCfg.vault_root = detectedVault;
+    globalCfg.templates_dir = join(detectedVault, '09_Plantilla');
+    globalCfg.requirements_dir = join(detectedVault, '00_Notas');
+    globalCfg.projects_dir = join(detectedVault, '01_Proyectos');
+    writeGlobalConfig(globalCfg);
+    console.log(`  ${pal.green('✔')} vault routes saved . global config updated`);
+  }
+
   // Destination defaults to the current working directory (git init style).
   const target = resolve(process.cwd(), opts.destino ?? '.');
   if (!existsSync(target)) {
@@ -96,7 +117,7 @@ export async function runInit(opts: InitOptions = {}): Promise<number> {
   // 1. Prerequisites gate: nothing is written when something is missing.
   let steps = 0;
   const step = (label: string, result: string) =>
-    console.log(phaseLine(++steps, 11, label, result, pal));
+    console.log(phaseLine(++steps, 12, label, result, pal));
   const prereqs = checkPrereqs(realProbe, process.platform);
   if (!prereqs.ok) {
     console.log(pal.bold('Missing prerequisites:'));
@@ -208,6 +229,16 @@ export async function runInit(opts: InitOptions = {}): Promise<number> {
     console.log(`  ${pal.green('✔')} git hooks ........... post-merge installed`);
   } else if (hookResult.skipped) {
     console.log(`  ${pal.check} git hooks ........... ${hookResult.skipped}`);
+  }
+
+  // 10. LLM detection (Ollama).
+  const ollama = await detectOllama();
+  if (ollama.available && ollama.models.length > 0) {
+    const modelName = ollama.models[0].name;
+    await configureLlm(modelName);
+    console.log(`  ${pal.green('✔')} llm ................. Ollama detected, model: ${modelName}`);
+  } else {
+    console.log(`  ${pal.check} llm ................. Ollama not detected (LLM classification disabled)`);
   }
 
   console.log(pal.bold(`Installed with spectralis ${version} (template ${version})`));

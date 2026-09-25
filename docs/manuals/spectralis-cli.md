@@ -142,13 +142,17 @@ Shows the installed SDD harness configuration (read-only). Displays tool directo
 
 Extracts knowledge from completed specifications in `01_Proyectos/<project>/` and writes distilled, optimized notes to `05_wiki/<project>/`. Uses a hybrid deterministic + semantic approach to minimize LLM token usage. The command is idempotent and supports `--dry-run`.
 
+**Stack detection:** scans the real project code (via `--project-root` or `projects_base` convention) to populate the `stack` field in `_INDEX.json`.
+
+**LLM classification:** when Ollama is configured (`llm.enabled: true`), ambiguous entries are classified via LLM. Without LLM, ambiguous entries are discarded.
+
 **Output files:**
 - `05_wiki/<project>/arquitectura.md` — system overview (overwrite)
 - `05_wiki/<project>/decisiones/<spec-id>.md` — architecture decisions (merge by spec-id)
 - `05_wiki/<project>/errores/<spec-id>.md` — post-mortems (merge by spec-id)
 - `05_wiki/<project>/log/YYYY-MM.md` — significant changes (append-only)
 - `05_wiki/<project>/restricciones.md` — hard constraints (overwrite)
-- `05_wiki/_INDEX.json` — metadata index for external projects
+- `05_wiki/_INDEX.json` — metadata index (includes `stack` field)
 - `01_Proyectos/<project>/_README.md` — auto-generated project summary
 
 **Options:**
@@ -157,6 +161,21 @@ Extracts knowledge from completed specifications in `01_Proyectos/<project>/` an
 |--------|--------|
 | `-d, --dry-run` | Show what would be written without modifying files |
 | `--demo`, `--dd` | Alias for `--dry-run` |
+| `-p, --project-root <path>` | Path to the real project code for stack detection |
+
+**LLM configuration** (in `~/.config/spectralis/config.json`):
+
+```json
+{
+  "llm": {
+    "host": "http://localhost:11434",
+    "model": "llama3.1:8b",
+    "enabled": true
+  }
+}
+```
+
+Auto-detected on `spectralis init` and `spectralis update` via `OLLAMA_HOST`.
 
 ### `spectralis --version`
 

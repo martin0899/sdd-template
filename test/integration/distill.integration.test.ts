@@ -49,7 +49,7 @@ test('distill --dry-run shows planned output without writing', () => {
     mkdirSync(projectDir, { recursive: true });
     writeFileSync(join(projectDir, 'spec.md'), '# Spec\nSome content');
     
-    const result = runCli(['distill', 'my-project', '--dry-run'], root);
+    const result = runCli(['distill', 'my-project', '--dry-run', '--vault-root', root], root);
     assert.equal(result.status, 0, `CLI exited with status ${result.status}: ${result.stderr}`);
     assert.ok(result.stdout.includes('[DRY RUN] Would distill project: my-project'));
     // Ensure no 05_wiki directory created
