@@ -21,6 +21,8 @@ import { runDoctor } from '../commands/doctor';
 import { runUpdate } from '../commands/update';
 import { runStatus } from '../commands/status';
 import { runConfig } from '../commands/config';
+import { runDistill } from '../commands/distill';
+import { runSkills } from '../commands/skills';
 
 const pkg = require('../../package.json') as { version: string };
 
@@ -47,6 +49,7 @@ Examples:
   $ spectralis status                   # Show installed harness status
   $ spectralis config                   # Show harness configuration
   $ spectralis doctor                   # Verify host prerequisites
+  $ spectralis skills                   # Detect skills and refresh _INDEX_SKILLS.json
   $ spectralis --v                      # Show version (alias for --version)
 `);
 
@@ -113,6 +116,38 @@ program
     const code = await runConfig({ destino });
     process.exitCode = code;
   });
+
+program
+  .command('distill <project>')
+  .description('Extract knowledge from project specs into 05_wiki/')
+  .option('-d, --dry-run', 'show the distillation plan without writing anything')
+  .option('--demo', 'alias for --dry-run')
+  .option('--dd', 'alias for --dry-run')
+  .action(
+    async (
+      project: string,
+      opts: { dryRun?: boolean; demo?: boolean; dd?: boolean }
+    ) => {
+      const code = await runDistill({ project, dryRun: opts.dryRun || opts.demo || opts.dd });
+      process.exitCode = code;
+    }
+  );
+
+program
+  .command('skills [destino]')
+  .description('Detect project skills and generate _INDEX_SKILLS.json + system-reminder')
+  .option('-d, --dry-run', 'show the skills that would be indexed without writing anything')
+  .option('--demo', 'alias for --dry-run')
+  .option('--dd', 'alias for --dry-run')
+  .action(
+    async (
+      destino: string | undefined,
+      opts: { dryRun?: boolean; demo?: boolean; dd?: boolean }
+    ) => {
+      const code = await runSkills({ destino, dryRun: opts.dryRun || opts.demo || opts.dd });
+      process.exitCode = code;
+    }
+  );
 
 program.parseAsync(process.argv).catch((err: Error) => {
   console.error(`[ERROR] ${err.message}`);

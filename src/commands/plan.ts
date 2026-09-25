@@ -49,7 +49,7 @@ export function buildInitPlan(
       ? '     frontend-standards.md not copied (backend-only project)'
       : `     frontend-standards.md <- docs-variants/frontend/${stack.frontend}.md (known placeholders filled)`
   );
-  lines.push('  5. Stack skills (npx autoskills): the user will be asked (Node >= 22; --yes defers it).');
+  lines.push('  5. Git hooks: post-merge auto-rebuild (if git repo + tsconfig.json).');
   lines.push('');
   lines.push('Dry-run complete. The destination remains identical. Run without --dry-run to apply.');
   return lines;

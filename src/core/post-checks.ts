@@ -5,7 +5,6 @@ export interface PostChecksContext {
   backendVariant: string;
   frontendVariant: string;
   includeOpencode: boolean;
-  autoskillsPending: boolean;
 }
 
 export interface PostChecksResult {
@@ -59,9 +58,6 @@ export function runPostChecks(target: string, ctx: PostChecksContext): PostCheck
   if (ctx.backendVariant === 'generic' || ctx.frontendVariant === 'generic') {
     warnings.push('Generic standards were composed: refine them with the sdd-onboard-project skill');
   }
-  if (ctx.autoskillsPending) {
-    warnings.push('Pending: run npx autoskills in the destination (requires Node >= 22)');
-  }
   if (!existsSync(join(target, 'graphify-out/graph.json'))) {
     warnings.push("Knowledge graph missing (graphify-out/): create it with 'graphify update .' (sdd-onboard-project skill)");
   }
@@ -80,9 +76,6 @@ export function runPostChecks(target: string, ctx: PostChecksContext): PostCheck
     manualSteps.push('2. (Optional, Claude Code only) npx skills in the destination');
   } else {
     manualSteps.push('1. (Optional, Claude Code only) npx skills in the destination');
-  }
-  if (ctx.autoskillsPending) {
-    manualSteps.push('3. (Optional) npx autoskills in the destination: curated stack skills (Node >= 22)');
   }
   const next = manualSteps.length + 1;
   manualSteps.push(`${next}. Onboarding: graphify update . and the sdd-onboard-project skill flow (refine generic standards, resolve pending placeholders)`);

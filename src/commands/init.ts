@@ -1,7 +1,7 @@
 import { existsSync, readFileSync, writeFileSync, copyFileSync, mkdirSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
-import { checkPrereqs, realProbe, installHint, parseNodeMajor } from '../core/prereqs';
+import { checkPrereqs, realProbe, installHint } from '../core/prereqs';
 import { detectStack, StackInfo } from '../core/detect-stack';
 import { injectSpanishContext } from '../core/spanish-context';
 import { manageAgentsMd } from '../core/agents-md';
@@ -15,13 +15,12 @@ import {
 import { fillPlaceholders, resolveVariantFile } from '../core/compose-standards';
 import { writeManifest } from '../core/manifest';
 import { runPostChecks } from '../core/post-checks';
+import { installGitHooks } from '../core/git-hooks';
 import { resolveAgent } from '../agents/profiles';
 import { selectTools } from '../core/tool-selector';
 import { buildInitPlan } from './plan';
-import { decideAutoskills } from './autoskills';
 import { makeConfirm } from '../util/prompt';
 import { currentPalette, phaseLine, printBanner, promptMark, red as uiRed } from '../util/ui';
-import { parseNodeMajor as _keep } from '../core/prereqs';
 
 export interface InitOptions {
   destino?: string;
@@ -97,7 +96,7 @@ export async function runInit(opts: InitOptions = {}): Promise<number> {
   // 1. Prerequisites gate: nothing is written when something is missing.
   let steps = 0;
   const step = (label: string, result: string) =>
-    console.log(phaseLine(++steps, 10, label, result, pal));
+    console.log(phaseLine(++steps, 11, label, result, pal));
   const prereqs = checkPrereqs(realProbe, process.platform);
   if (!prereqs.ok) {
     console.log(pal.bold('Missing prerequisites:'));
@@ -202,27 +201,22 @@ export async function runInit(opts: InitOptions = {}): Promise<number> {
   );
   writeManifest(target, managedPaths, version, version, toolSelection.selected);
   console.log(`  ${pal.green('✔')} manifest ............ ${managedPaths.length} files hashed`);
-  console.log(pal.bold(`Installed with spectralis ${version} (template ${version})`));
 
-  // 9. autoskills (opt-in).
-  const nodeVersion = realProbe('node').version;
-  const autoskills = decideAutoskills({
-    yes: Boolean(opts.yes),
-    nodeMajor: parseNodeMajor(nodeVersion),
-    confirmFn,
-    runner: (cwd) =>
-      spawnSync('npx', ['-y', 'autoskills'], { cwd, stdio: 'inherit', shell: process.platform === 'win32' }).status === 0,
-    cwd: target
-  });
-  if (autoskills.executed) console.log('[OK] autoskills completed in the destination.');
-  if (autoskills.pending && autoskills.reason) console.log(`[PENDING] autoskills: ${autoskills.reason}`);
+  // 9. Git hooks (post-merge auto-rebuild).
+  const hookResult = installGitHooks(target);
+  if (hookResult.installed) {
+    console.log(`  ${pal.green('✔')} git hooks ........... post-merge installed`);
+  } else if (hookResult.skipped) {
+    console.log(`  ${pal.check} git hooks ........... ${hookResult.skipped}`);
+  }
+
+  console.log(pal.bold(`Installed with spectralis ${version} (template ${version})`));
 
   // 10. Post checks + manual steps.
   const post = runPostChecks(target, {
     backendVariant: stack.backend,
     frontendVariant: stack.frontend,
-    includeOpencode: includeOpencode,
-    autoskillsPending: autoskills.pending
+    includeOpencode: includeOpencode
   });
   for (const w of post.warnings) console.log(`  [WARN] ${w}`);
   console.log('');

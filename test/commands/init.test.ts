@@ -3,45 +3,11 @@ import assert from 'node:assert/strict';
 import { mkdtempSync, mkdirSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 
-import { decideAutoskills } from '../../src/commands/autoskills';
 import { buildInitPlan } from '../../src/commands/plan';
 import { makeConfirm } from '../../src/util/prompt';
 import { join } from 'node:path';
 import { detectStack } from '../../src/core/detect-stack';
 import { resolveAgent } from '../../src/agents/profiles';
-
-test('decideAutoskills: --yes defers as pending without prompting', () => {
-  const r = decideAutoskills({
-    yes: true,
-    nodeMajor: 22,
-    confirmFn: () => true,
-    runner: () => true,
-    cwd: '/tmp'
-  });
-  assert.equal(r.executed, false);
-  assert.equal(r.pending, true);
-});
-
-test('decideAutoskills: node below 22 defers with requirement reason', () => {
-  const r = decideAutoskills({ yes: false, nodeMajor: 18, confirmFn: () => true, runner: () => true, cwd: '/tmp' });
-  assert.equal(r.pending, true);
-  assert.match(r.reason ?? '', /22/);
-});
-
-test('decideAutoskills: user decline defers', () => {
-  const r = decideAutoskills({ yes: false, nodeMajor: 22, confirmFn: () => false, runner: () => true, cwd: '/tmp' });
-  assert.equal(r.pending, true);
-  assert.equal(r.executed, false);
-});
-
-test('decideAutoskills: confirmed run executes; failure defers', () => {
-  const ok = decideAutoskills({ yes: false, nodeMajor: 22, confirmFn: () => true, runner: () => true, cwd: '/tmp' });
-  assert.equal(ok.executed, true);
-  assert.equal(ok.pending, false);
-  const fail = decideAutoskills({ yes: false, nodeMajor: 22, confirmFn: () => true, runner: () => false, cwd: '/tmp' });
-  assert.equal(fail.pending, true);
-  assert.match(fail.reason ?? '', /fail/i);
-});
 
 test('makeConfirm: autoYes always true; piped queue honors s/N sequence', () => {
   const auto = makeConfirm(true, []);
@@ -62,7 +28,6 @@ test('buildInitPlan mentions every mandatory section', () => {
     assert.match(plan, /openspec init/);
     assert.match(plan, /AGENTS\.md/);
     assert.match(plan, /gitignore/i);
-    assert.match(plan, /autoskills/);
     assert.match(plan, /Spanish context/);
     assert.match(plan, /opencode/);
   } finally {
