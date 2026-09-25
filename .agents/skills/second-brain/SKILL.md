@@ -12,7 +12,7 @@ Maneja el vault como un Second Brain (metodología CODE + PARA de Tiago Forte) a
 | Carpeta | Rol | Qué va aquí |
 |---|---|---|
 | `00_Notas/` | **Capturar** (inbox) | TODO lo que se guarda llega aquí primero, sin excepción |
-| `01_Proyectos/<Proyecto>/` | **Proyectos** | Notas ligadas a un proyecto activo con resultado/entregable (ej. SVA_Restaurante, Chapur Pay, Mesa Regalos) |
+| `01_Proyectos/<Proyecto>/` | **Proyectos** | **Solo carpetas spec** (`<spec-id>/` con briefing.md, tests.md, resumen.md) + `_README.md` + `_INDEX.md`. **NUNCA notas sueltas** — las notas van a `00_Notas/`. |
 | `02_Ideas/` | Ideas / someday | Posibles proyectos futuros, brainstorms, cosas incubando sin compromiso |
 | `03_Recursos/` | **Recursos** | Referencia por tema: `01_Documentacion/` (Lenguajes, Programas, PC_fedora, PC_Trabajo, Portafolio), `02_Sistemas_info/` (APIs, arquitectura), `Files/` |
 | `04_archivado/` | **Archivo** | Notas de proyectos terminados o sin relevancia actual |
@@ -43,13 +43,14 @@ Cuando el usuario diga "depurar", "depura", "organiza las notas", "limpia el inb
 
 1. Lista las notas en `00_Notas/` (ignora `_INDEX.md` y archivos no-markdown). Si está vacío, dilo y termina.
 2. Clasifica cada nota **por accionabilidad, en este orden de decisión**:
-   1. ¿Apoya un proyecto activo? → `01_Proyectos/<Proyecto>/` (usa la subcarpeta si encaja: convenios, firma_digital, tickets, puntos vivo, etc.; si no, raíz del proyecto)
-   2. ¿Es idea de algo que quizá haga algún día? → `02_Ideas/`
-   3. ¿Es referencia útil sin importar el proyecto? → `03_Recursos/<subtema>/`
-   4. ¿Nada de lo anterior / ya no importa? → `04_archivado/`
+   1. ¿Apoya un proyecto activo y ya tiene estructura spec? → `01_Proyectos/<Proyecto>/<spec-id>/` (carpeta con briefing/tests/resumen)
+   2. ¿Es nota de proyecto activo (propuesta, idea, pendiente)? → `00_Notas/` (inbox, NO en 01_Proyectos)
+   3. ¿Es idea de algo que quizá haga algún día? → `02_Ideas/`
+   4. ¿Es referencia útil sin importar el proyecto? → `03_Recursos/<subtema>/`
+   5. ¿Nada de lo anterior / ya no importa? → `04_archivado/`
 3. Reglas al mover:
    - Una nota = un tema. Si una brain-dump mezcla temas, divídela en varias notas antes de mover.
-   - Actualiza el frontmatter: `Proyecto:` con el proyecto real (o nombre de carpeta destino) y enriquece `tags`.
+   - Actualiza el frontmatter: `Proyecto:` con el **ID del proyecto** (`proy-YYYYMMDD-slug`, ej. `proy-20260925-spectralis`) y enriquece `tags`. El campo es `Proyecto:` (mayúscula, estándar del vault), el valor es el ID (no el nombre).
    - Si el destino no existe (proyecto o subtema nuevo), créalo con su `_INDEX.md` (patrón: `# <Nombre>` + lista de links a carpetas/notas) y actualiza el `_INDEX.md` del padre.
    - Usa `git mv` si el archivo ya está trackeado; si no, `mv` normal.
 4. Casos ambiguos: agrúpalos y pregúntale al usuario en un solo bloque (máx. 3-4 notas), mostrando las opciones de destino sugeridas.
@@ -63,6 +64,11 @@ Cuando el usuario diga "depurar", "depura", "organiza las notas", "limpia el inb
 - **Archivo**: notas de proyectos ya cerrados, duplicados, recordatorios vencidos sin valor futuro.
 
 ## Reglas
+
+- **`01_Proyectos/` NUNCA contiene notas sueltas.** Solo carpetas `<spec-id>/` (con briefing.md, tests.md, resumen.md), `_README.md` e `_INDEX.md`. Las notas (propuestas, ideas, pendientes) van a `00_Notas/`.
+- **Al convertir nota en spec:** la nota fuente se mueve a `04_archivado/` y se crea `01_Proyectos/<Proyecto>/<spec-id>/` con los 3 archivos.
+- **La estructura spec siempre se respeta:** `briefing.md` + `tests.md` + `resumen.md` en cada carpeta `<spec-id>/`.
+- **`_README.md` e `_INDEX.md`** son los únicos archivos sueltos permitidos en `01_Proyectos/<Proyecto>/`.
 
 - Nunca borres notas al depurar; solo muévelas (lo "muerto" va a `04_archivado/`).
 - El camino siempre pasa por `00_Notas`: nunca guardes directamente en 01-04 salvo pedido explícito del usuario.

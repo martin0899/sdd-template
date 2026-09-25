@@ -1,10 +1,16 @@
 import { existsSync } from 'node:fs';
 import { resolve, join } from 'node:path';
 import { readManifest } from '../core/manifest';
+import { readGlobalConfig, setRoute, resolveRoute, detectVaultRoot, RouteConfig } from '../core/config';
 import { currentPalette, printBanner, green, dim } from '../util/ui';
 
 export interface ConfigOptions {
   destino?: string;
+  list?: boolean;
+  get?: string;
+  vault?: string;
+  set?: string;
+  global?: boolean;
 }
 
 function templateRoot(): string {
@@ -32,9 +38,61 @@ function getToolPaths(tool: string): string[] {
 export async function runConfig(opts: ConfigOptions = {}): Promise<number> {
   const version = pkgVersion();
   const pal = currentPalette();
-  console.log(printBanner(version, version, pal));
 
+  // Handle --vault
+  if (opts.vault) {
+    const global = opts.global ?? false;
+    const projectRoot = opts.destino ? resolve(process.cwd(), opts.destino) : process.cwd();
+    setRoute('vault_root', resolve(opts.vault), global, projectRoot);
+    console.log(`[OK] vault_root set to ${opts.vault} (${global ? 'global' : 'project'})`);
+    return 0;
+  }
+
+  // Handle --set key=value
+  if (opts.set) {
+    const [key, value] = opts.set.split('=');
+    if (!key || !value) {
+      console.error('[ERROR] --set requires format key=value');
+      return 1;
+    }
+    const global = opts.global ?? false;
+    const projectRoot = opts.destino ? resolve(process.cwd(), opts.destino) : process.cwd();
+    setRoute(key as keyof RouteConfig, resolve(value), global, projectRoot);
+    console.log(`[OK] ${key} set to ${value} (${global ? 'global' : 'project'})`);
+    return 0;
+  }
+
+  // Handle --get
+  if (opts.get) {
+    const projectRoot = opts.destino ? resolve(process.cwd(), opts.destino) : process.cwd();
+    const value = resolveRoute(opts.get as keyof RouteConfig, projectRoot);
+    console.log(value || '(not set)');
+    return 0;
+  }
+
+  console.log(printBanner(version, version, pal));
   const target = resolve(process.cwd(), opts.destino ?? '.');
+
+  // Handle --list (routes)
+  if (opts.list) {
+    console.log('\n== spectralis config --list ==\n');
+    const global = readGlobalConfig();
+    const detected = detectVaultRoot();
+    const routes: Array<[string, string, string]> = [
+      ['vault_root', resolveRoute('vault_root', target), global.vault_root ? 'global' : (detected ? 'detected' : 'not set')],
+      ['templates_dir', resolveRoute('templates_dir', target), global.templates_dir ? 'global' : 'not set'],
+      ['requirements_dir', resolveRoute('requirements_dir', target), global.requirements_dir ? 'global' : 'not set'],
+      ['projects_dir', resolveRoute('projects_dir', target), global.projects_dir ? 'global' : 'not set'],
+      ['projects_base', global.projects_base, 'global'],
+    ];
+    for (const [key, value, origin] of routes) {
+      console.log(`  ${key}: ${value || '(not set)'}  [${origin}]`);
+    }
+    if (detected) console.log(`\n  Auto-detected vault: ${detected}`);
+    console.log('');
+    return 0;
+  }
+
   if (!existsSync(target)) {
     console.error(`[ERROR] Destination does not exist: ${target}`);
     return 2;

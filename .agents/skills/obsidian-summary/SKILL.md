@@ -104,7 +104,7 @@ Show the user:
 ---
 id: "<change-name>"
 Tipo: Resumen
-Proyecto: "<project-name>"
+Proyecto: "<proy-YYYYMMDD-slug>"
 Fecha: YYYY-MM-DD
 tags:
   - resumen
