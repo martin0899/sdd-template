@@ -21,7 +21,7 @@ test('discoverProjects finds dirs with openspec/', () => {
 
 test('seedProject creates wiki structure', () => {
   const vault = scratch();
-  const proj = { name: 'test-proj', path: '/tmp/test-proj', changes: 0 };
+  const proj = { name: 'test-proj', path: '/tmp/test-proj', changes: 0, stack: [] };
   const wikiDir = seedProject(vault, proj);
   assert.ok(existsSync(join(wikiDir, 'decisiones')));
   assert.ok(existsSync(join(wikiDir, 'errores')));
@@ -30,10 +30,35 @@ test('seedProject creates wiki structure', () => {
 
 test('seedIndex writes _INDEX.json', () => {
   const vault = scratch();
-  const projects = [{ name: 'proj-a', path: '/tmp/a', changes: 2 }];
+  const projects = [{ name: 'proj-a', path: '/tmp/a', changes: 2, stack: [] }];
   seedIndex(vault, projects);
   const raw = require('node:fs').readFileSync(join(vault, '05_wiki', '_INDEX.json'), 'utf8');
   const index = JSON.parse(raw);
   assert.ok(index['proj-a']);
   assert.equal(index['proj-a'].changes, 2);
+});
+
+test('seedIndex populates stack from project info', () => {
+  const vault = scratch();
+  const projects = [{ name: 'proj-a', path: '/tmp/a', changes: 1, stack: ['express-node', 'react'] }];
+  seedIndex(vault, projects);
+  const index = JSON.parse(require('node:fs').readFileSync(join(vault, '05_wiki', '_INDEX.json'), 'utf8'));
+  assert.deepEqual(index['proj-a'].stack, ['express-node', 'react']);
+});
+
+test('discoverProjects reads stack.json from project', () => {
+  const base = scratch();
+  mkdirSync(join(base, 'proj-a', 'openspec', 'changes'), { recursive: true });
+  writeFileSync(
+    join(base, 'proj-a', 'stack.json'),
+    JSON.stringify({ backend: 'express-node', frontend: 'react', framework: 'Express', frameworkFe: 'React' })
+  );
+  mkdirSync(join(base, 'proj-b', 'openspec', 'changes'), { recursive: true });
+  const projects = discoverProjects(base);
+  assert.equal(projects.length, 2);
+  const pa = projects.find((p) => p.name === 'proj-a');
+  assert.ok(pa!.stack.includes('express-node'));
+  assert.ok(pa!.stack.includes('react'));
+  const pb = projects.find((p) => p.name === 'proj-b');
+  assert.deepEqual(pb!.stack, []);
 });

@@ -5,6 +5,8 @@ description: Generate technical briefing in Obsidian for OpenSpec changes. Creat
 
 # Obsidian Briefing
 
+> **Orquestada**: cuando `obsidianSync=1` (o `--obsidian`), esta skill se invoca automáticamente desde `obsidian-orchestration` al completar un apply (`/opsx-apply`). Con el switch en `0`, se usa solo por invocación explícita.
+
 Genera un briefing técnico en Obsidian para cambios OpenSpec. Crea un resumen técnico portátil para referencia entre máquinas.
 
 ## Rutas y Configuración

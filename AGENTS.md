@@ -79,3 +79,7 @@ When working with requirements and specifications:
 **Templates location:** `{vault_root}/09_Plantilla/`
 
 **Enforcement:** The `openspec-gate` skill verifies that documentation exists in Obsidian before allowing archiving. If no documentation exists, the gate routes to the appropriate Obsidian skill.
+
+## Obsidian Orchestration (switch obsidianSync)
+
+**Al aplicar (`/opsx-apply`) o archivar (`/opsx-archive`) un change OpenSpec, consulta el switch de orquestación `spectralis config --get obsidianSync` (o los flags `--obsidian`/`--no-obsidian`). Si está activo, consulta la skill `.agents/skills/obsidian-orchestration/SKILL.md` y sigue su protocolo: `obsidian-briefing` al completar apply; `obsidian-summary` + `obsidian-tests` + `spectralis spec complete` antes de archivar. Con el switch en `0` (o `--no-obsidian`), no escribir nada en el cerebro. Los comandos `.opencode/commands/opsx-*` son vendor-managed por OpenSpec y NO se modifican.**

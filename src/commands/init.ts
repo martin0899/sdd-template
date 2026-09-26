@@ -21,6 +21,7 @@ import { detectVaultRoot, readGlobalConfig, writeGlobalConfig } from '../core/co
 import { resolveAgent } from '../agents/profiles';
 import { selectTools } from '../core/tool-selector';
 import { buildInitPlan } from './plan';
+import { runNotesInit, runNotesSync, isObsidianActive } from './notes';
 import { makeConfirm } from '../util/prompt';
 import { currentPalette, phaseLine, printBanner, promptMark, red as uiRed } from '../util/ui';
 
@@ -29,6 +30,8 @@ export interface InitOptions {
   agent?: string;
   dryRun?: boolean;
   yes?: boolean;
+  obsidian?: boolean;
+  noObsidian?: boolean;
   confirmFactory?: typeof makeConfirm;
 }
 
@@ -253,6 +256,15 @@ export async function runInit(opts: InitOptions = {}): Promise<number> {
   console.log('');
   console.log('Manual next steps in the destination:');
   for (const s of post.manualSteps) console.log(`  ${s}`);
+
+  // Orchestration: notes init/sync when obsidianSync is active.
+  const obsidianActive = isObsidianActive({ obsidian: opts.obsidian, noObsidian: opts.noObsidian }, target);
+  if (obsidianActive) {
+    console.log('');
+    console.log(`  ${pal.green('✔')} obsidianSync ..... active — syncing manuals to the brain`);
+    await runNotesInit({ destino: target, templateRoot: root });
+    await runNotesSync({ destino: target, templateRoot: root });
+  }
 
   console.log('');
   console.log(`[OK] SDD installation completed in: ${target} (${composedCount} standards composed)`);

@@ -156,3 +156,96 @@ test('saveStackCache and loadStackCache round-trip', () => {
   assert.equal(cached?.frontend, 'react');
   rmSync(dir, { recursive: true, force: true });
 });
+
+test('monorepo: package.json found at depth 2 in packages/<sub>', () => {
+  const dir = scratch();
+  try {
+    mkdirSync(join(dir, 'packages', 'api'), { recursive: true });
+    writeFileSync(
+      join(dir, 'packages', 'api', 'package.json'),
+      JSON.stringify({ dependencies: { express: '4.19.0' } })
+    );
+    const s = detectStack(dir);
+    assert.equal(s.backend, 'express-node');
+    assert.equal(s.language, 'Node.js');
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('monorepo: indicator at depth 1 in apps/', () => {
+  const dir = scratch();
+  try {
+    mkdirSync(join(dir, 'apps', 'web'), { recursive: true });
+    writeFileSync(
+      join(dir, 'apps', 'web', 'package.json'),
+      JSON.stringify({ dependencies: { react: '18.3.0' } })
+    );
+    const s = detectStack(dir);
+    assert.equal(s.frontend, 'react');
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('indicator under a non-known dir is ignored', () => {
+  const dir = scratch();
+  try {
+    mkdirSync(join(dir, 'random-dir'));
+    writeFileSync(
+      join(dir, 'random-dir', 'package.json'),
+      JSON.stringify({ dependencies: { express: '4.0.0' } })
+    );
+    const s = detectStack(dir);
+    assert.equal(s.backend, 'generic');
+    assert.equal(s.frontend, 'generic');
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('exclusion: dist/build/vendor not scanned', () => {
+  const dir = scratch();
+  try {
+    mkdirSync(join(dir, 'dist'));
+    mkdirSync(join(dir, 'build'));
+    mkdirSync(join(dir, 'vendor'));
+    writeFileSync(join(dir, 'dist', 'package.json'), JSON.stringify({ dependencies: { express: '4.0.0' } }));
+    writeFileSync(join(dir, 'build', 'package.json'), JSON.stringify({ dependencies: { react: '18.0.0' } }));
+    writeFileSync(join(dir, 'vendor', 'package.json'), JSON.stringify({ dependencies: { '@nestjs/core': '10.0.0' } }));
+    const s = detectStack(dir);
+    assert.equal(s.backend, 'generic');
+    assert.equal(s.frontend, 'generic');
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('loadStackCache invalidates when package.json mtime is newer', () => {
+  const dir = scratch();
+  try {
+    const info: StackInfo = { backend: 'express-node', frontend: 'generic', language: 'Node.js', projectName: 'p' };
+    saveStackCache(dir, info);
+    const cached = loadStackCache(dir);
+    assert.equal(cached?.backend, 'express-node');
+    // Touch package.json after detection -> cache invalidates.
+    writeFileSync(join(dir, 'package.json'), JSON.stringify({ dependencies: { express: '5.0.0' } }));
+    const stale = loadStackCache(dir);
+    assert.equal(stale, null);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('stack without variant degrades to generic but traces framework', () => {
+  const dir = scratch();
+  try {
+    writeFileSync(join(dir, 'requirements.txt'), 'Django==5.0\n');
+    const s = detectStack(dir);
+    assert.equal(s.backend, 'generic');
+    assert.equal(s.language, 'Python');
+    assert.equal(s.framework, 'Django');
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});

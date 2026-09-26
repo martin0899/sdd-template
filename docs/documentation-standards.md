@@ -71,18 +71,31 @@ The knowledge graph is stored in `graphify-out/`:
 
 ## Manuals Directory
 
-All user-requested technical manuals and documentation must be placed in the `docs/manuals/` directory.
+All user-requested technical manuals and documentation live in the **cerebro** (the second brain) under `03_Recursos/02_Sistemas_info/<topic>/`. In the template repository the canonical source is `notes/`; in installed projects the AI writes manuals to the resolved notes directory (see below). Manuals never live in `docs/` nor travel with the payload.
+
+### Resolving the Notes Directory
+
+The notes directory is resolved deterministically with `resolveNotesDir` (cascade): `resources_dir` in the project manifest → `resources_dir` in global config → detected Obsidian vault (`03_Recursos/02_Sistemas_info`) → fallback `info/` inside the project (last resort, with a warning). If no storage root is available, no files are created and the user is told that a storage root is missing.
+
+Commands:
+
+```bash
+spectralis notes init      # create the notes subfolder structure (vault or info fallback)
+spectralis notes sync      # sync canonical manuals from notes/ into the brain
+spectralis config --resources <path>   # set the notes directory without asking every time
+```
 
 ### Rules for Manuals
 
 - **Format**: Only `.md` (Markdown) files are allowed. No PDF, HTML, or other formats
-- **Naming**: Use `kebab-case` for file names (e.g., `login-flow.md`, `payment-module.md`)
+- **Naming**: Use `kebab-case` for file names and subfolders (e.g., `login-flow/manual.md`, `payment-module/manual.md`)
 - **Language**: All manuals must be written in English
 - **Source**: Use Graphify to generate accurate, relationship-aware documentation
+- **Terminology**: the second brain is referred to as **cerebro** (synonyms: brain, second-brain, sb) and the LLM Wiki as **biblioteca** (synonyms: book, library, wiki, llm-wiki, lib) — canonical terms first, synonyms in parentheses on first use
 
 ### When to Create a Manual
 
-Create a manual in `docs/manuals/` when the user requests:
+Create a manual when the user requests:
 - Documentation about how a component works
 - Explanation of a feature or screen flow
 - Technical guide for a module or functionality
@@ -91,10 +104,11 @@ Create a manual in `docs/manuals/` when the user requests:
 ### Manual Creation Workflow
 
 1. Run `graphify update .` to ensure the graph is current
-2. Query the graph for the requested topic
-3. Create the manual file in `docs/manuals/<manual-name>.md`
-4. Follow the existing documentation structure and formatting
-5. Update the index in `docs/manuals/README.md` if applicable
+2. Resolve the notes directory (`spectralis config --get resources_dir` or the detection cascade)
+3. Query the graph for the requested topic
+4. Create the manual file in `<notes-dir>/<topic>/manual.md`
+5. Follow the existing documentation structure and formatting
+6. Update the index in `<notes-dir>/README.md` if applicable
 
 ## AI specs
 

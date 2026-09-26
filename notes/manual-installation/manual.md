@@ -53,7 +53,6 @@ If a destination file already exists (e.g., you already have `docs/base-standard
 cd .opencode && npm install && cd ..
 ```
 
-- Optional: run `npx autoskills` in your project (Node >= 22) for curated stack skills
 - Optional: run `npx skills` for Claude Code support
 - Onboarding: run `graphify update .` and follow the `sdd-onboard-project` skill
 
@@ -86,7 +85,7 @@ Confirm all items to match the scripted installation:
 - [ ] `openspec/config.yaml` exists and contains the Spanish `Language preference` lines (YAML valid)
 - [ ] `.agents/skills/` contains the template skills
 - [ ] `.opencode/` contains `commands/`, `skills/`, `package.json`, `package-lock.json`, `.gitignore`
-- [ ] `docs/` has standards composed from detected stack variants (no `docs/manuals/` in destination)
+- [ ] `docs/` has standards composed from detected stack variants (no `notes/` in destination)
 - [ ] No `install.sh` or `docs-variants/` in your project root
 - [ ] `AGENTS.md` present with SDD rules (managed block between BEGIN/END markers)
 - [ ] `.gitignore` contains the managed SDD block

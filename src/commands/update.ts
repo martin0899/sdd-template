@@ -5,6 +5,7 @@ import { classifyFiles, countByStatus, hasChanges, type ClassifiedFile } from '.
 import { makeConfirm } from '../util/prompt';
 import { readGlobalConfig } from '../core/config';
 import { currentPalette, phaseLine, printBanner, promptMark } from '../util/ui';
+import { runNotesInit, runNotesSync, isObsidianActive } from './notes';
 
 export interface UpdateOptions {
   destino?: string;
@@ -12,6 +13,8 @@ export interface UpdateOptions {
   check?: boolean;
   yes?: boolean;
   auto?: boolean;
+  obsidian?: boolean;
+  noObsidian?: boolean;
 }
 
 function templateRoot(): string {
@@ -196,6 +199,17 @@ export async function runUpdate(opts: UpdateOptions = {}): Promise<number> {
     }
   } else {
     console.error(`\n[WARN] Partial update. Backups preserved in ${backupRoot}.`);
+  }
+
+  // Orchestration: notes init/sync when obsidianSync is active (only on success).
+  if (!partial) {
+    const obsidianActive = isObsidianActive({ obsidian: opts.obsidian, noObsidian: opts.noObsidian }, target);
+    if (obsidianActive) {
+      console.log('');
+      console.log(`  [OK] obsidianSync active — syncing manuals to the brain`);
+      await runNotesInit({ destino: target, templateRoot: root });
+      await runNotesSync({ destino: target, templateRoot: root });
+    }
   }
 
   return partial ? 1 : 0;

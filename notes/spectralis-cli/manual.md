@@ -43,8 +43,7 @@ Installs the SDD template into a project. With no argument, the destination is t
 7. Payload copy — new files copied in batch after confirmation; conflicts shown in a single summary with per-file decisions; identical files are skipped
 8. Standards composed from `docs-variants/` per detected stack (placeholders filled; unresolvable placeholders stay visible for onboarding)
 9. Manifest written with per-file hashes and selected tools
-10. Stack skills (`npx autoskills`) — opt-in prompt; pending if declined, `--yes`, or Node < 22
-11. Final verification: warnings plus manual next steps
+10. Final verification: warnings plus manual next steps
 
 ```
 Nothing is written before the user confirms. Re-runs are idempotent
@@ -213,14 +212,70 @@ $ head -5 <project>/.sdd-manifest.json
 - `MAJOR` bumps: only on explicit user confirmation; the agent may suggest them when accumulated project changes justify it.
 - The arnés version and the template version are conceptually independent and today share the same value; the manifest schema keeps them separate so they can diverge without a format change.
 
+## Obsidian orchestration switch (`obsidianSync`)
+
+The `obsidianSync` switch (default `0` = off) controls whether the CLI and the OpenSpec workflow synchronize with the **cerebro** (the second brain) automatically. Off by default means **zero extra token cost**.
+
+| Value | Behavior |
+|-------|----------|
+| `0` (default) | No orchestration. Nothing is written to the brain unless a command runs manually. |
+| `1` | Orchestration on. `init`/`update` run `notes init` + `notes sync`; `/opsx-apply` invokes `obsidian-briefing`; `/opsx-archive` invokes `obsidian-summary` + `obsidian-tests` + `spec complete`. |
+
+Configure and inspect it:
+
+```bash
+spectralis config --set obsidianSync=1        # per project (--global for machine-wide)
+spectralis config --get obsidianSync          # effective value and origin (config/manifest/default)
+spectralis config --list                      # shows obsidianSync alongside the routes
+```
+
+Per-command overrides (do not change the stored switch):
+
+```bash
+spectralis init --obsidian                    # force orchestration for this run
+spectralis init --no-obsidian                # disable for this run
+spectralis update --obsidian                  # force for this run
+spectralis update --no-obsidian             # disable for this run
+```
+
+The orchestration logic lives in the `obsidian-orchestration` skill (`.agents/skills/`), referenced from the managed `AGENTS.md` block; it is idempotent and never modifies the vendor-managed `.opencode/commands/opsx-*` files.
+
+## Reproducible stack detection (`stack.json`)
+
+`spectralis init` (and `distill`) detect the project stack deterministically and persist it to `stack.json` at the project root. The artifact is the single source of truth consumed by `seed`, `distill` and the `sdd-onboard-project` skill.
+
+**Detection contract:**
+
+- **Root scan**: indicators (`package.json`, `pom.xml`, `build.gradle(.kts)`, `requirements.txt`, `pyproject.toml`, `go.mod`, `Cargo.toml`, `Gemfile`) at the project root.
+- **Monorepo depth 2**: the same indicators are searched up to 2 levels deep, but ONLY under known monorepo dirs (`packages`, `apps`, `services`, `libs`).
+- **Excluded dirs** (never scanned): `node_modules`, `.opencode`, `.git`, `dist`, `build`, `.next`, `.nuxt`, `__pycache__`, `vendor`, `target`, `.cache`, `.sdd-backup-*`.
+- **Cache invalidation**: `stack.json` is re-detected when any indicator has a modification time newer than `detected_at`.
+- **Generic degradation**: stacks without a supported variant (Django, FastAPI, Flask, Gin, Axum, Rails, ...) degrade `backend`/`frontend` to `generic`; the real `language`/`framework` remain recorded in `stack.json` for onboarding refinement. No new variants are added.
+
+**Artifact schema:**
+
+```json
+{
+  "backend": "spring-boot|express-node|nestjs|react|angular|generic|none",
+  "frontend": "react|angular|generic|none",
+  "language": "Java", "languageVersion": "21",
+  "buildTool": "Maven", "testFramework": "JUnit",
+  "framework": "Spring Boot", "frameworkVersion": "3.2.0",
+  "frameworkFe": "", "frameworkVersionFe": "",
+  "projectName": "demo-app", "detected_at": "2026-09-25T..."
+}
+```
+
+`stack.json` is machine-local and gitignored.
+
 ## Anti-corruption guarantees
 
 - Nothing is written before the user confirms the plan (except with `--dry-run`, which never writes at all; and `--yes`, which still backs up first).
 - Any existing file that differs is backed up to `.sdd-backup-<fecha>/` before being questioned.
 - Idempotent re-runs: identical files are skipped, managed blocks are never duplicated.
 - `.sdd-manifest.json` inventories every managed file with a SHA-256 hash — the exact payload that traveled to the destination.
-- Managed `.gitignore` block includes `openspec/`, `.claude/`, and `05_wiki/`: the SDD spec/changes tree and LLM Wiki layer are machine-local and never committed.
-- `docs/manuals/` (this file, and all other manuals in the template) never leak into the destination — they remain in the template repository for reference only.
+- Managed `.gitignore` block includes `openspec/`, `.claude/`, and `05_wiki/`: the SDD spec/changes tree and the biblioteca (LLM Wiki) layer are machine-local and never committed.
+- `notes/` (this file, and all other manuals in the template) never leak into the destination — they live in the cerebro (the second brain) and are synced with `spectralis notes sync`.
 - `install.sh` (removed) and `docs-variants/` never leak into the destination.
 
 ## Migrating from install.sh

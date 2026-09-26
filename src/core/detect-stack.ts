@@ -1,4 +1,4 @@
-import { readdirSync, readFileSync, writeFileSync, existsSync } from 'node:fs';
+import { readdirSync, readFileSync, writeFileSync, existsSync, statSync } from 'node:fs';
 import { join, basename } from 'node:path';
 
 export type BackendVariant = 'spring-boot' | 'express-node' | 'nestjs' | 'generic' | 'none';
@@ -30,6 +30,28 @@ const INDICATORS = [
   'Gemfile'
 ];
 
+const SKIP_DIRS = new Set([
+  'node_modules',
+  '.opencode',
+  '.git',
+  'dist',
+  'build',
+  '.next',
+  '.nuxt',
+  '__pycache__',
+  'vendor',
+  'target',
+  '.cache'
+]);
+
+const MONOREPO_DIRS = ['packages', 'apps', 'services', 'libs'];
+
+function isSkipped(name: string): boolean {
+  if (SKIP_DIRS.has(name)) return true;
+  if (name.startsWith('.sdd-backup-')) return true;
+  return false;
+}
+
 function indicatorFile(target: string, name: string): string | undefined {
   const root = join(target, name);
   if (existsSync(root)) return root;
@@ -41,10 +63,26 @@ function indicatorFile(target: string, name: string): string | undefined {
   } catch {
     return undefined;
   }
+  // Depth 2, only known monorepo dirs: <dir>/<sub>/<indicator> and <dir>/<sub>/<leaf>/<indicator>.
   for (const sub of entries) {
-    if (sub === 'node_modules' || sub === '.opencode' || sub.startsWith('.sdd-backup-')) continue;
-    const candidate = join(target, sub, name);
-    if (existsSync(candidate)) return candidate;
+    if (isSkipped(sub)) continue;
+    if (MONOREPO_DIRS.includes(sub)) {
+      const l1 = join(target, sub, name);
+      if (existsSync(l1)) return l1;
+      let subEntries: string[];
+      try {
+        subEntries = readdirSync(join(target, sub), { withFileTypes: true })
+          .filter((e) => e.isDirectory())
+          .map((e) => e.name);
+      } catch {
+        continue;
+      }
+      for (const leaf of subEntries) {
+        if (isSkipped(leaf)) continue;
+        const l2 = join(target, sub, leaf, name);
+        if (existsSync(l2)) return l2;
+      }
+    }
   }
   return undefined;
 }
@@ -53,6 +91,41 @@ function findPackageJson(target: string): string | undefined {
   const direct = indicatorFile(target, 'package.json');
   if (direct && !direct.includes(`${target}/.opencode/`)) return direct;
   return undefined;
+}
+
+function findAllPackageJsons(target: string): string[] {
+  const out: string[] = [];
+  const root = join(target, 'package.json');
+  if (existsSync(root)) out.push(root);
+  let entries: string[];
+  try {
+    entries = readdirSync(target, { withFileTypes: true })
+      .filter((e) => e.isDirectory())
+      .map((e) => e.name);
+  } catch {
+    return out;
+  }
+  for (const sub of entries) {
+    if (isSkipped(sub)) continue;
+    if (MONOREPO_DIRS.includes(sub)) {
+      const l1 = join(target, sub, 'package.json');
+      if (existsSync(l1)) out.push(l1);
+      let subEntries: string[];
+      try {
+        subEntries = readdirSync(join(target, sub), { withFileTypes: true })
+          .filter((e) => e.isDirectory())
+          .map((e) => e.name);
+      } catch {
+        continue;
+      }
+      for (const leaf of subEntries) {
+        if (isSkipped(leaf)) continue;
+        const l2 = join(target, sub, leaf, 'package.json');
+        if (existsSync(l2)) out.push(l2);
+      }
+    }
+  }
+  return out;
 }
 
 function hasDep(pkgFile: string, dep: string): boolean {
@@ -116,25 +189,34 @@ export interface StackCacheEntry {
 export function loadStackCache(projectRoot: string): StackCacheEntry | null {
   const path = join(projectRoot, 'stack.json');
   if (!existsSync(path)) return null;
+  let raw: StackCacheEntry;
   try {
-    const raw = JSON.parse(readFileSync(path, 'utf8'));
-    return {
-      backend: raw.backend ?? 'generic',
-      frontend: raw.frontend ?? 'generic',
-      language: raw.language ?? '',
-      languageVersion: raw.languageVersion ?? '',
-      buildTool: raw.buildTool ?? '',
-      testFramework: raw.testFramework ?? '',
-      framework: raw.framework ?? '',
-      frameworkVersion: raw.frameworkVersion ?? '',
-      frameworkFe: raw.frameworkFe ?? '',
-      frameworkVersionFe: raw.frameworkVersionFe ?? '',
-      projectName: raw.projectName ?? '',
-      detected_at: raw.detected_at ?? ''
-    };
+    raw = JSON.parse(readFileSync(path, 'utf8')) as StackCacheEntry;
   } catch {
     return null;
   }
+  // Invalidate when any indicator changed after the detection timestamp.
+  const detectedAt = raw.detected_at ? new Date(raw.detected_at).getTime() : 0;
+  if (detectedAt > 0) {
+    for (const indicator of INDICATORS) {
+      const found = indicatorFile(projectRoot, indicator);
+      if (found && statSync(found).mtimeMs > detectedAt) return null;
+    }
+  }
+  return {
+    backend: raw.backend ?? 'generic',
+    frontend: raw.frontend ?? 'generic',
+    language: raw.language ?? '',
+    languageVersion: raw.languageVersion ?? '',
+    buildTool: raw.buildTool ?? '',
+    testFramework: raw.testFramework ?? '',
+    framework: raw.framework ?? '',
+    frameworkVersion: raw.frameworkVersion ?? '',
+    frameworkFe: raw.frameworkFe ?? '',
+    frameworkVersionFe: raw.frameworkVersionFe ?? '',
+    projectName: raw.projectName ?? '',
+    detected_at: raw.detected_at ?? ''
+  };
 }
 
 export function saveStackCache(projectRoot: string, info: StackInfo): void {
@@ -201,25 +283,39 @@ export function detectStack(target: string): StackInfo {
         const jvm = /(?:sourceCompatibility\s*=\s*["']?(\d+))|jvmToolchain\((\d+)/.exec(gradleContent);
         info.languageVersion = jvm ? (jvm[1] ?? jvm[2]) : undefined;
       }
-    } else if ((pkgFile = findPackageJson(target))) {
+    } else if (findAllPackageJsons(target).length > 0) {
+      const allPkgs = findAllPackageJsons(target);
+      pkgFile = findPackageJson(target);
       info.language = 'Node.js';
       info.buildTool = 'npm';
-      info.languageVersion = depValue(pkgFile, 'node');
-      if (hasDep(pkgFile, '@nestjs/core')) {
-        info.backend = 'nestjs';
-        info.framework = 'NestJS';
-        info.frameworkVersion = depValue(pkgFile, '@nestjs/core');
-      } else if (hasDep(pkgFile, 'express')) {
-        info.backend = 'express-node';
-        info.framework = 'Express';
-        info.frameworkVersion = depValue(pkgFile, 'express');
-      } else if (hasDep(pkgFile, 'fastify')) {
-        info.backend = 'express-node';
-        info.framework = 'Fastify';
-        info.frameworkVersion = depValue(pkgFile, 'fastify');
+      // Consolidate backend framework across monorepo packages.
+      for (const p of allPkgs) {
+        if (hasDep(p, '@nestjs/core')) {
+          info.backend = 'nestjs';
+          info.framework = 'NestJS';
+          info.frameworkVersion = depValue(p, '@nestjs/core');
+          if (!pkgFile) pkgFile = p;
+          break;
+        }
+        if (hasDep(p, 'express')) {
+          info.backend = 'express-node';
+          info.framework = 'Express';
+          info.frameworkVersion = depValue(p, 'express');
+          if (!pkgFile) pkgFile = p;
+          break;
+        }
+        if (hasDep(p, 'fastify')) {
+          info.backend = 'express-node';
+          info.framework = 'Fastify';
+          info.frameworkVersion = depValue(p, 'fastify');
+          if (!pkgFile) pkgFile = p;
+          break;
+        }
       }
+      const backendPkg = pkgFile ?? allPkgs[0];
+      info.languageVersion = depValue(backendPkg, 'node');
       for (const tf of ['jest', 'vitest', 'mocha']) {
-        if (hasDep(pkgFile, tf)) {
+        if (hasDep(backendPkg, tf)) {
           info.testFramework = tf;
           break;
         }
@@ -270,33 +366,36 @@ export function detectStack(target: string): StackInfo {
     }
   }
 
-  // --- frontend ---
-  const fePkg = pkgFile ?? findPackageJson(target);
-  if (fePkg) {
+  // --- frontend (consolidate across monorepo packages) ---
+  const fePkgs = (pkgFile ? [pkgFile, ...findAllPackageJsons(target).filter((p) => p !== pkgFile)] : findAllPackageJsons(target));
+  for (const fePkg of fePkgs) {
     if (hasDep(fePkg, 'react')) {
       info.frontend = 'react';
       info.frameworkFe = 'React';
       info.frameworkVersionFe = depValue(fePkg, 'react');
-    } else if (hasDep(fePkg, '@angular/core')) {
+      break;
+    }
+    if (hasDep(fePkg, '@angular/core')) {
       info.frontend = 'angular';
       info.frameworkFe = 'Angular';
       info.frameworkVersionFe = depValue(fePkg, '@angular/core');
-    } else {
-      for (const fw of ['vue', 'angular', 'svelte', 'next', 'nuxt']) {
-        if (hasDep(fePkg, fw)) {
-          info.frontend = 'generic';
-          info.frameworkFe = fw.charAt(0).toUpperCase() + fw.slice(1);
-          info.frameworkVersionFe = depValue(fePkg, fw);
-          break;
-        }
+      break;
+    }
+    for (const fw of ['vue', 'svelte', 'next', 'nuxt']) {
+      if (hasDep(fePkg, fw)) {
+        info.frontend = 'generic';
+        info.frameworkFe = fw.charAt(0).toUpperCase() + fw.slice(1);
+        info.frameworkVersionFe = depValue(fePkg, fw);
+        break;
       }
     }
-    if (info.frameworkFe) {
-      if (!info.language) {
-        info.backend = 'none';
-      } else if (info.language === 'Node.js' && info.backend === 'generic') {
-        info.backend = 'none';
-      }
+    if (info.frameworkFe) break;
+  }
+  if (info.frameworkFe) {
+    if (!info.language) {
+      info.backend = 'none';
+    } else if (info.language === 'Node.js' && info.backend === 'generic') {
+      info.backend = 'none';
     }
   } else if (existsSync(join(target, 'src', 'main', 'webapp'))) {
     info.frontend = 'generic';
@@ -307,9 +406,9 @@ export function detectStack(target: string): StackInfo {
   // --- project name ---
   if (pom) {
     info.projectName = pomArtifactId(pom) ?? info.projectName;
-  } else if (fePkg) {
+  } else if (fePkgs.length > 0) {
     try {
-      const name = (JSON.parse(readFileSync(fePkg, 'utf8')) as { name?: string }).name;
+      const name = (JSON.parse(readFileSync(fePkgs[0], 'utf8')) as { name?: string }).name;
       if (name) info.projectName = name;
     } catch {
       /* keep basename */
