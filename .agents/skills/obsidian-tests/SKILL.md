@@ -5,6 +5,8 @@ description: Generate test files and documentation in Obsidian after completing 
 
 # Obsidian Tests
 
+> **Orquestada**: cuando `obsidianSync=1` (o `--obsidian`), esta skill se invoca automáticamente desde `obsidian-orchestration` al archivar un change (`/opsx-archive`). Con el switch en `0`, se usa solo por invocación explícita.
+
 Genera archivos de test y documentación en Obsidian después de completar una especificación OpenSpec. Crea documentación de pruebas de regresión para validación continua.
 
 ## Rutas y Configuración

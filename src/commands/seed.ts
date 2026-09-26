@@ -1,4 +1,4 @@
-import { existsSync, readdirSync, mkdirSync, writeFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { readGlobalConfig, detectProjectFromCwd, setCurrentProjectRoot } from '../core/config';
 
@@ -6,6 +6,30 @@ export interface SeedProjectInfo {
   name: string;
   path: string;
   changes: number;
+  stack: string[];
+}
+
+function readProjectStack(projectPath: string): string[] {
+  const stackFile = join(projectPath, 'stack.json');
+  if (!existsSync(stackFile)) return [];
+  try {
+    const raw = JSON.parse(readFileSync(stackFile, 'utf8')) as {
+      backend?: string;
+      frontend?: string;
+      framework?: string;
+      frameworkFe?: string;
+    };
+    const stack: string[] = [];
+    for (const v of [raw.backend, raw.frontend]) {
+      if (v && v !== 'generic' && v !== 'none') stack.push(v);
+    }
+    for (const fw of [raw.framework, raw.frameworkFe]) {
+      if (fw && !stack.includes(fw)) stack.push(fw);
+    }
+    return stack;
+  } catch {
+    return [];
+  }
 }
 
 export function discoverProjects(projectsBase: string): SeedProjectInfo[] {
@@ -26,7 +50,7 @@ export function discoverProjects(projectsBase: string): SeedProjectInfo[] {
             .filter(d => d.isDirectory() && d.name !== 'archive')
             .length;
         }
-        projects.push({ name: entry.name, path: projPath, changes });
+        projects.push({ name: entry.name, path: projPath, changes, stack: readProjectStack(projPath) });
       } else {
         walk(projPath, depth + 1);
       }
@@ -52,7 +76,7 @@ export function seedIndex(vaultRoot: string, projects: SeedProjectInfo[]): void 
       name: p.name,
       path: join('05_wiki', p.name),
       content: ['arquitectura', 'decisiones', 'errores', 'log', 'restricciones'],
-      stack: [],
+      stack: p.stack,
       changes: p.changes,
       updated: new Date().toISOString()
     };

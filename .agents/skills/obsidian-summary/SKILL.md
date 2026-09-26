@@ -5,6 +5,8 @@ description: Generate summary document in Obsidian after completing an OpenSpec 
 
 # Obsidian Summary
 
+> **Orquestada**: cuando `obsidianSync=1` (o `--obsidian`), esta skill se invoca automáticamente desde `obsidian-orchestration` al archivar un change (`/opsx-archive`). Con el switch en `0`, se usa solo por invocación explícita.
+
 Genera un documento resumen en Obsidian después de completar una especificación OpenSpec. Crea un wiki portátil para referencia entre máquinas.
 
 ## Rutas y Configuración

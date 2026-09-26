@@ -13,12 +13,14 @@ export interface RouteConfig {
   templates_dir: string;
   requirements_dir: string;
   projects_dir: string;
+  resources_dir: string;
 }
 
 export interface SpectralisConfig extends RouteConfig {
   llm: LlmConfig;
   projects_base: string;
   autoUpdate: boolean;
+  obsidianSync: 0 | 1;
   current_project_root: string;
 }
 
@@ -35,7 +37,9 @@ const DEFAULT_CONFIG: SpectralisConfig = {
   templates_dir: '',
   requirements_dir: '',
   projects_dir: '',
+  resources_dir: '',
   autoUpdate: false,
+  obsidianSync: 0,
   current_project_root: ''
 };
 
@@ -59,7 +63,9 @@ export function readGlobalConfig(): SpectralisConfig {
       templates_dir: raw.templates_dir ?? '',
       requirements_dir: raw.requirements_dir ?? '',
       projects_dir: raw.projects_dir ?? '',
+      resources_dir: raw.resources_dir ?? '',
       autoUpdate: raw.autoUpdate ?? false,
+      obsidianSync: raw.obsidianSync === 1 ? 1 : 0,
       current_project_root: raw.current_project_root ?? ''
     };
   } catch {
@@ -124,6 +130,80 @@ export function detectVaultRoot(startDir?: string): string | null {
     dir = dirname(dir);
   }
   return null;
+}
+
+export const RESOURCES_REL = join('03_Recursos', '02_Sistemas_info');
+
+export interface NotesDirResolution {
+  dir: string;
+  origin: 'config' | 'manifest' | 'vault' | 'info';
+}
+
+/**
+ * Resolve the notes/manuals directory for a project with a deterministic cascade:
+ * 1. resources_dir in the project manifest (.sdd-manifest.json)
+ * 2. resources_dir in the global config
+ * 3. detected Obsidian vault -> <vault>/03_Recursos/02_Sistemas_info
+ * 4. fallback <projectRoot>/info (last resort)
+ */
+export function resolveNotesDir(projectRoot?: string): NotesDirResolution {
+  if (projectRoot) {
+    const manifestPath = join(projectRoot, '.sdd-manifest.json');
+    if (existsSync(manifestPath)) {
+      try {
+        const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
+        if (manifest.resources_dir) return { dir: manifest.resources_dir, origin: 'manifest' };
+      } catch {}
+    }
+  }
+  const config = readGlobalConfig();
+  if (config.resources_dir) return { dir: config.resources_dir, origin: 'config' };
+
+  const vault = detectVaultRoot(projectRoot || process.cwd());
+  if (vault) return { dir: join(vault, RESOURCES_REL), origin: 'vault' };
+
+  const root = projectRoot || process.cwd();
+  return { dir: join(root, 'info'), origin: 'info' };
+}
+
+export interface ObsidianSyncResolution {
+  value: 0 | 1;
+  origin: 'manifest' | 'config' | 'default';
+}
+
+/**
+ * Resolve the obsidian orchestration switch for a project:
+ * 1. obsidianSync in the project manifest (.sdd-manifest.json)
+ * 2. obsidianSync in the global config
+ * 3. default 0 (off)
+ */
+export function resolveObsidianSync(projectRoot?: string): ObsidianSyncResolution {
+  if (projectRoot) {
+    const manifestPath = join(projectRoot, '.sdd-manifest.json');
+    if (existsSync(manifestPath)) {
+      try {
+        const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
+        if (manifest.obsidianSync === 1 || manifest.obsidianSync === 0) {
+          return { value: manifest.obsidianSync === 1 ? 1 : 0, origin: 'manifest' };
+        }
+      } catch {}
+    }
+  }
+  const config = readGlobalConfig();
+  return { value: config.obsidianSync, origin: config.obsidianSync === 1 ? 'config' : 'default' };
+}
+
+export function setObsidianSync(value: 0 | 1, global: boolean, projectRoot?: string): void {
+  if (global) {
+    const config: SpectralisConfig = readGlobalConfig();
+    config.obsidianSync = value;
+    writeGlobalConfig(config);
+  } else if (projectRoot) {
+    const manifestPath = join(projectRoot, '.sdd-manifest.json');
+    const manifest = existsSync(manifestPath) ? JSON.parse(readFileSync(manifestPath, 'utf8')) : {};
+    manifest.obsidianSync = value;
+    writeFileSync(manifestPath, JSON.stringify(manifest, null, 2) + '\n', 'utf8');
+  }
 }
 
 export function detectProjectFromCwd(cwd: string): { project: string; root: string } | null {

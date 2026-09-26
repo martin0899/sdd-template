@@ -3,16 +3,20 @@ import assert from 'node:assert/strict';
 import { mkdtempSync, rmSync, existsSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { readGlobalConfig, writeGlobalConfig, readLlmConfig, writeLlmConfig, resolveProjectRoot, detectVaultRoot, setRoute, resolveRoute, detectProjectFromCwd, setCurrentProjectRoot, SpectralisConfig } from '../../src/core/config';
+import { readGlobalConfig, writeGlobalConfig, readLlmConfig, writeLlmConfig, resolveProjectRoot, detectVaultRoot, setRoute, resolveRoute, detectProjectFromCwd, setCurrentProjectRoot, resolveNotesDir, resolveObsidianSync, setObsidianSync, SpectralisConfig } from '../../src/core/config';
 
 let savedConfig: SpectralisConfig;
+let savedHome: string | undefined;
 
 beforeEach(() => {
+  savedHome = process.env.HOME;
+  process.env.HOME = join(tmpdir(), `sp-cfg-home-${Date.now()}-${Math.random()}`);
   savedConfig = readGlobalConfig();
 });
 
 afterEach(() => {
   writeGlobalConfig(savedConfig);
+  if (savedHome !== undefined) process.env.HOME = savedHome;
 });
 
 test('readGlobalConfig returns defaults when no file exists', () => {
@@ -23,7 +27,9 @@ test('readGlobalConfig returns defaults when no file exists', () => {
     templates_dir: '',
     requirements_dir: '',
     projects_dir: '',
+    resources_dir: '',
     autoUpdate: false,
+    obsidianSync: 0,
     current_project_root: ''
   });
   const cfg = readGlobalConfig();
@@ -41,7 +47,9 @@ test('writeGlobalConfig and readGlobalConfig round-trip', () => {
     templates_dir: '',
     requirements_dir: '',
     projects_dir: '',
+    resources_dir: '/tmp/test-resources',
     autoUpdate: false,
+    obsidianSync: 0,
     current_project_root: ''
   };
   writeGlobalConfig(testCfg);
@@ -50,6 +58,7 @@ test('writeGlobalConfig and readGlobalConfig round-trip', () => {
   assert.equal(read.llm.model, 'test-model');
   assert.equal(read.llm.enabled, true);
   assert.equal(read.projects_base, '/tmp/test-projects');
+  assert.equal(read.resources_dir, '/tmp/test-resources');
   writeGlobalConfig(original);
 });
 
@@ -178,4 +187,102 @@ test('setCurrentProjectRoot persists value', () => {
   } finally {
     writeGlobalConfig(original);
   }
+});
+
+test('resolveNotesDir prefers resources_dir from manifest', () => {
+  const projDir = mkdtempSync(join(tmpdir(), 'sp-res-manifest-'));
+  require('node:fs').writeFileSync(join(projDir, '.sdd-manifest.json'), JSON.stringify({ resources_dir: '/proj/resources' }), 'utf8');
+  const res = resolveNotesDir(projDir);
+  assert.equal(res.dir, '/proj/resources');
+  assert.equal(res.origin, 'manifest');
+  rmSync(projDir, { recursive: true, force: true });
+});
+
+test('resolveNotesDir falls back to global resources_dir', () => {
+  const original = readGlobalConfig();
+  try {
+    writeGlobalConfig({ ...original, resources_dir: '/global/resources' });
+    const res = resolveNotesDir();
+    assert.equal(res.dir, '/global/resources');
+    assert.equal(res.origin, 'config');
+  } finally {
+    writeGlobalConfig(original);
+  }
+});
+
+test('resolveNotesDir derives from detected vault', () => {
+  const original = readGlobalConfig();
+  try {
+    writeGlobalConfig({ ...original, resources_dir: '' });
+    const base = mkdtempSync(join(tmpdir(), 'sp-res-vault-'));
+    const vaultDir = join(base, 'vault');
+    require('node:fs').mkdirSync(join(vaultDir, '.obsidian'), { recursive: true });
+    const res = resolveNotesDir(vaultDir);
+    assert.equal(res.origin, 'vault');
+    assert.ok(res.dir.endsWith(join('03_Recursos', '02_Sistemas_info')));
+    rmSync(base, { recursive: true, force: true });
+  } finally {
+    writeGlobalConfig(original);
+  }
+});
+
+test('resolveNotesDir falls back to info inside project', () => {
+  const original = readGlobalConfig();
+  try {
+    writeGlobalConfig({ ...original, resources_dir: '' });
+    const projDir = mkdtempSync(join(tmpdir(), 'sp-res-temp-'));
+    const res = resolveNotesDir(projDir);
+    assert.equal(res.dir, join(projDir, 'info'));
+    assert.equal(res.origin, 'info');
+    rmSync(projDir, { recursive: true, force: true });
+  } finally {
+    writeGlobalConfig(original);
+  }
+});
+
+test('resolveObsidianSync defaults to 0', () => {
+  const original = readGlobalConfig();
+  try {
+    writeGlobalConfig({ ...original, obsidianSync: 0 });
+    const res = resolveObsidianSync();
+    assert.equal(res.value, 0);
+    assert.equal(res.origin, 'default');
+  } finally {
+    writeGlobalConfig(original);
+  }
+});
+
+test('resolveObsidianSync reads from global config', () => {
+  const original = readGlobalConfig();
+  try {
+    writeGlobalConfig({ ...original, obsidianSync: 1 });
+    const res = resolveObsidianSync();
+    assert.equal(res.value, 1);
+    assert.equal(res.origin, 'config');
+  } finally {
+    writeGlobalConfig(original);
+  }
+});
+
+test('resolveObsidianSync prefers manifest value', () => {
+  const original = readGlobalConfig();
+  try {
+    writeGlobalConfig({ ...original, obsidianSync: 1 });
+    const projDir = mkdtempSync(join(tmpdir(), 'sp-obs-manifest-'));
+    require('node:fs').writeFileSync(join(projDir, '.sdd-manifest.json'), JSON.stringify({ obsidianSync: 0 }), 'utf8');
+    const res = resolveObsidianSync(projDir);
+    assert.equal(res.value, 0);
+    assert.equal(res.origin, 'manifest');
+    rmSync(projDir, { recursive: true, force: true });
+  } finally {
+    writeGlobalConfig(original);
+  }
+});
+
+test('setObsidianSync persists to manifest', () => {
+  const projDir = mkdtempSync(join(tmpdir(), 'sp-obs-set-'));
+  setObsidianSync(1, false, projDir);
+  const manifest = JSON.parse(require('node:fs').readFileSync(join(projDir, '.sdd-manifest.json'), 'utf8'));
+  assert.equal(manifest.obsidianSync, 1);
+  rmSync(projDir, { recursive: true, force: true });
 });

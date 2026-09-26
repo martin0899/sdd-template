@@ -26,6 +26,7 @@ import { runSkills } from '../commands/skills';
 import { runSpecInit, runSpecComplete } from '../commands/spec';
 import { runProjects } from '../commands/projects';
 import { runSeed } from '../commands/seed';
+import { runNotesInit, runNotesSync } from '../commands/notes';
 
 const pkg = require('../../package.json') as { version: string };
 
@@ -64,14 +65,16 @@ program
   .option('--demo', 'alias for --dry-run')
   .option('--dd', 'alias for --dry-run')
   .option('--yes', 'non-interactive mode (always with backup)')
+  .option('--obsidian', 'force obsidian orchestration (notes sync) even if obsidianSync=0')
+  .option('--no-obsidian', 'disable obsidian orchestration even if obsidianSync=1')
   .action(
     async (
       destino: string | undefined,
-      opts: { agent?: string; dryRun?: boolean; demo?: boolean; dd?: boolean; yes?: boolean }
+      opts: { agent?: string; dryRun?: boolean; demo?: boolean; dd?: boolean; yes?: boolean; obsidian?: boolean; noObsidian?: boolean }
     ) => {
       // Agent validation happens before any write-capable action.
       resolveAgent(opts.agent);
-      const code = await runInit({ destino, agent: opts.agent, dryRun: opts.dryRun || opts.demo || opts.dd, yes: opts.yes });
+      const code = await runInit({ destino, agent: opts.agent, dryRun: opts.dryRun || opts.demo || opts.dd, yes: opts.yes, obsidian: opts.obsidian, noObsidian: opts.noObsidian });
       process.exitCode = code;
     }
   );
@@ -86,13 +89,15 @@ program
   .option('--yes', 'non-interactive mode (always with backup)')
   .option('-a, --auto', 'apply all updates without asking (alias for --yes + autoUpdate config)')
   .option('--agent <agente>', 'target agent profile (opencode | antigravity | claude | all)')
+  .option('--obsidian', 'force obsidian orchestration (notes sync) even if obsidianSync=0')
+  .option('--no-obsidian', 'disable obsidian orchestration even if obsidianSync=1')
   .action(
     async (
       destino: string | undefined,
-      opts: { dryRun?: boolean; demo?: boolean; dd?: boolean; check?: boolean; yes?: boolean; auto?: boolean; agent?: string }
+      opts: { dryRun?: boolean; demo?: boolean; dd?: boolean; check?: boolean; yes?: boolean; auto?: boolean; agent?: string; obsidian?: boolean; noObsidian?: boolean }
     ) => {
       if (opts.agent) resolveAgent(opts.agent);
-      const code = await runUpdate({ destino, dryRun: opts.dryRun || opts.demo || opts.dd, check: opts.check, yes: opts.yes, auto: opts.auto });
+      const code = await runUpdate({ destino, dryRun: opts.dryRun || opts.demo || opts.dd, check: opts.check, yes: opts.yes, auto: opts.auto, obsidian: opts.obsidian, noObsidian: opts.noObsidian });
       process.exitCode = code;
     }
   );
@@ -119,9 +124,10 @@ program
   .option('-l, --list', 'list all effective routes with origin')
   .option('-g, --get <key>', 'get value of a route key')
   .option('-v, --vault <path>', 'set vault_root (use --global for machine-wide)')
+  .option('-r, --resources <path>', 'set resources_dir (use --global for machine-wide)')
   .option('-s, --set <key=value>', 'set a route key=value (use --global for machine-wide)')
   .option('--global', 'apply to global config (machine-wide)')
-  .action(async (destino: string | undefined, opts: { list?: boolean; get?: string; vault?: string; set?: string; global?: boolean }) => {
+  .action(async (destino: string | undefined, opts: { list?: boolean; get?: string; vault?: string; resources?: string; set?: string; global?: boolean }) => {
     const code = await runConfig({ destino, ...opts });
     process.exitCode = code;
   });
@@ -205,6 +211,43 @@ program
     const code = await runSeed({ project: opts.project, dryRun: opts.dryRun || opts.demo || opts.dd });
     process.exitCode = code;
   });
+
+const notesCmd = program
+  .command('notes')
+  .description('Manage technical manuals between the template and the second brain');
+
+notesCmd
+  .command('init [destino]')
+  .description('Create the notes/manuals folder structure in the second brain (or info fallback)')
+  .option('-d, --dry-run', 'show the target and subfolders without creating anything')
+  .option('--demo', 'alias for --dry-run')
+  .option('--dd', 'alias for --dry-run')
+  .action(
+    async (
+      destino: string | undefined,
+      opts: { dryRun?: boolean; demo?: boolean; dd?: boolean }
+    ) => {
+      const code = await runNotesInit({ destino, dryRun: opts.dryRun || opts.demo || opts.dd });
+      process.exitCode = code;
+    }
+  );
+
+notesCmd
+  .command('sync [destino]')
+  .description('Sync canonical manuals from notes/ to the second brain (or info fallback)')
+  .option('-d, --dry-run', 'show the manuals that would be synced without writing anything')
+  .option('--demo', 'alias for --dry-run')
+  .option('--dd', 'alias for --dry-run')
+  .option('--yes', 'non-interactive mode (always with backup)')
+  .action(
+    async (
+      destino: string | undefined,
+      opts: { dryRun?: boolean; demo?: boolean; dd?: boolean; yes?: boolean }
+    ) => {
+      const code = await runNotesSync({ destino, dryRun: opts.dryRun || opts.demo || opts.dd, yes: opts.yes });
+      process.exitCode = code;
+    }
+  );
 
 program.parseAsync(process.argv).catch((err: Error) => {
   console.error(`[ERROR] ${err.message}`);

@@ -55,27 +55,23 @@ Ofrece: *"¿Quieres que persista esta estructura como regla en `openspec/config.
 
 ## Fase 3 — Refinamiento de estándares según el stack real
 
-### 3a. Identificar la variante instalada por el instalador
+### 3a. Consumir el artefacto de stack (stack.json)
 
-`install.sh` ya detectó el stack y compuso `docs/backend-standards.md` y `docs/frontend-standards.md` desde `docs-variants/` (variantes: backend `spring-boot`/`express-node`/`nestjs`/`generic`; frontend `react`/`angular`/`generic`; los estándares de un proyecto backend puro o frontend puro pueden no haberse copiado). Identifica la variante por su cabecera (`# ... (Spring Boot)`, `# ... (Angular)`, etc.) y localiza los **placeholders pendientes** (`{{ORM}}`, `{{TEST_FRAMEWORK}}`, ...). El papel de esta fase es **refinar**, no reescribir desde cero.
+El instalador ya detectó el stack de forma reproducible y lo guardó en `stack.json` (raíz del proyecto). **Léelo como fuente de verdad** antes de cualquier otra indagación:
 
-### 3b. Detección adicional (por orden, primer match)
+```bash
+cat stack.json
+```
 
-Usa esta tabla solo si la variante instalada es genérica o hay placeholders sin resolver:
+El artefacto contiene: `backend` y `frontend` (variante instalada: `spring-boot`, `express-node`, `nestjs`, `react`, `angular`, `generic`, `none`), `language`, `languageVersion`, `buildTool`, `testFramework`, `framework`, `frameworkVersion`, `frameworkFe`, `frameworkVersionFe`, `projectName`, `detected_at`.
 
-| Archivo indicador | Stack | Detección de framework |
-|-------------------|-------|------------------------|
-| `pom.xml` | Java/Maven | `spring-boot-starter-parent` → Spring Boot; `<java.version>` |
-| `build.gradle` / `build.gradle.kts` | Java/Gradle | plugin `org.springframework.boot` → Spring Boot |
-| `package.json` | Node.js | deps: `react`, `@angular/core` (Angular moderno; la clave simple `angular` solo indica AngularJS legacy), `@nestjs/core` (NestJS, antes que `express`), `express`, `fastify`, `next`, `nuxt` |
-| `requirements.txt` / `pyproject.toml` | Python | `django`, `flask`, `fastapi`, `sqlalchemy` |
-| `Cargo.toml` | Rust | `actix-web`, `axum`, `rocket` |
-| `go.mod` | Go | `gin-gonic`, `gorilla`, `echo`, `fiber` |
-| `Gemfile` | Ruby | `rails`, `sinatra` |
+La variante `generic` significa que el stack detectado **no tiene variante soportada** en `docs-variants/` (p. ej. Django, FastAPI, Flask, Gin, Axum, Rails): el lenguaje y framework reales quedan registrados en `stack.json` para este refinamiento. **No se crean variantes nuevas.**
 
-Prefer siempre la **evidencia del grafo** (`graphify query/explain`) sobre la tabla: el grafo refleja el código real, no solo los archivos indicadores. Los frameworks con paquetes con scope (`@angular/*`, `@nestjs/*`) se detectan por su paquete principal (`@angular/core`, `@nestjs/core`).
+### 3b. Resolver el refinamiento
 
-**Stack no detectable**: si ni el instalador ni el grafo revelan el stack, pregunta al usuario por las tecnologías (lenguaje, framework, build tool, base de datos) antes de refinar nada. No inventes un stack ni valores de placeholder.
+- **Con `stack.json` presente**: usa el artefacto para saber qué variante se instaló, qué stack real se degradó a `generic` y qué placeholders quedaron. Usa `graphify query/explain` **solo para refinar** las secciones pendientes (ORM, testing, utilidades) — no para re-detectar el stack.
+- **Sin `stack.json`** (proyecto instalado antes de la detección reproducible, o manual): usa `graphify query/explain` como evidencia del stack real. No uses una tabla manual de archivos indicadores: pregunta al usuario por las tecnologías (lenguaje, framework, build tool, base de datos) si el grafo no revela el stack.
+- **Stack no detectable**: si ni el artefacto ni el grafo revelan el stack, pregunta al usuario por las tecnologías antes de refinar nada. No inventes un stack ni valores de placeholder.
 
 ### 3c. Refinamiento (con confirmación por artefacto)
 
@@ -85,7 +81,7 @@ Para cada archivo de `docs/` propón el refinamiento y pide confirmación **indi
   - Spring Boot: REST controllers, JPA/Hibernate, `@ControllerAdvice`, JUnit/Mockito, Maven/Gradle
   - Express/Fastify: router middleware, ORM (Sequelize/Prisma/TypeORM), error middleware, Winston/Pino, Jest/Supertest
   - Django/Flask: views/serializers, Django ORM/SQLAlchemy, pytest
-  - Fallback: documentar los patrones propios que se observen en el grafo
+  - Fallback (`generic`): documentar los patrones propios que se observen en el grafo (el stack real está en `stack.json`)
 - `frontend-standards.md` → React (hooks, estado, React Router, Tailwind/RTL) · Vue (SFC, Pinia, Vue Router, Vitest) · Angular (servicios, NgRx, Karma) · fallback genérico
 - Si no existe `frontend-standards.md` (el instalador omitió backend puro): pregunta si generarlo desde `docs-variants/frontend/generic.md` o marcarlo como no aplicable. Simétrico para backend puro.
 - `api-spec.yml` → ajustar a las convenciones REST reales del proyecto
@@ -100,11 +96,11 @@ Reglas de escritura para docs/:
 
 ## Fase 4 — Guía de IA local (Ollama)
 
-1. Lee `docs/manuals/local-ai.md` y preséntala al usuario.
+1. Resuelve la ruta de manuales (cerebro): `spectralis config --get resources_dir` o la cascada de detección (config → manifiesto → vault → `info/` en el proyecto). Lee la guía `notes/local-ai/manual.md` del repo plantilla y preséntala al usuario.
 2. Explica la recomendación: **modelos locales solo para tareas de baja demanda** (RAM limitada); las tareas pesadas siguen en la nube o el modelo principal.
 3. Pregunta: *"¿Qué modelo local de Ollama quieres usar para tareas sencillas? (p. ej. qwen2.5:3b, llama3.2:3b — o ninguno)"*
 4. **Si el usuario elige un modelo**: propón añadir al `context` de `openspec/config.yaml` una línea del tipo `Local AI (Ollama): <modelo> for low-demand tasks; use cloud for complex tasks.` y escríbela solo con confirmación (APPEND, preservando lo previo).
-5. **Si no quiere IA local**: no escribas nada; la guía queda en `docs/` para el futuro.
+5. **Si no quiere IA local**: no escribas nada; la guía queda en el cerebro para el futuro.
 
 ## Cierre
 

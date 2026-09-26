@@ -1,7 +1,7 @@
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve, join } from 'node:path';
 import { readManifest } from '../core/manifest';
-import { readGlobalConfig, setRoute, resolveRoute, detectVaultRoot, RouteConfig } from '../core/config';
+import { readGlobalConfig, writeGlobalConfig, setRoute, resolveRoute, detectVaultRoot, resolveObsidianSync, setObsidianSync, RouteConfig, SpectralisConfig } from '../core/config';
 import { currentPalette, printBanner, green, dim } from '../util/ui';
 
 export interface ConfigOptions {
@@ -9,6 +9,7 @@ export interface ConfigOptions {
   list?: boolean;
   get?: string;
   vault?: string;
+  resources?: string;
   set?: string;
   global?: boolean;
 }
@@ -48,6 +49,15 @@ export async function runConfig(opts: ConfigOptions = {}): Promise<number> {
     return 0;
   }
 
+  // Handle --resources (alias of --set resources_dir=)
+  if (opts.resources) {
+    const global = opts.global ?? false;
+    const projectRoot = opts.destino ? resolve(process.cwd(), opts.destino) : process.cwd();
+    setRoute('resources_dir', resolve(opts.resources), global, projectRoot);
+    console.log(`[OK] resources_dir set to ${opts.resources} (${global ? 'global' : 'project'})`);
+    return 0;
+  }
+
   // Handle --set key=value
   if (opts.set) {
     const [key, value] = opts.set.split('=');
@@ -57,6 +67,12 @@ export async function runConfig(opts: ConfigOptions = {}): Promise<number> {
     }
     const global = opts.global ?? false;
     const projectRoot = opts.destino ? resolve(process.cwd(), opts.destino) : process.cwd();
+    if (key === 'obsidianSync') {
+      const parsed = value === '1' ? 1 : 0;
+      setObsidianSync(parsed, global, projectRoot);
+      console.log(`[OK] obsidianSync set to ${parsed} (${global ? 'global' : 'project'})`);
+      return 0;
+    }
     setRoute(key as keyof RouteConfig, resolve(value), global, projectRoot);
     console.log(`[OK] ${key} set to ${value} (${global ? 'global' : 'project'})`);
     return 0;
@@ -65,6 +81,11 @@ export async function runConfig(opts: ConfigOptions = {}): Promise<number> {
   // Handle --get
   if (opts.get) {
     const projectRoot = opts.destino ? resolve(process.cwd(), opts.destino) : process.cwd();
+    if (opts.get === 'obsidianSync') {
+      const res = resolveObsidianSync(projectRoot);
+      console.log(`${res.value} [${res.origin}]`);
+      return 0;
+    }
     const value = resolveRoute(opts.get as keyof RouteConfig, projectRoot);
     console.log(value || '(not set)');
     return 0;
@@ -83,8 +104,11 @@ export async function runConfig(opts: ConfigOptions = {}): Promise<number> {
       ['templates_dir', resolveRoute('templates_dir', target), global.templates_dir ? 'global' : 'not set'],
       ['requirements_dir', resolveRoute('requirements_dir', target), global.requirements_dir ? 'global' : 'not set'],
       ['projects_dir', resolveRoute('projects_dir', target), global.projects_dir ? 'global' : 'not set'],
+      ['resources_dir', resolveRoute('resources_dir', target), global.resources_dir ? 'global' : (detected ? 'derived' : 'not set')],
       ['projects_base', global.projects_base, 'global'],
     ];
+    const obsidian = resolveObsidianSync(target);
+    console.log(`  obsidianSync: ${obsidian.value}  [${obsidian.origin}]`);
     for (const [key, value, origin] of routes) {
       console.log(`  ${key}: ${value || '(not set)'}  [${origin}]`);
     }
