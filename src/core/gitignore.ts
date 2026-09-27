@@ -13,7 +13,8 @@ export const GITIGNORE_ENTRIES = [
   'skills-lock.json',
   'openspec/',
   '.claude/',
-  '05_wiki/'
+  '05_wiki/',
+  '.spectralis/'
 ];
 
 export type GitignoreStatus = 'created' | 'appended' | 'refreshed' | 'synced' | 'kept';
