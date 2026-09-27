@@ -30,7 +30,7 @@ The skill feeds OpenSpec; it does not replace it. Everything downstream (apply, 
 
 ## Note Template
 
-- **Location**: single copy in the Obsidian vault, at `~/Documentos/Obsidian Vault/obsidian_sync_git/Recursos/Plantilla/Requerimiento para Specs.md`. The authoritative path is also recorded as the first line of each project's `docs/requirements/REGISTRY.md`.
+- **Location**: single copy in the Obsidian vault, at `~/Documentos/Obsidian Vault/obsidian_sync_git/Recursos/Plantilla/Requerimiento para Specs.md`. The authoritative path is also recorded as the first line of each project's `.sdd-registry/REGISTRY.md`.
 - **One note = one requirement** with an activity matrix (ID-01, ID-02, ...). Each row's `Componente` column declares its layer (`Backend`, `Frontend`, `DB`).
 - **API contracts** live inside the note (section 7) as blocks identified `API-01`, `API-02`, ... using request/response JSON pairs. Activities reference them ("Crea API-01", "Consume API-01"). Contracts evolve **by copy**: a later note that changes API-01 carries the updated block; OpenSpec archives keep the evolution history.
 - **Optional per-activity detail** (section 8): backend endpoints/patterns, frontend screens/states, DB DDL with a verification SELECT before any UPDATE.
@@ -41,12 +41,12 @@ Notes can arrive at any detail level (detailed, partial, minimal). The flow work
 
 Notes are never copied into the repository. Two artifacts hold references:
 
-- **`docs/requirements/REGISTRY.md`** (per target project): template path plus one row per requirement — note path, requirement id, briefing path, generated changes, status.
+- **`.sdd-registry/REGISTRY.md`** (per target project): template path plus one row per requirement — note path, requirement id, briefing path, generated changes, status.
 - **`proposal.md` of each generated change**: a provenance line `Fuente: <note-path> · Actividad: ID-xx`.
 
 ## Briefing
 
-Before proposing any split, the skill investigates the target repository and writes `docs/requirements/briefings/<req-id>.md` with six sections:
+Before proposing any split, the skill investigates the target repository and writes `.sdd-registry/briefings/<req-id>.md` with six sections:
 
 1. Code state (modules, patterns — via Graphify when available)
 2. Existing specs (capabilities being evolved or reused)

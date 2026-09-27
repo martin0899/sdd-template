@@ -97,8 +97,8 @@ export function validateSpecComplete(vaultRoot: string, project: string, specId:
 }
 
 export function registerSpec(projectRoot: string, specId: string, project: string): void {
-  const registryPath = join(projectRoot, 'docs', 'requirements', 'REGISTRY.md');
-  const dir = join(projectRoot, 'docs', 'requirements');
+  const registryPath = join(projectRoot, '.sdd-registry', 'REGISTRY.md');
+  const dir = join(projectRoot, '.sdd-registry');
   if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
 
   let content = existsSync(registryPath) ? readFileSync(registryPath, 'utf8') : `# Requirements Registry\n\n| nota (ruta) | requerimiento | briefing | changes generados | estado |\n|-------------|---------------|----------|-------------------|--------|\n`;

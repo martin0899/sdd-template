@@ -14,10 +14,11 @@ export interface DistillOptions {
   vaultRoot?: string;
 }
 
-function readSpecSources(specDir: string): SourceFile[] {
+export function readSpecSources(specDir: string): SourceFile[] {
   const sources: SourceFile[] = [];
   if (!existsSync(specDir)) return sources;
   for (const entry of readdirSync(specDir, { withFileTypes: true })) {
+    if (entry.name.startsWith('_')) continue;
     if (entry.isDirectory()) {
       const subDir = join(specDir, entry.name);
       for (const f of readdirSync(subDir)) {
@@ -28,7 +29,7 @@ function readSpecSources(specDir: string): SourceFile[] {
           sources.push({ path: `${entry.name}/${f}`, content: parsed.content, frontmatter: parsed.data });
         }
       }
-    } else if (entry.name.endsWith('.md') && entry.name !== '_INDEX.md' && entry.name !== '_README.md') {
+    } else if (entry.name.endsWith('.md')) {
       const path = join(specDir, entry.name);
       const raw = readFileSync(path, 'utf8');
       const parsed = matter(raw);

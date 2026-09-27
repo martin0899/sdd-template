@@ -15,13 +15,13 @@ Build a solid Spanish requirement before producing implementation specifications
 |---|---|---|
 | `templates_dir` | Carpeta donde viven las plantillas de requerimiento | `/mnt/c/Users/martin.martinez/Documents/obsidian/Local/obsidian_sync_git/Recursos/Plantilla` (raíz del vault de Obsidian) |
 | `requirements_dir` | Carpeta donde se escriben los requerimientos generados | `/mnt/c/Users/martin.martinez/Documents/obsidian/Local/obsidian_sync_git/Requerimientos` (raíz del vault de Obsidian) |
-| `project_registry` | Registro de requerimientos procesados por proyecto | `docs/requirements/REGISTRY.md` (dentro del repo del proyecto) |
-| `project_briefings` | Briefings técnicos generados durante la investigación | `docs/requirements/briefings/` (dentro del repo del proyecto) |
+| `project_registry` | Registro de requerimientos procesados por proyecto | `.sdd-registry/REGISTRY.md` (dentro del repo del proyecto) |
+| `project_briefings` | Briefings técnicos generados durante la investigación | `.sdd-registry/briefings/` (dentro del repo del proyecto) |
 
 **Resolución de rutas al inicio de cada invocación:**
 
 1. Si el usuario indicó rutas explícitas en la conversación actual → usar esas.
-2. Si existe `docs/requirements/REGISTRY.md` en el proyecto → leer las rutas registradas.
+2. Si existe `.sdd-registry/REGISTRY.md` en el proyecto → leer las rutas registradas.
 3. Si existe `Recursos/Plantilla/` en el vault de Obsidian detectado → usar como `templates_dir`.
 4. Si ninguna aplica → preguntar al usuario y registrar en `REGISTRY.md`.
 

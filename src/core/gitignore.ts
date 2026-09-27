@@ -14,6 +14,7 @@ export const GITIGNORE_ENTRIES = [
   'openspec/',
   '.claude/',
   '05_wiki/',
+  '.sdd-registry/',
   '.spectralis/'
 ];
 

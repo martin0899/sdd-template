@@ -79,7 +79,7 @@ export function runPostChecks(target: string, ctx: PostChecksContext): PostCheck
   }
   const next = manualSteps.length + 1;
   manualSteps.push(`${next}. Onboarding: graphify update . and the sdd-onboard-project skill flow (refine generic standards, resolve pending placeholders)`);
-  manualSteps.push(`${next + 1}. On first spec-from-note use: register the note template path in docs/requirements/REGISTRY.md`);
+  manualSteps.push(`${next + 1}. On first spec-from-note use: register the note template path in .sdd-registry/REGISTRY.md`);
 
   return { warnings, manualSteps };
 }

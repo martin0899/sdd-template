@@ -15,6 +15,7 @@ export function isExcludedPath(rel: string): boolean {
     const seg = segments[i];
     if (
       seg === 'graphify-out' ||
+      seg === '.sdd-registry' ||
       seg === 'node_modules' ||
       seg === 'dist' ||
       seg === 'build' ||

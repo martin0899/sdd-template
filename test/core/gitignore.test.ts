@@ -9,11 +9,12 @@ function scratch(): string {
   return mkdtempSync(join(tmpdir(), 'spectralis-gi-'));
 }
 
-test('entries include .claude, openspec and .spectralis per local policy', () => {
+test('entries include .claude, openspec and .sdd-registry per local policy', () => {
   assert.ok(GITIGNORE_ENTRIES.includes('.claude/'));
   assert.ok(GITIGNORE_ENTRIES.includes('openspec/'));
+  assert.ok(GITIGNORE_ENTRIES.includes('.sdd-registry/'));
   assert.ok(GITIGNORE_ENTRIES.includes('.spectralis/'));
-  assert.equal(GITIGNORE_ENTRIES.length, 9);
+  assert.equal(GITIGNORE_ENTRIES.length, 10);
 });
 
 test('missing file is created with the full managed block', () => {
@@ -50,7 +51,7 @@ test('entries already covered outside the block are not duplicated', () => {
   const dst = scratch();
   writeFileSync(
     join(dst, '.gitignore'),
-    'node_modules/\n.agents/\n.opencode/\n.claude/\nopenspec/\nskills-lock.json\ngraphify-out/\n.sdd-backup-*/\n05_wiki/\n.spectralis/\n'
+    'node_modules/\n.agents/\n.opencode/\n.claude/\nopenspec/\nskills-lock.json\ngraphify-out/\n.sdd-backup-*/\n05_wiki/\n.sdd-registry/\n.spectralis/\n'
   );
   try {
     const r = manageGitignore(dst, { confirmFn: () => true });
@@ -73,6 +74,7 @@ test('old block missing .claude and openspec is refreshed with backup; rest inta
     const out = readFileSync(join(dst, '.gitignore'), 'utf8');
     assert.match(out, /^\.claude\/$/m);
     assert.match(out, /^openspec\/$/m);
+    assert.match(out, /^\.sdd-registry\/$/m);
     assert.match(out, /^own stuff$/m);
     assert.match(out, /^more own stuff$/m);
     const backups = readdirSync(dst).filter((d) => d.startsWith('.sdd-backup-'));
