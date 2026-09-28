@@ -94,20 +94,22 @@ cd /ruta/a/tu-proyecto && spectralis init
 spectralis update --check   # Verificar si hay actualizaciones disponibles
 spectralis status           # Ver estado del arnés instalado
 spectralis config           # Ver configuración del arnés
-spectralis check            # Validar consistencia del flujo SDD y IDs del vault
+spectralis check            # Validar consistencia del flujo SDD, IDs del vault y orden TDD
 ```
 
-El doctor **`spectralis check`** valida de forma determinista (sin LLM) la consistencia del triángulo repo ↔ `.sdd-registry/REGISTRY.md` ↔ brain ↔ `openspec` y la conformidad/unicidad de IDs del vault:
+El doctor **`spectralis check`** valida de forma determinista (sin LLM) la consistencia del triángulo repo ↔ `.sdd-registry/REGISTRY.md` ↔ brain ↔ `openspec`, la conformidad/unicidad de IDs del vault y el orden TDD de los `tasks.md` de los changes activos:
 
 ```bash
-spectralis check            # Ejecuta ambos sub-checks
+spectralis check            # Ejecuta los sub-checks por defecto (registry e ids)
 spectralis check --registry # Solo consistencia del triángulo
 spectralis check --ids      # Solo validación de IDs del vault
+spectralis check --tdd      # Solo validación del orden TDD (Step K) en tasks.md de changes activos
 ```
 
 - Exit code `0` sin errores; `1` si hay hallazgos con severidad error (los warnings no bloquean).
 - Solo lectura: nunca modifica el vault, `.sdd-registry/`, `05_wiki/` ni `openspec/`.
 - `--ids` usa caché por mtime (`.spectralis/ids-cache.json`) para re-validar solo notas cambiadas.
+- `--tdd` es explícito (no se ejecuta con `spectralis check` sin flags); exige que cada sección de implementación de un `tasks.md` tenga una tarea de tests con marcador TDD (`(TDD)`/`tests first`/`pruebas antes`) antes del primer task de código (Step K en `docs/openspec-tasks-mandatory-steps.md`).
 
 ### Manuales en el cerebro (segundo cerebro)
 
