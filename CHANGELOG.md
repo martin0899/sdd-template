@@ -7,6 +7,17 @@ Historial de versiones de **spectralis** (el arnés SDD). Este changelog aplica 
 - Formato: `MAJOR.MINOR.<N>` donde el **tercer valor es el número de especificaciones (OpenSpec changes) completadas/archivadas**.
 - `MAJOR`/`MINOR` siguen la semántica previa del arnés; el tercer valor se incrementa con cada change archivado.
 - Los tags git (`v1.2.N`) marcan el estado del arnés con esa cantidad de especificaciones implementadas.
+- El **proyecto destino** tiene su propia versión (`projectVersion` en el manifest): PATCH +1 por spec archivada, MINOR +1 al crear release, MAJOR solo por ruptura, máx 99 con carry.
+
+---
+
+## v1.2.35 — 2026-09-27
+
+Conteo de especificaciones: **35**.
+
+### 2026-09-27 (1)
+
+- **refactor-project-version-rules** — renombra `templateVersion` → `projectVersion` (manifest schema v3 con lectura tolerante de v2), `spectralis init` pregunta la versión del proyecto (default `1.0.0`, sugerencia del `pom.xml`/`package.json`), reglas deterministas de bump (`bumpPatch`/`bumpMinor`/`bumpMajor` con máx 99 y carry), y el flujo commit/release usa `projectVersion` como fuente canónica.
 
 ---
 

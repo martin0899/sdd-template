@@ -71,6 +71,11 @@ graphify-out/
 .agents/
 .opencode/
 skills-lock.json
+openspec/
+.claude/
+05_wiki/
+.sdd-registry/
+.spectralis/
 ```
 
 Rules the agent follows when committing:

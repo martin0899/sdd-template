@@ -134,7 +134,7 @@ export async function runConfig(opts: ConfigOptions = {}): Promise<number> {
   // Basic info
   console.log('  [Harness]');
   console.log(`    spectralis version:  ${manifest.spectralisVersion || 'unknown'}`);
-  console.log(`    template version:    ${manifest.templateVersion || 'unknown'}`);
+  console.log(`    project version:     ${manifest.projectVersion || 'unknown'}`);
   console.log(`    schema version:      ${manifest.schemaVersion}`);
   
   // Tools

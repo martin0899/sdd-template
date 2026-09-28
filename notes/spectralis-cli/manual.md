@@ -130,12 +130,73 @@ Shows the installed SDD harness status: spectralis version, template version, se
 
 ### `spectralis config [<destino>]`
 
-Shows the installed SDD harness configuration (read-only). Displays tool directories, managed files, and version information. This is an MVP; future versions may include interactive configuration.
+Shows the installed SDD harness configuration: versions, registered tools, tool directories, and managed file count. Read-only by default.
+
+**Options:**
+
+| Option | Effect |
+|--------|--------|
+| `--list` | List the effective routes (`vault_root`, `templates_dir`, `requirements_dir`, `projects_dir`, `resources_dir`, `projects_base`) with their origin (global / detected / derived / not set), plus the `obsidianSync` switch |
+| `--get <key>` | Print the effective value of a route or switch with its origin |
+| `--set <key>=<value>` | Set a route or switch (`obsidianSync=0|1`); use `--global` for machine-wide config |
+| `--vault <path>` | Shorthand to set `vault_root` |
+| `--resources <path>` | Shorthand to set `resources_dir` |
+| `--global` | Apply to global config instead of the project manifest |
 
 | Case | Exit code |
 |------|-----------|
 | Installed | 0 |
 | Not installed (no manifest) | 2 |
+
+### `spectralis check`
+
+Deterministic, LLM-free doctor that validates the SDD flow consistency and the vault note ID conventions. Runs anywhere, never writes to the vault, `.sdd-registry/`, `05_wiki/`, or `openspec/`.
+
+| Option | Effect |
+|--------|--------|
+| *(no flags)* | Run both sub-checks |
+| `--registry` | Consistency of the triangle repo ↔ `.sdd-registry/REGISTRY.md` ↔ brain ↔ openspec |
+| `--ids` | Validate vault note IDs (format `TYPE-YYYYMMDD-slug`, uniqueness, registration) |
+
+- Exit code `0` when there are no errors (warnings do not block); `1` when at least one finding has severity error.
+- `--ids` keeps an mtime cache (`.spectralis/ids-cache.json`) to re-parse only changed notes while always recomputing global uniqueness.
+
+### `spectralis notes init` / `spectralis notes sync`
+
+Manage the manual folders of the harness in the **cerebro** (the second brain, `03_Recursos/02_Sistemas_info/`):
+
+- `notes init` — creates the subfolder structure (one per manual topic) where the manuals live; falls back to `info/` inside the project when no second brain is detected.
+- `notes sync` — copies the canonical manuals from `notes/` in the template into the target folder (conflict → backup + ask; identical → skip).
+
+Both work in any installed project and return `0` on success, `1` if no storage root is available.
+
+### `spectralis seed`
+
+Initial load of the machine-local wiki layer (`05_wiki/`): discovers projects under `projects_base` (recursively, up to depth 5) that have an `openspec/` root, creates the wiki skeleton (`decisiones/`, `errores/`, `log/`), reads each project's `stack.json`, and writes `05_wiki/_INDEX.json` with per-project `changes` count and `updated` timestamp.
+
+| Option | Effect |
+|--------|--------|
+| `-d, --dry-run` | Show the projects that would be seeded without writing |
+| `--project <name>` | Seed only the given project |
+
+Requires `projects_base` to be configured (`spectralis config --set projects_base=<path> --global`).
+
+### `spectralis projects`
+
+Shows OpenSpec status across local projects found under `projects_base`: name, number of changes, and how many are complete/pending (by checking `tasks.md` checkboxes). `--json` prints the same data as JSON. Requires `projects_base` to be configured.
+
+### `spectralis spec init` / `spectralis spec complete`
+
+Creates and validates the spec folder of a requirement in the brain (`01_Proyectos/<project>/<spec-id>/`):
+
+- `spec init <project> <spec-id>` — creates the folder with `briefing.md`, `tests.md`, and `resumen.md`.
+- `spec complete <project> <spec-id>` — validates the files are filled, registers the spec in `.sdd-registry/REGISTRY.md`, and runs the distillation into `05_wiki/`.
+
+Return `0` on success, `1` on error (e.g., empty files in `spec complete`).
+
+### `spectralis skills [<destino>]`
+
+Detects the skills present in a project (from `.agents/skills/`, `.opencode/skills/`, and agent-specific folders), writes `_INDEX_SKILLS.json`, and updates the `<system-reminder>` block in `AGENTS.md` so agents know which skills are available. `--dry-run` only lists what would change.
 
 ### `spectralis distill <project>`
 
@@ -184,23 +245,23 @@ Reports the arnés (CLI) version. Use `--v` as a shorthand alias.
 
 ```
 $ spectralis --version
-1.1.0
+1.2.0
 
 $ spectralis --v
-1.1.0
+1.2.34
 ```
 
 Every completed `init` records both relevant versions in the destination manifest:
 
 ```
 $ spectralis --version
-1.0.0
+1.2.34
 
 $ head -5 <project>/.sdd-manifest.json
 {
   "schemaVersion": 2,
-  "spectralisVersion": "1.0.0",   <- arnés (CLI) version that ran the init
-  "templateVersion": "1.0.0",     <- template (payload) version installed
+  "spectralisVersion": "1.2.34",  <- arnés (CLI) version that ran the init
+  "templateVersion": "1.2.34",    <- template (payload) version installed
   "tools": ["opencode"],           <- selected agent tools
   ...
 }
@@ -208,11 +269,22 @@ $ head -5 <project>/.sdd-manifest.json
 
 ## Versioning policy
 
+### Arnés (this template repo)
+
 - The package is born at `1.0.0`.
-- `MINOR` bumps: approved spec deltas that add requirements or capabilities (scaled by change count and risk).
-- `PATCH` bumps: contract-preserving fixes.
+- Format: `MAJOR.MINOR.<N>`, where **`N` (the PATCH value) is the count of completed/archived OpenSpec changes**. Every archived change increments `N`; there is no manual judgment about whether a change is "minor" or "patch".
+- `MINOR` bumps: reserved for explicit, user-approved re-scoping (e.g. a contract change or major restructuring) and are never inferred from change count.
 - `MAJOR` bumps: only on explicit user confirmation; the agent may suggest them when accumulated project changes justify it.
-- The arnés version and the template version are conceptually independent and today share the same value; the manifest schema keeps them separate so they can diverge without a format change.
+
+### Proyecto destino (projectVersion)
+
+- `spectralis init` asks for the current project version; pressing Enter without a value defaults to `1.0.0`. The detected version from `pom.xml`/`package.json` is shown as a suggestion.
+- Stored as `projectVersion` in `.sdd-manifest.json` (schema v3). Manifest v1/v2 are read tolerantly, deriving `projectVersion` from the legacy `templateVersion` or defaulting to `1.0.0`.
+- **PATCH** increments by 1 per archived spec (with its commit) — there is no reliable bug detection, so every completed spec counts. Carry: `1.2.99` + spec → `1.3.0`.
+- **MINOR** increments by 1 (PATCH resets to 0) when the user requests a version release. Carry: `1.99.5` → `2.0.0`.
+- **MAJOR** increments only on explicit compatibility-breaking decisions.
+- Each component is capped at `99`; the bump carries to the next component.
+- The commit/release skill uses `.sdd-manifest.json → projectVersion` as the canonical version source (fallback: `pom.xml`/`package.json`). Bumps are available in `src/core/project-version.ts` (`bumpPatch`/`bumpMinor`/`bumpMajor`).
 
 ## Obsidian orchestration switch (`obsidianSync`)
 
@@ -299,8 +371,14 @@ The orchestration logic lives in the `obsidian-orchestration` skill (`.agents/sk
 | `spectralis update` | Sync installed destination with template |
 | `spectralis update --check` | Check for updates without applying |
 | `spectralis status` | Show installed harness status |
-| `spectralis config` | Show harness configuration |
+| `spectralis config` | Show/modify harness configuration |
 | `spectralis doctor` | Verify host prerequisites |
+| `spectralis check` | Validate SDD flow consistency and vault note IDs |
+| `spectralis notes init/sync` | Create/sync manual folders in the second brain |
+| `spectralis seed` | Initial load of `05_wiki/` from discovered projects |
+| `spectralis projects` | Show OpenSpec status across local projects |
+| `spectralis spec init/complete` | Create/validate a spec folder in the brain |
+| `spectralis skills` | Detect skills and write `_INDEX_SKILLS.json` + system-reminder |
 | `spectralis distill` | Extract knowledge from specs into 05_wiki/ |
 
 ### Common Flags

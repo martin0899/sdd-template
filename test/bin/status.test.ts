@@ -26,7 +26,7 @@ test('--status shows installed info with exit code 0', () => {
     });
     assert.ok(result.includes('spectralis version:'), 'Should show spectralis version');
     assert.ok(result.includes('1.1.0'), 'Should show version number');
-    assert.ok(result.includes('template version:'), 'Should show template version');
+    assert.ok(result.includes('project version:'), 'Should show project version');
     assert.ok(result.includes('tools:'), 'Should show tools');
     assert.ok(result.includes('opencode'), 'Should show opencode tool');
     assert.ok(result.includes('Health check:'), 'Should show health check');

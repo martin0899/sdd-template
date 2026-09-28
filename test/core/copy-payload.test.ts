@@ -40,12 +40,12 @@ test('fresh copy creates payload, docs and a valid manifest', () => {
     const manifest = JSON.parse(readFileSync(join(dst, '.sdd-manifest.json'), 'utf8')) as {
       schemaVersion: number;
       spectralisVersion: string;
-      templateVersion: string;
+      projectVersion: string;
       files: { path: string; hash: string }[];
     };
-    assert.equal(manifest.schemaVersion, 2);
+    assert.equal(manifest.schemaVersion, 3);
     assert.equal(manifest.spectralisVersion, '1.0.0');
-    assert.equal(manifest.templateVersion, '1.0.0');
+    assert.equal(manifest.projectVersion, '1.0.0');
     assert.deepEqual((manifest as any).tools, []);
     assert.equal(manifest.files.length, 2);
     assert.match(manifest.files[0].hash, /^[0-9a-f]{64}$/);
@@ -182,20 +182,23 @@ test('readManifest tolerates v1 manifest without tools field', () => {
     assert.equal(m.schemaVersion, 1);
     assert.deepEqual(m.tools, ['opencode']);
     assert.equal(m.files.length, 1);
+    // v1/v2 without projectVersion derives it from templateVersion.
+    assert.equal(m.projectVersion, '0.9.0');
   } finally {
     rmSync(dst, { recursive: true, force: true });
   }
 });
 
-test('writeManifest produces v2 with tools', () => {
-  const dst = scratch('v2');
+test('writeManifest produces v3 with tools', () => {
+  const dst = scratch('v3');
   try {
     mkdirSync(join(dst, 'docs'), { recursive: true });
     writeFileSync(join(dst, 'docs/base.md'), 'x');
     writeManifest(dst, ['docs/base.md'], '1.0.0', '1.0.0', ['opencode', 'claude']);
     const m = readManifest(dst);
     assert.ok(m);
-    assert.equal(m.schemaVersion, 2);
+    assert.equal(m.schemaVersion, 3);
+    assert.equal(m.projectVersion, '1.0.0');
     assert.deepEqual(m.tools, ['opencode', 'claude']);
   } finally {
     rmSync(dst, { recursive: true, force: true });

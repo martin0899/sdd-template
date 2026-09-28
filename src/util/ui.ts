@@ -80,12 +80,17 @@ export function currentPalette(): Palette {
   return isColorSupported() ? ansi : noColor;
 }
 
-export function printBanner(spectralisVersion: string, templateVersion: string, p: Palette = currentPalette()): string {
+export function printBanner(
+  spectralisVersion: string,
+  projectVersion: string,
+  p: Palette = currentPalette(),
+  label: string = 'project'
+): string {
   const lines: string[] = [];
   const rule = '─'.repeat(52);
   lines.push(p.bold('  spectralis'));
   lines.push(p.dim('  Spec-Driven Development toolkit · no npm registry'));
-  lines.push(p.dim(`  arnés ${spectralisVersion} · template ${templateVersion}`));
+  lines.push(p.dim(`  arnés ${spectralisVersion} · ${label} ${projectVersion}`));
   return [rule, ...lines, rule].join('\n');
 }
 

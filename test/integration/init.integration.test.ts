@@ -62,9 +62,9 @@ test('fresh install into clean destination matches the anti-corruption contract'
     assert.ok(existsSync(join(dst, '.opencode/package.json')));
     assert.ok(existsSync(join(dst, 'docs/base-standards.md')));
     const manifest = JSON.parse(readFileSync(join(dst, '.sdd-manifest.json'), 'utf8'));
-    assert.equal(manifest.schemaVersion, 2);
-    assert.equal(manifest.spectralisVersion, '1.2.0', 'arnés version recorded separately');
-    assert.equal(manifest.templateVersion, '1.2.0', 'template version recorded separately');
+    assert.equal(manifest.schemaVersion, 3);
+    assert.equal(manifest.spectralisVersion, '1.2.34', 'arnés version recorded separately');
+    assert.equal(manifest.projectVersion, '1.0.0', 'project version defaults to 1.0.0');
     assert.ok(manifest.files.length > 0);
   } finally {
     rmSync(dst, { recursive: true, force: true });
@@ -91,8 +91,8 @@ test('conflict keeps the destination version when declined, with backup', () => 
     runCli(['init', dst, '--yes'], 's\n');
     const skillPath = join(dst, '.agents/skills/commit/SKILL.md');
     writeFileSync(skillPath, 'customized destination\n');
-    // answers: continue install -> s ; replace conflict -> n
-    const r = runCli(['init', dst], 's\nn\n');
+    // answers: project version -> 1.0.0 ; continue install -> s ; replace conflict -> n
+    const r = runCli(['init', dst], '1.0.0\ns\nn\n');
     assert.equal(r.status, 0);
     assert.equal(readFileSync(skillPath, 'utf8'), 'customized destination\n');
     const backups = readdirSync(dst).filter((d) => d.startsWith('.sdd-backup-'));

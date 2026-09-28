@@ -48,7 +48,7 @@ test('banner shows brand and both versions; noColor has no escapes', () => {
   const styled = printBanner('1.0.0', '1.0.0');
   assert.match(styled, /spectralis/i);
   assert.match(styled, /1\.0\.0/);
-  assert.match(styled, /template/);
+  assert.match(styled, /project/);
 
   const plain = printBanner('1.0.0', '1.0.0', noColor);
   assert.ok(!plain.includes('\x1b['));

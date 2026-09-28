@@ -44,3 +44,25 @@ export function makeConfirm(autoYes: boolean, pipedLines?: string[]): (question:
     return result.status === 0;
   };
 }
+
+/**
+ * Build a synchronous text-input function (used by init to ask for the
+ * project version). autoYes returns the default value without prompting;
+ * pipedLines are consumed first; interactive TTY spawns a readline prompt.
+ */
+export function makeTextPrompt(autoYes: boolean, pipedLines?: string[]): (question: string, fallback: string) => string {
+  if (autoYes) return (_q: string, fallback: string) => fallback;
+  return (question: string, fallback: string) => {
+    const queue = ensureQueue(pipedLines);
+    const next = queue.shift();
+    if (next !== undefined) {
+      return next.trim() === '' ? fallback : next.trim();
+    }
+    const script = `const rl=require("readline").createInterface({input:process.stdin,output:process.stdout});rl.question(${JSON.stringify(
+      `${question} [${fallback}] `
+    )},a=>{rl.close();console.log(a.trim());});`;
+    const result = spawnSync(process.execPath, ['-e', script], { stdio: ['inherit', 'pipe', 'inherit'] });
+    const raw = (result.stdout?.toString('utf8') ?? '').trim();
+    return raw === '' ? fallback : raw;
+  };
+}

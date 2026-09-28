@@ -27,6 +27,21 @@ Spectralis es la fuente canónica de la configuración SDD — **OpenSpec + skil
 └── docs-variants/      ← variantes de estándares por stack (fuente del instalador)
 ```
 
+> **Arquitectura del arnés**: cómo está organizado el CLI, los flujos de `init`/`update`, el doctor `check` y las capas del segundo cerebro → **[notes/architecture/manual.md](notes/architecture/manual.md)** (EN).
+
+### Manuales
+
+Los manuales técnicos del arnés viven en `notes/` (se sincronizan al cerebro con `spectralis notes sync`; nunca viajan al destino):
+
+| Manual | Contenido |
+|--------|-----------|
+| [Arquitectura](notes/architecture/manual.md) | Organización del CLI, inventario de comandos, flujos install/update, doctor, segundo cerebro y convenciones (EN) |
+| [CLI de spectralis](notes/spectralis-cli/manual.md) | Uso estándar completo del CLI: comandos, opciones, matriz de agentes, versionado y garantías |
+| [Git Workflow](notes/git-workflow/manual.md) | Cómo solicitar ramas, commits, pull requests y releases |
+| [Spec-from-Note](notes/spec-from-note/manual.md) | Cómo las notas de requerimiento de Obsidian se convierten en changes y specs OpenSpec |
+| [IA local (Ollama)](notes/local-ai/manual.md) | Guía de IA local para tareas de baja demanda |
+| [Instalación manual](notes/manual-installation/manual.md) | Instalación/actualización manual sin bash, multiplataforma |
+
 **Qué viaja al destino**: `openspec/` (creada con `openspec init` + contexto español inyectado), `.agents/skills/`, `.opencode/` (sin `node_modules`), `docs/` — con `backend-standards.md` y `frontend-standards.md` **compuestos según el stack detectado** en tu proyecto.
 
 **Qué NO viaja**: este README, `notes/`, `docs-variants/`, `openspec/changes/` del repo plantilla. Los manuales de `notes/` viven en el **cerebro** (el segundo cerebro, `03_Recursos/02_Sistemas_info/`) y se sincronizan con `spectralis notes sync`; nunca se copian al proyecto destino.
@@ -79,7 +94,20 @@ cd /ruta/a/tu-proyecto && spectralis init
 spectralis update --check   # Verificar si hay actualizaciones disponibles
 spectralis status           # Ver estado del arnés instalado
 spectralis config           # Ver configuración del arnés
+spectralis check            # Validar consistencia del flujo SDD y IDs del vault
 ```
+
+El doctor **`spectralis check`** valida de forma determinista (sin LLM) la consistencia del triángulo repo ↔ `.sdd-registry/REGISTRY.md` ↔ brain ↔ `openspec` y la conformidad/unicidad de IDs del vault:
+
+```bash
+spectralis check            # Ejecuta ambos sub-checks
+spectralis check --registry # Solo consistencia del triángulo
+spectralis check --ids      # Solo validación de IDs del vault
+```
+
+- Exit code `0` sin errores; `1` si hay hallazgos con severidad error (los warnings no bloquean).
+- Solo lectura: nunca modifica el vault, `.sdd-registry/`, `05_wiki/` ni `openspec/`.
+- `--ids` usa caché por mtime (`.spectralis/ids-cache.json`) para re-validar solo notas cambiadas.
 
 ### Manuales en el cerebro (segundo cerebro)
 
@@ -126,7 +154,11 @@ La orquestación es idempotente (no regenera documentos ya correctos) y no modif
 
 > **Detalle**: `spectralis init --dry-run` muestra el plan completo sin escribir nada.
 >
-> **Versionado**: spectralis nace en `1.0.0`; los bumps `MINOR`/`PATCH` siguen los deltas de especificaciones aprobados (cantidad de cambios y riesgo); `MAJOR` solo a petición explícita del usuario (el agente puede sugerirlo). `spectralis --version` reporta la versión del arnés (CLI); el manifiesto `.sdd-manifest.json` del destino registra `spectralisVersion` y `templateVersion` como campos separados para saber con qué se instaló.
+> **Versionado — arnés**: formato `MAJOR.MINOR.<N>` donde `N` es el **número de especificaciones OpenSpec completadas/archivadas** — cada change archivado incrementa `N` automáticamente, sin juicio manual de minor/patch. `MINOR`/`MAJOR` solo por decisión explícita.
+>
+> **Versionado — proyecto destino**: `spectralis init` pregunta la versión actual del proyecto (Enter = `1.0.0`) y la guarda como `projectVersion` en `.sdd-manifest.json`. PATCH sube +1 con cada spec archivada (con su commit); MINOR sube +1 (y resetea PATCH) al crear una versión release; MAJOR solo por ruptura de compatibilidad explícita. Cada componente topa en `99` con carry (`1.2.99` → `1.3.0`). El flujo commit/release usa `projectVersion` como fuente canónica.
+>
+> `spectralis --version` reporta la versión del arnés (CLI); el manifest registra `spectralisVersion` y `projectVersion` como campos separados.
 >
 > La política anti-corrupción es idéntica a la del instalador bash original: backups en `.sdd-backup-<fecha>/`, confirmación por archivo, bloques idempotentes y manifiesto con hashes.
 >
@@ -208,6 +240,7 @@ spectralis update --check
 | `spectralis doctor` | Prerrequisitos (git, node, openspec, graphify) |
 | `spectralis status` | Estado del arnés en el proyecto |
 | `spectralis config` | Configuración y tools |
+| `spectralis check` | Consistencia del flujo SDD y IDs del vault |
 | `spectralis update --check` | Actualizaciones pendientes |
 
 ### 6. Mantenimiento de proyectos instalados
