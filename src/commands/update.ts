@@ -184,7 +184,7 @@ export async function runUpdate(opts: UpdateOptions = {}): Promise<number> {
   if (!partial) {
     const allManaged = files.map((f) => f.rel).filter((r) => !files.some((f) => f.rel === r && f.status === 'retired'));
     const { writeManifest } = require('../core/manifest');
-    writeManifest(target, allManaged, version, version, manifest.tools);
+    writeManifest(target, allManaged, manifest.projectVersion ?? '1.0.0', version, manifest.tools);
     console.log(`\n[OK] Update complete. ${updatedPaths.length} file(s) updated.`);
 
     // LLM detection (Ollama).

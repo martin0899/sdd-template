@@ -7,6 +7,9 @@ import { join } from 'node:path';
 
 const REPO = join(__dirname, '..', '..', '..');
 const CLI = join(REPO, 'dist', 'bin', 'spectralis.js');
+const harnessVersion = (
+  JSON.parse(readFileSync(join(REPO, 'package.json'), 'utf8')) as { version: string }
+).version;
 let fakeBin: string;
 let baseEnv: NodeJS.ProcessEnv;
 
@@ -63,7 +66,7 @@ test('fresh install into clean destination matches the anti-corruption contract'
     assert.ok(existsSync(join(dst, 'docs/base-standards.md')));
     const manifest = JSON.parse(readFileSync(join(dst, '.sdd-manifest.json'), 'utf8'));
     assert.equal(manifest.schemaVersion, 3);
-    assert.equal(manifest.spectralisVersion, '1.2.34', 'arnés version recorded separately');
+    assert.equal(manifest.spectralisVersion, harnessVersion, 'arnés version recorded separately');
     assert.equal(manifest.projectVersion, '1.0.0', 'project version defaults to 1.0.0');
     assert.ok(manifest.files.length > 0);
   } finally {

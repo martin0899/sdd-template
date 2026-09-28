@@ -1,9 +1,9 @@
 import { test, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, rmSync, mkdirSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, rmSync, mkdirSync, writeFileSync, readdirSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { readSpecSources } from '../../src/commands/distill';
+import { readSpecSources, runDistill } from '../../src/commands/distill';
 
 const created: string[] = [];
 afterEach(() => { for (const d of created) rmSync(d, { recursive: true, force: true }); created.length = 0; });
@@ -32,4 +32,43 @@ test('readSpecSources reads top-level md files (non underscore)', () => {
   const sources = readSpecSources(projectDir);
   const paths = sources.map(s => s.path);
   assert.deepEqual(paths, ['spec.md']);
+});
+
+function walkFiles(root: string): string[] {
+  const out: string[] = [];
+  for (const entry of readdirSync(root, { withFileTypes: true })) {
+    const full = join(root, entry.name);
+    if (entry.isDirectory()) out.push(...walkFiles(full));
+    else out.push(full);
+  }
+  return out;
+}
+
+test('runDistill excludes _Notas content from the wiki output', async () => {
+  const vault = scratch();
+  const projectDir = join(vault, '01_Proyectos', 'demo');
+  mkdirSync(join(projectDir, 'add-feature-x'), { recursive: true });
+  writeFileSync(
+    join(projectDir, 'add-feature-x', 'briefing.md'),
+    '---\ntipo: decision\n---\n# Decisión\n## Decisiones\nUsar SQLite para persistencia'
+  );
+  mkdirSync(join(projectDir, '_Notas'), { recursive: true });
+  writeFileSync(
+    join(projectDir, '_Notas', 'pendiente.md'),
+    '---\ntipo: decision\n---\n# Nota pendiente\n## Decisiones\nElegir el ORM todavía no está decidido'
+  );
+
+  const code = await runDistill({ project: 'demo', vaultRoot: vault });
+  assert.equal(code, 0);
+
+  const wikiProject = join(vault, '05_wiki', 'demo');
+  assert.deepEqual(readdirSync(join(wikiProject, 'decisiones')), ['add-feature-x.md']);
+  const spec = readFileSync(join(wikiProject, 'decisiones', 'add-feature-x.md'), 'utf8');
+  assert.match(spec, /SQLite/);
+
+  // No distilled file may contain _Notas content.
+  for (const file of walkFiles(wikiProject)) {
+    const raw = readFileSync(file, 'utf8');
+    assert.doesNotMatch(raw, /ORM todavía|pendiente/i, `_Notas leaked into ${file}`);
+  }
 });

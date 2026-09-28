@@ -1,11 +1,14 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, existsSync, rmSync } from 'node:fs';
+import { mkdtempSync, existsSync, rmSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 const REPO = join(__dirname, '..', '..', '..');
+const harnessVersion = (
+  JSON.parse(readFileSync(join(REPO, 'package.json'), 'utf8')) as { version: string }
+).version;
 
 test('packed tarball installs globally and resolves the embedded template without the clone', { timeout: 240000 }, () => {
   const work = mkdtempSync(join(tmpdir(), 'spectralis-pack-'));
@@ -14,7 +17,7 @@ test('packed tarball installs globally and resolves the embedded template withou
     const pack = spawnSync('npm', ['pack', '--pack-destination', work], { cwd: REPO, encoding: 'utf8' });
     assert.equal(pack.status, 0, pack.stderr);
     const tarball = join(work, (pack.stdout.trim().split('\n').pop() ?? '').trim());
-    assert.match(tarball, /spectralis-1\.2\.34\.tgz$/);
+    assert.match(tarball, new RegExp(`spectralis-${harnessVersion.replace(/\./g, '\\.')}\\.tgz$`));
 
     // 2. global install from the tarball into an isolated prefix
     const prefix = join(work, 'prefix');
