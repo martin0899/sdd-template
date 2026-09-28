@@ -19,5 +19,11 @@ stack.json
 # Maquinaria OpenSpec local (specs y changes no se versionan)
 openspec/
 
+# Registro de requerimientos y briefings machine-local
+.sdd-registry/
+
+# Caché local del doctor (spectralis check)
+.spectralis/
+
 # Archivos temporales de testing
 .test-tmp/

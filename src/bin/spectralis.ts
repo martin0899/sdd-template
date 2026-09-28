@@ -18,6 +18,7 @@ import { Command } from 'commander';
 import { resolveAgent } from '../agents/profiles';
 import { runInit } from '../commands/init';
 import { runDoctor } from '../commands/doctor';
+import { runCheck } from '../commands/check';
 import { runUpdate } from '../commands/update';
 import { runStatus } from '../commands/status';
 import { runConfig } from '../commands/config';
@@ -107,6 +108,18 @@ program
   .description('Verify prerequisites on this host (git, node, openspec, graphify)')
   .action(async () => {
     const code = await runDoctor();
+    process.exitCode = code;
+  });
+
+program
+  .command('check')
+  .description('Validate SDD flow consistency (repo, REGISTRY, brain, openspec) and vault note IDs')
+  .option('-r, --registry', 'check repo ↔ REGISTRY ↔ brain ↔ openspec consistency')
+  .option('-i, --ids', 'validate vault note IDs (format, uniqueness, _INDEX_ID, tipo)')
+  .option('-v, --vault-root <path>', 'vault root path (default: from config)')
+  .option('-p, --project-root <path>', 'project root (default: from config or cwd)')
+  .action(async (opts: { registry?: boolean; ids?: boolean; vaultRoot?: string; projectRoot?: string }) => {
+    const code = await runCheck({ registry: opts.registry, ids: opts.ids, vaultRoot: opts.vaultRoot, projectRoot: opts.projectRoot });
     process.exitCode = code;
   });
 

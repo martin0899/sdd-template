@@ -18,12 +18,12 @@ Genera archivos de test y documentación en Obsidian después de completar una e
 | `vault_root` | Raíz del vault de Obsidian | `/home/martinmartinez/Documentos/obsidian_sync_git` |
 | `templates_dir` | Carpeta de plantillas | `{vault_root}/09_Plantilla` |
 | `projects_dir` | Carpeta de proyectos | `{vault_root}/01_Proyectos` |
-| `project_registry` | Registro de requerimientos | `docs/requirements/REGISTRY.md` (dentro del repo) |
+| `project_registry` | Registro de requerimientos | `.sdd-registry/REGISTRY.md` (dentro del repo) |
 
 **Resolución de rutas al inicio de cada invocación:**
 
 1. Si el usuario indicó rutas explícitas en la conversación actual → usar esas.
-2. Si existe `docs/requirements/REGISTRY.md` en el proyecto → leer las rutas registradas.
+2. Si existe `.sdd-registry/REGISTRY.md` en el proyecto → leer las rutas registradas.
 3. Si existe el vault en la ruta por defecto → usarlo.
 4. Si ninguna aplica → preguntar al usuario.
 

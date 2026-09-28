@@ -141,6 +141,8 @@ Shows the installed SDD harness configuration (read-only). Displays tool directo
 
 Extracts knowledge from completed specifications in `01_Proyectos/<project>/` and writes distilled, optimized notes to `05_wiki/<project>/`. Uses a hybrid deterministic + semantic approach to minimize LLM token usage. The command is idempotent and supports `--dry-run`.
 
+**Organization entries ignored:** `distill` reads only `<spec-id>/` folders. Entries whose name starts with `_` — `_Notas/`, `_INDEX.md`, `_README.md` — are treated as vault organization and never distilled into `05_wiki/`.
+
 **Stack detection:** scans the real project code (via `--project-root` or `projects_base` convention) to populate the `stack` field in `_INDEX.json`.
 
 **LLM classification:** when Ollama is configured (`llm.enabled: true`), ambiguous entries are classified via LLM. Without LLM, ambiguous entries are discarded.

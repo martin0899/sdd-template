@@ -56,6 +56,6 @@ test('validateSpecComplete passes when files are filled', () => {
 test('registerSpec appends row to REGISTRY.md', () => {
   const root = scratch();
   registerSpec(root, 'my-spec', 'TestProject');
-  const reg = readFileSync(join(root, 'docs', 'requirements', 'REGISTRY.md'), 'utf8');
+  const reg = readFileSync(join(root, '.sdd-registry', 'REGISTRY.md'), 'utf8');
   assert.ok(reg.includes('my-spec'));
 });

@@ -64,8 +64,8 @@ When working with requirements and specifications:
 **Obsidian Vault Location:** `/home/martinmartinez/Documentos/obsidian_sync_git`
 
 **Vault Structure Rule (MANDATORY):**
-- `00_Notas/` = **inbox** — ALL notes arrive here first (proposals, ideas, pendientes)
-- `01_Proyectos/<Proyecto>/` = **ONLY spec folders** (`<spec-id>/` with briefing.md, tests.md, resumen.md) + `_README.md` + `_INDEX.md`. **NEVER loose notes.**
+- `00_Notas/` = **inbox** — casual captures arrive here first (proposals, ideas, pendientes)
+- `01_Proyectos/<Proyecto>/` = **spec folders** (`<spec-id>/` with briefing.md, tests.md, resumen.md) + organization entries (underscore-prefixed): `_README.md`, `_INDEX.md`, and `_Notas/` (active project decisions/proposals — deliberate material, exception to the capture flow). NEVER loose casual notes. `spectralis distill` reads only `<spec-id>/`; it ignores `_Notas/` and `_`-prefixed entries.
 - When a note becomes a spec: create `01_Proyectos/<Proyecto>/<spec-id>/`, archive the source note to `04_archivado/`
 - `05_wiki/` = distilled knowledge (machine-local, not committed)
 

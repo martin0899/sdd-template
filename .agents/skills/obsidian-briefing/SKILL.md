@@ -18,19 +18,19 @@ Genera un briefing técnico en Obsidian para cambios OpenSpec. Crea un resumen t
 | `vault_root` | Raíz del vault de Obsidian | `/home/martinmartinez/Documentos/obsidian_sync_git` |
 | `templates_dir` | Carpeta de plantillas | `{vault_root}/09_Plantilla` |
 | `projects_dir` | Carpeta de proyectos | `{vault_root}/01_Proyectos` |
-| `project_registry` | Registro de requerimientos | `docs/requirements/REGISTRY.md` (dentro del repo) |
-| `project_briefings` | Briefings técnicos | `docs/requirements/briefings/` (dentro del repo) |
+| `project_registry` | Registro de requerimientos | `.sdd-registry/REGISTRY.md` (dentro del repo) |
+| `project_briefings` | Briefings técnicos | `.sdd-registry/briefings/` (dentro del repo) |
 
 **Resolución de rutas al inicio de cada invocación:**
 
 1. Si el usuario indicó rutas explícitas en la conversación actual → usar esas.
-2. Si existe `docs/requirements/REGISTRY.md` en el proyecto → leer las rutas registradas.
+2. Si existe `.sdd-registry/REGISTRY.md` en el proyecto → leer las rutas registradas.
 3. Si existe el vault en la ruta por defecto → usarlo.
 4. Si ninguna aplica → preguntar al usuario.
 
 ## When to Use
 
-- After generating a technical briefing in `docs/requirements/briefings/`
+- After generating a technical briefing in `.sdd-registry/briefings/`
 - When the user asks for a technical summary
 - Before starting implementation of a specification
 - When documenting technical decisions for cross-machine reference
@@ -42,7 +42,7 @@ Genera un briefing técnico en Obsidian para cambios OpenSpec. Crea un resumen t
 Look for an existing briefing in the repository:
 
 ```bash
-ls -la docs/requirements/briefings/
+ls -la .sdd-registry/briefings/
 ```
 
 If a briefing exists for the current requirement, use it as the source.
@@ -194,7 +194,7 @@ tags:
 
 ### From spec-from-note
 
-When `spec-from-note` generates a briefing in `docs/requirements/briefings/`, this skill copies it to Obsidian for portability.
+When `spec-from-note` generates a briefing in `.sdd-registry/briefings/`, this skill copies it to Obsidian for portability.
 
 ### With obsidian-summary
 
@@ -206,7 +206,7 @@ Document the technical context before generating test documentation.
 
 ## Enforcement Rules
 
-1. **Use existing briefing** - If a briefing exists in `docs/requirements/briefings/`, use it as the source
+1. **Use existing briefing** - If a briefing exists in `.sdd-registry/briefings/`, use it as the source
 2. **Technical accuracy** - Ensure all technical details are accurate
 3. **Link to source** - Always link back to the OpenSpec change and requirement
 4. **Portable format** - Ensure the document is readable without repository context
@@ -216,7 +216,7 @@ Document the technical context before generating test documentation.
 
 ### Scenario: Briefing exists in repository
 
-1. Check `docs/requirements/briefings/` for existing briefing
+1. Check `.sdd-registry/briefings/` for existing briefing
 2. Copy content to Obsidian
 3. Add links and metadata
 4. Show confirmation
@@ -237,6 +237,6 @@ Document the technical context before generating test documentation.
 ## Notes
 
 - This skill creates technical documentation in Obsidian, not in the repository
-- Briefings in `docs/requirements/briefings/` are for the repository
+- Briefings in `.sdd-registry/briefings/` are for the repository
 - Briefings in Obsidian are for cross-machine reference
 - Use this skill to maintain technical knowledge across machines

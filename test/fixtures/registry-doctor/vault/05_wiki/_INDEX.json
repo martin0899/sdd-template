@@ -1,0 +1,10 @@
+{
+  "spec": {
+    "name": "spec",
+    "path": "05_wiki/spec",
+    "content": ["arquitectura", "decisiones", "errores", "log", "restricciones"],
+    "stack": [],
+    "changes": 1,
+    "updated": "2026-01-01T00:00:00.000Z"
+  }
+}

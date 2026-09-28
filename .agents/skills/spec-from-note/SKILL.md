@@ -17,14 +17,14 @@ Convierte una nota de requerimiento (Obsidian) en changes y especificaciones Ope
 |---|---|---|
 | `templates_dir` | Carpeta donde viven las plantillas de requerimiento | `Recursos/Plantilla/` (raíz del vault de Obsidian) |
 | `requirements_dir` | Carpeta donde viven los requerimientos generados | `Requerimientos/` (raíz del vault de Obsidian) |
-| `project_registry` | Registro de requerimientos procesados por proyecto | `docs/requirements/REGISTRY.md` (dentro del repo del proyecto) |
-| `project_briefings` | Briefings técnicos generados durante la investigación | `docs/requirements/briefings/` (dentro del repo del proyecto) |
+| `project_registry` | Registro de requerimientos procesados por proyecto | `.sdd-registry/REGISTRY.md` (dentro del repo del proyecto) |
+| `project_briefings` | Briefings técnicos generados durante la investigación | `.sdd-registry/briefings/` (dentro del repo del proyecto) |
 | `changes_dir` | Carpeta de cambios OpenSpec | `openspec/changes/` (dentro del repo del proyecto) |
 
 **Resolución de rutas al inicio de cada invocación:**
 
 1. Si el usuario indicó rutas explícitas en la conversación actual → usar esas.
-2. Si existe `docs/requirements/REGISTRY.md` en el proyecto → leer las rutas registradas (incluye `templates_dir` y `requirements_dir`).
+2. Si existe `.sdd-registry/REGISTRY.md` en el proyecto → leer las rutas registradas (incluye `templates_dir` y `requirements_dir`).
 3. Si existe `Recursos/Plantilla/` en el vault de Obsidian detectado → usar como `templates_dir`.
 4. Si ninguna aplica → preguntar al usuario y registrar en `REGISTRY.md`.
 
@@ -100,7 +100,7 @@ Requirements dir: <ruta configurada de requirements_dir>
 
 | nota (ruta) | requerimiento | briefing | changes generados | estado |
 |-------------|---------------|----------|-------------------|--------|
-| <ruta>      | <req-id>      | docs/requirements/briefings/<req-id>.md | add-id01-..., add-id02-... | 0/2 applied |
+| <ruta>      | <req-id>      | .sdd-registry/briefings/<req-id>.md | add-id01-..., add-id02-... | 0/2 applied |
 ```
 
 - Al re-procesar una nota ya registrada: re-lee la nota por la ruta registrada, detecta deltas respecto a lo ya generado (actividades nuevas, reglas cambiadas) y actualiza la fila.
