@@ -1,0 +1,68 @@
+# Changelog
+
+Historial de versiones de **spectralis** (el arnés SDD). Este changelog aplica **solo al arnés** (`sdd-template`), no a los proyectos donde se instala la plantilla.
+
+## Esquema de versionado
+
+- Formato: `MAJOR.MINOR.<N>` donde el **tercer valor es el número de especificaciones (OpenSpec changes) completadas/archivadas**.
+- `MAJOR`/`MINOR` siguen la semántica previa del arnés; el tercer valor se incrementa con cada change archivado.
+- Los tags git (`v1.2.N`) marcan el estado del arnés con esa cantidad de especificaciones implementadas.
+
+---
+
+## v1.2.34 — 2026-09-27
+
+Conteo de especificaciones: **34**.
+
+### 2026-09-27 (3)
+
+- **add-check-registry-consistencia** — `spectralis check --registry`: doctor determinista sin LLM que valida la consistencia del triángulo repo ↔ `.sdd-registry/REGISTRY.md` ↔ brain ↔ `openspec` (change sin registro, huérfano, briefing faltante, `_INDEX.json` desalineado, sin destilar).
+- **add-check-vault-ids** — `spectralis check --ids`: valida conformidad/unicidad de IDs del vault (whitelist ampliada `res-`/`brief-`/`test-`, caché por mtime en `.spectralis/`).
+- **move-registry-machine-local** — mueve `docs/requirements/REGISTRY.md` y briefings a `.sdd-registry/` (machine-local, sin versionar ni distribuir); actualiza skills, `copy-payload`, `post-checks`, `spec-workflow`.
+
+### 2026-09-25 (21)
+
+- **orchestrate-obsidian-sync** — switch `obsidianSync` que orquesta el cerebro en `/opsx-apply` y `/opsx-archive`.
+- **add-05-wiki-distill** — capa `05_wiki/` (LLM Wiki) consumible por proyectos externos, separada del Second Brain.
+- **add-seed-and-distill-complete** — `spectralis seed` (carga inicial `05_wiki/`) y `spectralis distill` completo (determinista + LLM).
+- **add-spec-workflow-commands** — comandos `spectralis spec init/complete` para el flujo de especificación.
+- **add-manuals-second-brain-sync** — manuales del arnés sincronizados al cerebro (`spectralis notes`).
+- **add-spectralis-config-vault-routes** — rutas del vault configurables (config → manifiesto → vault → fallback).
+- **add-spectralis-projects-dashboard** — `spectralis projects` con estado OpenSpec por proyecto.
+- **add-spectralis-skills-command** — `spectralis skills` detecta skills y refresca `_INDEX_SKILLS.json`.
+- **add-spectralis-update-auto** — actualización automática y clasificación de archivos gestionados.
+- **add-project-ids** — IDs de proyecto (`proy-YYYYMMDD-slug`) en el flujo del cerebro.
+- **add-project-cwd-detection** — detección del proyecto desde el cwd actual.
+- **add-openspec-local-policy** — política local: `openspec/` deja de versionarse.
+- **add-stack-json-artifact** — artefacto `stack.json` con detección reproducible del stack.
+- **improve-stack-detection-reproducibility** — caché por mtime y escaneo a profundidad 2 en monorepos.
+- **enhance-distill-llm-and-stack** — clasificación LLM (Ollama) para entradas ambiguas del distill.
+- **improve-spectralis-ux-update-tools-menu** — mejoras de UX en el menú de herramientas de `update`.
+- **spectralis-cli-ux-aliases** — aliases de flags del CLI (`--demo`, `--dd`, `--v`).
+- **add-compose-standards-placeholders** — reporte de placeholders pendientes en estándares compuestos.
+- **add-readme-third-party-tools** — README con herramientas de terceros.
+- **remove-autoskills** — eliminación del autoskills automático.
+- **update-skill-index-spec** — actualización del índice de skills.
+
+### 2026-09-21 (10)
+
+- **add-spectralis-cli-installer** — instalador CLI multiplataforma (init, update, doctor) en Node puro.
+- **add-spectralis-init-ui** — UI del instalador: banner, fases marcadas, prompts.
+- **add-stack-detection-and-docs-variants** — detección de stack y variantes de `docs/`.
+- **add-spec-from-note** — skill que convierte nota de requerimiento en changes OpenSpec.
+- **add-skill-index** — índice de skills del proyecto.
+- **add-exploration-briefing-gate** — gate de briefing antes de `openspec new change`.
+- **add-spanish-commit-review-gate** — revisión de commits en español.
+- **add-gitignore-managed-refresh** — refresco del bloque gestionado de `.gitignore`.
+- **sync-project-agent-config** — sincronización de config de agentes.
+- **update-installer-managed-agents-block** — bloque gestionado de agentes en el instalador.
+
+---
+
+## v1.2.0 — 2026-09-23
+
+- Alias de flags, selector de tools y comandos `status`/`config`. Bump a `1.2.0` sin correlato de spec archivada.
+
+## v1.0.0 — 2026-09-21
+
+- Implementación inicial del CLI spectralis: instalador SDD multiplataforma con `doctor` y matriz de agentes.
