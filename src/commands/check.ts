@@ -6,11 +6,13 @@ import {
   VaultDoctorFinding
 } from '../core/vault-doctor';
 import { checkVaultIds } from '../core/vault-ids';
+import { checkTddOrdering } from '../core/tdd-check';
 import { currentPalette, green, red, dim, bold } from '../util/ui';
 
 export interface CheckOptions {
   registry?: boolean;
   ids?: boolean;
+  tdd?: boolean;
   vaultRoot?: string;
   projectRoot?: string;
   cacheRoot?: string;
@@ -47,9 +49,10 @@ export async function runCheck(opts: CheckOptions = {}): Promise<number> {
   const projectRoot = opts.projectRoot || detected?.root || config.current_project_root || process.cwd();
   const vaultRoot = opts.vaultRoot || config.vault_root || detectVaultRoot(projectRoot) || '';
 
-  const noFlags = !opts.registry && !opts.ids;
+  const noFlags = !opts.registry && !opts.ids && !opts.tdd;
   const doRegistry = opts.registry === true || noFlags;
   const doIds = opts.ids === true || noFlags;
+  const doTdd = opts.tdd === true;
 
   let exitCode = 0;
 
@@ -75,6 +78,13 @@ export async function runCheck(opts: CheckOptions = {}): Promise<number> {
     if (reparsed >= 0) {
       console.log(`  ${dim(`${reparsed} nota(s) re-parseada(s)`, pal)}`);
     }
+    printFindings(findings);
+    if (hasErrors(findings)) exitCode = 1;
+  }
+
+  if (doTdd) {
+    console.log(`\n  ${pal.bold('spectralis check --tdd')} · validación del orden TDD en tasks.md (changes activos)`);
+    const findings = checkTddOrdering(projectRoot);
     printFindings(findings);
     if (hasErrors(findings)) exitCode = 1;
   }

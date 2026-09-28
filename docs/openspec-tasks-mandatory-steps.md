@@ -24,7 +24,21 @@ All implementation tasks MUST include these steps in the correct order:
 - **Branch naming**: `feature/[ticket-id]` or `feature/[change-name]`
 - **Action**: If the current branch is `main`/`master`/`develop`, create and switch to the feature branch before any code changes. If already on another branch, do NOT create or switch one: note in the tasks that work continues on the current branch and suggest it to the user — that branch can accumulate multiple changes/specs whose commits may share one commit/PR. Create a separate branch only when the user explicitly asks.
 
+### Step K: Write Failing Tests First (TDD) (MANDATORY - before implementation)
+
+- **Location**: For each implementation section in `tasks.md`, the test-writing task MUST come BEFORE the first code-implementation task in the same section.
+- **Purpose**: Enforce Test-Driven Development (per `docs/base-standards.md` core principle). A feature is only complete when a test suite written first demonstrates the expected behavior.
+- **Cycle (RED → GREEN)**:
+  1. Write the failing test for the new functionality.
+  2. Run it and confirm it FAILS (RED) — the failure proves the test exercises the new behavior.
+  3. Implement the functionality.
+  4. Run the test again and confirm it PASSES (GREEN).
+- **Verification**: Each TDD task MUST include an explicit `Verify:` clause stating how the RED→GREEN cycle is checked (e.g., "Verify: test fails before implementation and passes after").
+- **Mechanical marker**: The test-writing task MUST include one of the markers `(TDD)`, `tests first`, `test first`, or `pruebas antes` so the ordering can be validated automatically (`spectralis check --tdd`).
+- **Relationship to later steps**: Step N+1 (Run Unit Tests) still applies afterwards — Step K guarantees the tests exist and were written first; Step N+1 runs the whole suite and verifies state.
+
 ### Mandatory Steps (Must Be Included):
+- **Step K**: Write Failing Tests First (TDD) (MANDATORY, before implementation) - see section above
 - **Step N**: Review and Update Existing Unit Tests (MANDATORY)
 - **Step N+1**: Run Unit Tests and Verify Database State (MANDATORY)
 - **Step N+2**: Manual Endpoint Testing with curl (MANDATORY) - **AGENT MUST EXECUTE**
@@ -234,6 +248,7 @@ All implementation tasks MUST include these steps in the correct order:
 
 Before finalizing any `tasks.md` file, verify:
 - [ ] Step 0 (Create Feature Branch) is the FIRST step — or, when already on a non-base branch, its conditional variant is recorded (continue on the current branch and suggest it to the user)
+- [ ] Step K (Write Failing Tests First - TDD) precedes the first code-implementation task in each implementation section and uses a mechanical marker (`(TDD)`, `tests first`, `test first`, `pruebas antes`)
 - [ ] All mandatory steps from config.yaml are included
 - [ ] Steps are numbered sequentially
 - [ ] Mandatory steps are clearly marked with "(MANDATORY)" label
@@ -260,7 +275,8 @@ This rule applies when:
 - [ ] 0.1 If current branch is main/master, create feature branch `feature/update-position-backend`; if already on another branch, record "continuing on current branch (multi-spec allowed)" and suggest it to the user
 - [ ] 0.2 Verify branch creation/current branch status and report which case applied
 
-## 1. Backend: Validator Tests (TDD)
+## 1. Backend: Validator Tests (TDD) (MANDATORY - before implementation)
+- [ ] 1.1 Write failing validator tests first (TDD): invalid input rejected, valid input accepted. Verify: tests fail (RED) before implementation and pass (GREEN) after.
 ...
 
 ## 8. Backend: Review and Update Existing Unit Tests (MANDATORY)

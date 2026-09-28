@@ -84,3 +84,35 @@ test('check --ids returns exit 0 when all ids are conformant', async () => {
   const code = await runCheck({ ids: true, projectRoot: root, vaultRoot: vault });
   assert.equal(code, 0);
 });
+
+test('check --tdd returns exit 1 when a task implements without a prior TDD test task', async () => {
+  const root = scratch();
+  const tasksDir = join(root, 'openspec', 'changes', 'add-foo');
+  mkdirSync(tasksDir, { recursive: true });
+  writeFileSync(
+    join(tasksDir, 'tasks.md'),
+    `# Tasks: add-foo\n\n## 1. Core module\n\n- [ ] 1.1 Implement the foo module and verify it exports the expected API\n`,
+    'utf8'
+  );
+  const code = await runCheck({ tdd: true, projectRoot: root, vaultRoot: '' });
+  assert.equal(code, 1);
+});
+
+test('check --tdd returns exit 0 when tasks follow TDD ordering', async () => {
+  const root = scratch();
+  const tasksDir = join(root, 'openspec', 'changes', 'add-foo');
+  mkdirSync(tasksDir, { recursive: true });
+  writeFileSync(
+    join(tasksDir, 'tasks.md'),
+    `# Tasks: add-foo\n\n## 1. Core module\n\n- [ ] 1.1 Write unit tests first (TDD): foo returns the expected result. Verify: tests fail (RED) before implementation and pass (GREEN) after.\n- [ ] 1.2 Implement the foo module and verify the tests pass\n`,
+    'utf8'
+  );
+  const code = await runCheck({ tdd: true, projectRoot: root, vaultRoot: '' });
+  assert.equal(code, 0);
+});
+
+test('check --tdd returns exit 0 when there are no active changes', async () => {
+  const root = scratch();
+  const code = await runCheck({ tdd: true, projectRoot: root, vaultRoot: '' });
+  assert.equal(code, 0);
+});
