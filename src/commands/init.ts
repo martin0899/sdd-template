@@ -22,7 +22,7 @@ import { resolveAgent } from '../agents/profiles';
 import { selectTools } from '../core/tool-selector';
 import { buildInitPlan } from './plan';
 import { runNotesInit, runNotesSync, isObsidianActive } from './notes';
-import { makeConfirm } from '../util/prompt';
+import { makeConfirm, makeTextPrompt } from '../util/prompt';
 import { currentPalette, phaseLine, printBanner, promptMark, red as uiRed } from '../util/ui';
 
 export interface InitOptions {
@@ -33,6 +33,7 @@ export interface InitOptions {
   obsidian?: boolean;
   noObsidian?: boolean;
   confirmFactory?: typeof makeConfirm;
+  projectVersion?: string;
 }
 
 function templateRoot(): string {
@@ -135,6 +136,15 @@ export async function runInit(opts: InitOptions = {}): Promise<number> {
   // 2. Read-only recognition.
   const stack = detectStack(target);
 
+  // 2.1 Project version: flag > prompt (with detected suggestion) > 1.0.0.
+  const suggested = stack.projectVersion || '1.0.0';
+  let projectVersion = opts.projectVersion;
+  if (!projectVersion && !opts.dryRun) {
+    const textPrompt = makeTextPrompt(Boolean(opts.yes));
+    projectVersion = textPrompt(promptMark('Ingresa la versión actual del proyecto'), suggested);
+  }
+  projectVersion = projectVersion || suggested;
+
   // 3. Tool selection (interactive menu or flag-based).
   const toolSelection = await selectTools({ target, agentFlag: opts.agent, yes: opts.yes });
   const includeOpencode = toolSelection.selected.includes('opencode');
@@ -223,8 +233,8 @@ export async function runInit(opts: InitOptions = {}): Promise<number> {
       ...(stack.frontend !== 'none' ? [COMPOSED_STANDARDS[1]] : [])
     ])
   );
-  writeManifest(target, managedPaths, version, version, toolSelection.selected);
-  console.log(`  ${pal.green('✔')} manifest ............ ${managedPaths.length} files hashed`);
+  writeManifest(target, managedPaths, projectVersion, version, toolSelection.selected);
+  console.log(`  ${pal.green('✔')} manifest ............ ${managedPaths.length} files hashed (project v${projectVersion})`);
 
   // 9. Git hooks (post-merge auto-rebuild).
   const hookResult = installGitHooks(target);

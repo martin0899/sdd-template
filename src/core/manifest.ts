@@ -9,7 +9,7 @@ export function sha256File(file: string): string {
 export function writeManifest(
   target: string,
   managedPaths: string[],
-  templateVersion: string,
+  projectVersion: string,
   spectralisVersion: string,
   tools?: string[]
 ): string {
@@ -20,9 +20,9 @@ export function writeManifest(
     })
     .map((rel) => ({ path: rel, hash: sha256File(join(target, rel)) }));
   const manifest: Record<string, unknown> = {
-    schemaVersion: 2,
+    schemaVersion: 3,
     spectralisVersion,
-    templateVersion,
+    projectVersion,
     updatedAt: new Date().toISOString().replace(/\.\d{3}Z$/, 'Z'),
     excluded: ['secrets', 'local-config', 'generated-artifacts'],
     tools: tools ?? [],
@@ -37,6 +37,7 @@ export interface ManifestData {
   schemaVersion: number;
   spectralisVersion: string;
   templateVersion: string;
+  projectVersion: string;
   tools: string[];
   files: { path: string; hash: string }[];
 }
@@ -54,10 +55,13 @@ export function readManifest(target: string): ManifestData | undefined {
         : raw.includeOpencode === false
           ? []
           : ['opencode'];
+    // projectVersion (v3) with fallback to templateVersion (v2) or 1.0.0.
+    const projectVersion = (raw.projectVersion as string) ?? (raw.templateVersion as string) ?? '1.0.0';
     return {
       schemaVersion: (raw.schemaVersion as number) ?? 1,
       spectralisVersion: (raw.spectralisVersion as string) ?? '',
-      templateVersion: (raw.templateVersion as string) ?? '',
+      templateVersion: (raw.templateVersion as string) ?? projectVersion,
+      projectVersion,
       tools,
       files: (raw.files as { path: string; hash: string }[]) ?? []
     };

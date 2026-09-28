@@ -8,6 +8,7 @@ export interface StackInfo {
   backend: BackendVariant;
   frontend: FrontendVariant;
   projectName: string;
+  projectVersion?: string;
   language?: string;
   languageVersion?: string;
   framework?: string;
@@ -183,6 +184,7 @@ export interface StackCacheEntry {
   frameworkFe: string;
   frameworkVersionFe: string;
   projectName: string;
+  projectVersion?: string;
   detected_at: string;
 }
 
@@ -215,6 +217,7 @@ export function loadStackCache(projectRoot: string): StackCacheEntry | null {
     frameworkFe: raw.frameworkFe ?? '',
     frameworkVersionFe: raw.frameworkVersionFe ?? '',
     projectName: raw.projectName ?? '',
+    projectVersion: raw.projectVersion,
     detected_at: raw.detected_at ?? ''
   };
 }
@@ -232,6 +235,7 @@ export function saveStackCache(projectRoot: string, info: StackInfo): void {
     frameworkFe: info.frameworkFe ?? '',
     frameworkVersionFe: info.frameworkVersionFe ?? '',
     projectName: info.projectName,
+    projectVersion: info.projectVersion,
     detected_at: new Date().toISOString()
   };
   writeFileSync(join(projectRoot, 'stack.json'), JSON.stringify(entry, null, 2) + '\n', 'utf8');
@@ -252,7 +256,8 @@ export function detectStack(target: string): StackInfo {
       frameworkVersion: cached.frameworkVersion || undefined,
       frameworkFe: cached.frameworkFe || undefined,
       frameworkVersionFe: cached.frameworkVersionFe || undefined,
-      projectName: cached.projectName || target.split('/').pop() || ''
+      projectName: cached.projectName || target.split('/').pop() || '',
+      projectVersion: cached.projectVersion
     };
   }
   const info: StackInfo = { backend: 'generic', frontend: 'generic', projectName: basename(target) };
@@ -414,6 +419,28 @@ export function detectStack(target: string): StackInfo {
       /* keep basename */
     }
   }
+
+  // --- project version (unique per project) ---
+  if (pom) {
+    // Prefer an explicit <version> in the pom itself; avoid inheriting from <parent>.
+    const content = readFileSync(pom, 'utf8');
+    if (!/<\/parent>[\s\S]*<version>/.test(content)) {
+      const v = xmlValue(pom, 'version');
+      if (v) info.projectVersion = v;
+    }
+  }
+  if (!info.projectVersion) {
+    const verPkg = pkgFile ?? fePkgs[0];
+    if (verPkg) {
+      try {
+        const pv = (JSON.parse(readFileSync(verPkg, 'utf8')) as { version?: string }).version;
+        if (pv) info.projectVersion = pv;
+      } catch {
+        /* keep undefined */
+      }
+    }
+  }
+
   saveStackCache(target, info);
   return info;
 }

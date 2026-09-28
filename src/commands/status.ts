@@ -40,7 +40,6 @@ function checkToolExists(tool: string): boolean {
 export async function runStatus(opts: StatusOptions = {}): Promise<number> {
   const version = pkgVersion();
   const pal = currentPalette();
-  console.log(printBanner(version, version, pal));
 
   const target = resolve(process.cwd(), opts.destino ?? '.');
   if (!existsSync(target)) {
@@ -55,11 +54,13 @@ export async function runStatus(opts: StatusOptions = {}): Promise<number> {
     return 2;
   }
 
+  console.log(printBanner(version, manifest.projectVersion, pal));
+
   console.log('\n== spectralis status ==\n');
   
   // Basic info
   console.log(`  spectralis version:  ${manifest.spectralisVersion || 'unknown'}`);
-  console.log(`  template version:    ${manifest.templateVersion || 'unknown'}`);
+  console.log(`  project version:     ${manifest.projectVersion || 'unknown'}`);
   console.log(`  installed at:        ${new Date().toISOString().split('T')[0]} (from manifest)`);
   
   // Tools

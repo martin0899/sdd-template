@@ -35,9 +35,17 @@ Branch-name rules:
 Version precedence for release or version-bump requests:
 
 1. An explicit version in the user's request, for example `1.4.0`.
-2. The project's canonical version file or package manifest.
-3. The current release/tag metadata, if available.
+2. The project's canonical version source: `.sdd-manifest.json` → `projectVersion` when the project has the SDD harness installed (written by `spectralis init`).
+3. The project's canonical version file or package manifest (`pom.xml`, `package.json`, …) as fallback when no `.sdd-manifest.json` exists.
 4. Ask the user for the target version; never guess it.
+
+Project version bump rules (deterministic, managed by the arnés):
+
+- **PATCH** increments by 1 for every archived OpenSpec change (with its commit); there is no reliable way to detect bugs, so each completed spec counts. Carry: `1.2.99` + spec → `1.3.0`.
+- **MINOR** increments by 1 (and PATCH resets to 0) when the user requests creating a version release ("crea versión release y commit de cambios"). Carry: `1.99.5` → `2.0.0`.
+- **MAJOR** increments only on explicit compatibility-breaking decisions.
+- Each component is capped at `99`; the bump carries to the next component instead of exceeding it.
+- The arnés exposes these bumps (`bumpPatch`/`bumpMinor`/`bumpMajor` in `src/core/project-version.ts`); after archiving a spec or creating a release, update the destination's `.sdd-manifest.json` `projectVersion` accordingly.
 - **Description-only / no-git mode (explicit user override)**: If the user **explicitly** says something like "no PR", "only commit" (meaning only produce the commit text), "only description", "don't touch git", "just the message", or "dry run", then do **not** run any git commands or create a PR. Produce directly the handoff artifact defined in step 4 (staging list + copy-pasteable message) and stop; the user can run the git commands themselves.
 
 # Goal

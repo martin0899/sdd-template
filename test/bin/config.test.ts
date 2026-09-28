@@ -26,7 +26,7 @@ test('--config shows configuration with exit code 0', () => {
     });
     assert.ok(result.includes('[Harness]'), 'Should show Harness section');
     assert.ok(result.includes('spectralis version:'), 'Should show spectralis version');
-    assert.ok(result.includes('template version:'), 'Should show template version');
+    assert.ok(result.includes('project version:'), 'Should show project version');
     assert.ok(result.includes('[Tools]'), 'Should show Tools section');
     assert.ok(result.includes('opencode'), 'Should show opencode tool');
     assert.ok(result.includes('claude'), 'Should show claude tool');
