@@ -30,6 +30,7 @@ import { runSeed } from '../commands/seed';
 import { runNotesInit, runNotesSync } from '../commands/notes';
 import { runBacklog } from '../commands/backlog';
 import { runWikiSearch } from '../commands/wiki-search';
+import { runBump } from '../commands/bump';
 
 const pkg = require('../../package.json') as { version: string };
 
@@ -56,6 +57,10 @@ Examples:
   $ spectralis status                   # Show installed harness status
   $ spectralis config                   # Show harness configuration
   $ spectralis doctor                   # Verify host prerequisites
+  $ spectralis bump                     # Bump project version (patch)
+  $ spectralis bump minor               # Bump project version (minor)
+  $ spectralis bump --spectralis        # Bump spectralis own version
+  $ spectralis bump --dry-run           # Preview bump without writing
   $ spectralis skills                   # Detect skills and refresh _INDEX_SKILLS.json
   $ spectralis distill Spectralis        # Distill project specs to wiki
   $ spectralis backlog Spectralis         # List backlog notes from project
@@ -113,6 +118,17 @@ program
   .description('Verify prerequisites on this host (git, node, openspec, graphify)')
   .action(async () => {
     const code = await runDoctor();
+    process.exitCode = code;
+  });
+
+program
+  .command('bump [level]')
+  .description('Bump version (patch | minor | major). Defaults to patch.')
+  .option('-d, --dry-run', 'show the new version without writing')
+  .option('--spectralis', 'bump spectralis own version (package.json)')
+  .option('--project', 'bump project version (.sdd-manifest.json)')
+  .action(async (level: 'patch' | 'minor' | 'major' | undefined, opts: { dryRun?: boolean; spectralis?: boolean; project?: boolean }) => {
+    const code = await runBump({ level: level ?? 'patch', dryRun: opts.dryRun, spectralis: opts.spectralis, project: opts.project });
     process.exitCode = code;
   });
 

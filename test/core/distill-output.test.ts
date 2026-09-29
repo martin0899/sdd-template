@@ -26,15 +26,15 @@ function scratch(): string {
   return mkdtempSync(join(tmpdir(), 'spectralis-distill-'));
 }
 
-test('createWikiDir creates directory structure', () => {
+test('createWikiDir creates directory structure (4 aggregates, no obsolete subfolders)', () => {
   const root = scratch();
   try {
     createWikiDir(root, 'my-project');
     const projectDir = join(root, '05_wiki', 'my-project');
     assert.ok(existsSync(projectDir));
-    assert.ok(existsSync(join(projectDir, 'decisiones')));
-    assert.ok(existsSync(join(projectDir, 'errores')));
-    assert.ok(existsSync(join(projectDir, 'log')));
+    assert.ok(!existsSync(join(projectDir, 'decisiones')));
+    assert.ok(!existsSync(join(projectDir, 'errores')));
+    assert.ok(!existsSync(join(projectDir, 'log')));
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

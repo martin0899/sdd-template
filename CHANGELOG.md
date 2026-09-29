@@ -11,6 +11,16 @@ Historial de versiones de **spectralis** (el arnés SDD). Este changelog aplica 
 
 ---
 
+## v1.2.37 — 2026-09-29
+
+Conteo de especificaciones: **37**.
+
+### 2026-09-29 (1)
+
+- **add-bump-command** — nuevo comando `spectralis bump [patch|minor|major]` para versionar manualmente spectralis (`package.json`) o el proyecto destino (`.sdd-manifest.json`). Opciones: `--dry-run`, `--spectralis`, `--project`.
+
+---
+
 ## v1.2.35 — 2026-09-27
 
 Conteo de especificaciones: **35**.

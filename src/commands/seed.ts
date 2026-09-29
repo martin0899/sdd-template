@@ -1,4 +1,4 @@
-import { existsSync, readdirSync, readFileSync, mkdirSync, writeFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, mkdirSync, writeFileSync, renameSync } from 'node:fs';
 import { join } from 'node:path';
 import { readGlobalConfig, detectProjectFromCwd, setCurrentProjectRoot } from '../core/config';
 
@@ -63,9 +63,8 @@ export function discoverProjects(projectsBase: string): SeedProjectInfo[] {
 
 export function seedProject(vaultRoot: string, project: SeedProjectInfo): string {
   const wikiDir = join(vaultRoot, '05_wiki', project.name);
-  for (const sub of ['decisiones', 'errores', 'log']) {
-    mkdirSync(join(wikiDir, sub), { recursive: true });
-  }
+  // Aligned with the 4-aggregate scheme: only the project dir, no obsolete subfolders.
+  mkdirSync(wikiDir, { recursive: true });
   return wikiDir;
 }
 
@@ -75,7 +74,7 @@ export function seedIndex(vaultRoot: string, projects: SeedProjectInfo[]): void 
     index[p.name] = {
       name: p.name,
       path: join('05_wiki', p.name),
-      content: ['arquitectura', 'decisiones', 'errores', 'log', 'restricciones'],
+      content: ['arquitectura', 'decisiones', 'operacion', 'historial'],
       stack: p.stack,
       changes: p.changes,
       updated: new Date().toISOString()
@@ -83,7 +82,11 @@ export function seedIndex(vaultRoot: string, projects: SeedProjectInfo[]): void 
   }
   const wikiDir = join(vaultRoot, '05_wiki');
   mkdirSync(wikiDir, { recursive: true });
-  writeFileSync(join(wikiDir, '_INDEX.json'), JSON.stringify(index, null, 2) + '\n', 'utf8');
+  // Atomic write: temp + rename (avoids partial files on interruption).
+  const indexPath = join(wikiDir, '_INDEX.json');
+  const tmpPath = `${indexPath}.tmp`;
+  writeFileSync(tmpPath, JSON.stringify(index, null, 2) + '\n', 'utf8');
+  renameSync(tmpPath, indexPath);
 }
 
 export async function runSeed(opts: { project?: string; dryRun?: boolean; vaultRoot?: string } = {}): Promise<number> {

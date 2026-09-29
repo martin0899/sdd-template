@@ -80,6 +80,60 @@ cd /ruta/a/tu-proyecto && spectralis init
 # Ejecutar `pnpm prepare` o `tsc -p tsconfig.json` para recompilar
 ```
 
+### Instalación guiada por IA (sin clonar el repo a mano)
+
+Si prefieres no clonar ni compilar el arnés manualmente, **pega este prompt en tu agente de IA** (opencode, Claude Code, etc.) parado **en la raíz de tu proyecto**. El agente ejecuta la instalación completa mediante el CLI y te pide confirmación antes de cada escritura:
+
+```text
+Instala el arnés SDD "spectralis" en este proyecto usando su CLI.
+
+CONTEXTO
+- El arnés no se publica en npm: vive en https://github.com/martin0899/sdd-template.git
+- Se instala globalmente con `npm i -g .` desde un clon temporal.
+
+PASOS (en este orden, sin saltarte ninguno)
+
+1. Prerrequisitos
+   - `node --version` debe ser >= 22. Si no lo es, detente y dime cómo actualizarlo.
+   - Verifica `git`, `openspec --help` y `graphify --help`.
+   - Si falta openspec o graphify, informa y ofrece el comando de instalación; no continúes.
+
+2. Instalar el CLI (una vez por máquina)
+   - Si `spectralis --v` ya responde en el PATH, usa el que ya está: NO reinstales.
+   - Si no responde:
+       git clone --depth 1 https://github.com/martin0899/sdd-template.git /tmp/spectralis-arnes
+       cd /tmp/spectralis-arnes && npm i -g .
+   - Verifica con `spectralis --v` y `spectralis doctor`.
+
+3. Simulación en el proyecto actual (OBLIGATORIA, no escribe nada)
+   - Ejecuta `spectralis init --dry-run`.
+   - Muéstrame el plan completo: archivos nuevos, actualizables, conflictos y retired.
+   - Espera mi confirmación explícita antes de continuar.
+
+4. Instalación real (solo tras mi "s")
+   - Ejecuta `spectralis init`.
+   - Ante cualquier conflicto: respalda primero y pregúntame archivo por archivo.
+     Nunca sobrescribas un archivo sin mi confirmación.
+
+5. Verificación posterior
+   - `spectralis status`
+   - `spectralis config`
+   - `spectralis update --check`   (debe indicar que el destino está al día)
+   - `spectralis check`
+
+6. Onboarding
+   - Ejecuta `graphify update .` para construir el grafo del proyecto.
+   - Invoca la skill `sdd-onboard-project` y refina los placeholders pendientes
+     en docs/backend-standards.md y docs/frontend-standards.md con la evidencia real.
+
+REGLAS
+- No escribas nada en el proyecto sin mi confirmación explícita.
+- Nunca subas al control de versiones .env, credenciales ni artefactos generados
+  (graphify-out/, .sdd-backup-*/, dist/).
+- Si un comando falla, detente, muestra el error completo y propón el siguiente paso.
+  No sigas adelante a ciegas ni inventes el resultado.
+```
+
 ### Aliases de flags
 
 | Flag | Alias | Descripción |
@@ -162,6 +216,8 @@ La orquestación es idempotente (no regenera documentos ya correctos) y no modif
 > **Versionado — proyecto destino**: `spectralis init` pregunta la versión actual del proyecto (Enter = `1.0.0`) y la guarda como `projectVersion` en `.sdd-manifest.json`. PATCH sube +1 con cada spec archivada (con su commit); MINOR sube +1 (y resetea PATCH) al crear una versión release; MAJOR solo por ruptura de compatibilidad explícita. Cada componente topa en `99` con carry (`1.2.99` → `1.3.0`). El flujo commit/release usa `projectVersion` como fuente canónica.
 >
 > `spectralis --version` reporta la versión del arnés (CLI); el manifest registra `spectralisVersion` y `projectVersion` como campos separados.
+>
+> **Subir versiones con el CLI**: `spectralis bump [patch|minor|major]` incrementa las versiones sin editar archivos a mano. Dentro de un proyecto instalado, por defecto sube `projectVersion` (`.sdd-manifest.json`); con `--spectralis` sube la versión del arnés (`package.json`); con `--project` fuerza la del proyecto. `--dry-run` previsualiza sin escribir.
 >
 > La política anti-corrupción es idéntica a la del instalador bash original: backups en `.sdd-backup-<fecha>/`, confirmación por archivo, bloques idempotentes y manifiesto con hashes.
 >
