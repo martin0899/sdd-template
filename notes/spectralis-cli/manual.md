@@ -70,6 +70,68 @@ Nothing is written before the user confirms. Re-runs are idempotent
 
 Unknown `--agent` values are rejected with the valid list before any write.
 
+**Parameters:**
+
+| Parameter / Option | Description | Default | Required |
+|--------------------|-------------|---------|----------|
+| `<destino>` (positional) | Destination project directory (git-init style when omitted) | current working directory | no |
+| `--agent <agente>` | Target agent profile (`opencode` \| `antigravity` \| `claude` \| `all`) | interactive menu | no |
+| `-d, --dry-run` | Show the full plan without writing | off | no |
+| `--demo`, `--dd` | Alias for `--dry-run` | — | no |
+| `--yes` | Non-interactive mode (always with backup) | off | no |
+| `--obsidian` | Force obsidian orchestration for this run | off | no |
+| `--no-obsidian` | Disable obsidian orchestration for this run | off | no |
+
+**Examples:**
+
+```text
+$ spectralis init
+────────────────────────────────────────────────────
+  spectralis
+  Spec-Driven Development toolkit · no npm registry
+  arnés 1.2.35 · project 1.2.35
+────────────────────────────────────────────────────
+== PLAN (dry-run; nothing written yet) ==   # with -d/--dry-run
+```
+
+```text
+$ spectralis init my-project
+== PLAN ==
+  1. Prerequisites verified.
+  -- recognition: ./my-project
+     openspec/            missing (will be created with openspec init)
+     backend : variant generic
+     frontend: variant generic
+     project : my-project
+  2. openspec init (non-interactive) with tools: opencode
+  3. Spanish context injected by APPEND into openspec/config.yaml
+  ... (confirmation prompt; nothing written until confirmed)
+```
+
+```text
+$ spectralis init --agent opencode --dry-run
+== PLAN (dry-run; nothing written yet) ==
+  1. Prerequisites verified.
+  -- recognition: /path/to/demo-project
+     openspec/            missing (will be created with openspec init)
+     graphify-out/        missing (create it later: graphify update .)
+     backend : variant generic
+     frontend: variant generic
+     project : demo-project
+  2. openspec init (non-interactive) with tools: opencode
+  ...
+  4b. Standards composed from docs-variants/ based on the detected stack:
+     backend-standards.md  <- docs-variants/backend/generic.md (known placeholders filled)
+     frontend-standards.md <- docs-variants/frontend/generic.md (known placeholders filled)
+  5. Git hooks: post-merge auto-rebuild (if git repo + tsconfig.json).
+```
+
+**Notes:**
+- Nothing is written before the user confirms; `--dry-run` never writes at all.
+- Re-runs are idempotent: identical files are skipped, no ghost backups.
+- Unknown `--agent` values abort with the valid list before any write.
+- The destination can be an existing project; only managed files are touched.
+
 ### `spectralis update [<destino>]`
 
 Re-syncs an installed destination with the current template. Reads the manifest, classifies files by hash comparison, and applies updates with backups and confirmation. This is the only supported update mechanism.
@@ -102,6 +164,49 @@ Re-syncs an installed destination with the current template. Reads the manifest,
 | 1 | Partial update, error, or updates available (`--check`) |
 | 2 | Destination not installed (no manifest) |
 
+**Parameters:**
+
+| Parameter / Option | Description | Default | Required |
+|--------------------|-------------|---------|----------|
+| `<destino>` (positional) | Destination project directory | current working directory | no |
+| `-d, --dry-run` | Show the update plan without writing | off | no |
+| `--demo`, `--dd` | Alias for `--dry-run` | — | no |
+| `--check` | Read-only check: exit 0=up-to-date, 1=updates, 2=error | off | no |
+| `--yes` | Non-interactive; conflicts kept (conservative) | off | no |
+| `--agent <agente>` | Target agent profile (same as init) | inherited manifest | no |
+
+**Examples:**
+
+```text
+$ spectralis update --check
+== Update check ==
+  Template 1.2.35 -> destination 1.2.34
+  [1] updates available (exit 1)     # exit 0 when up-to-date
+```
+
+```text
+$ spectralis update --dry-run
+== PLAN (dry-run; nothing written yet) ==
+  classification:
+    unchanged  -> skipped (identical hashes)
+    updatable  -> will be replaced after confirmation
+    conflict   -> backup + ask before replacing
+    retired    -> reported, never deleted
+```
+
+```text
+$ spectralis update
+== PLAN ==
+  ... (file-by-file decisions with confirmation)
+  [OK] synced to ./my-project
+  backups preserved in .sdd-backup-20260929...   # only when conflicts existed
+```
+
+**Notes:**
+- `update` is the only supported update mechanism; manual edits to managed files are detected as `conflict` and preserved (backup + ask).
+- `--yes` never overwrites a conflict silently — conflicts are kept and reported.
+- Exit code `2` when the destination has no manifest (run `spectralis init` first).
+
 ### `spectralis doctor`
 
 Verifies the host prerequisites and reports each one with its detected version. Missing or insufficient tools get install instructions for the detected operating system (Windows / macOS / Linux). Runs anywhere, without a destination, and never writes to disk.
@@ -110,6 +215,39 @@ Verifies the host prerequisites and reports each one with its detected version. 
 |------|-----------|
 | All prerequisites satisfied | 0 |
 | One or more missing / insufficient | 1 (nothing written) |
+
+**Parameters:**
+
+| Parameter | Description | Default | Required |
+|-----------|-------------|---------|----------|
+| *(none)* | No arguments or options | — | — |
+
+**Examples:**
+
+```text
+$ spectralis doctor
+  spectralis doctor · host prerequisites
+  [OK] git (git version 2.52.0)
+  [OK] node (v22.21.1)
+  [OK] openspec (Usage: openspec [options] [command])
+  [OK] graphify (Usage: graphify <command>)
+
+[OK] Host is ready. Run: spectralis init
+```
+
+```text
+$ spectralis doctor        # when a tool is missing
+  spectralis doctor · host prerequisites
+  [OK] git (git version 2.52.0)
+  [FAIL] openspec (not found)
+  -> Install instructions for the detected OS are printed below.
+
+[FAIL] Host not ready. Install the missing tools and re-run.
+```
+
+**Notes:**
+- Runs anywhere (no destination required) and never writes to disk.
+- `doctor` gates `init`/`update`: installation aborts before writing when a prerequisite is missing.
 
 ### `spectralis status [<destino>]`
 
@@ -127,6 +265,44 @@ Shows the installed SDD harness status: spectralis version, template version, se
 | Installed and healthy | 0 |
 | Installed with warnings | 0 |
 | Not installed (no manifest) | 2 |
+
+**Parameters:**
+
+| Parameter | Description | Default | Required |
+|-----------|-------------|---------|----------|
+| `<destino>` (positional) | Destination project directory | current working directory | no |
+
+**Examples:**
+
+```text
+$ spectralis status
+  spectralis status
+  arnés version : 1.2.35
+  template      : 1.2.35
+  tools         : opencode
+  health        : [OK] .opencode/ [OK] .agents/
+  managed files : 44
+```
+
+```text
+$ spectralis status my-project
+  spectralis status
+  arnés version : 1.2.35
+  template      : 1.2.34
+  tools         : opencode, claude
+  health        : [OK] .opencode/ [WARN] .agents/ (missing)
+  managed files : 44
+```
+
+```text
+$ spectralis status      # not installed
+[ERROR] No .sdd-manifest.json found in the destination.
+spectralis has not been installed here. Run spectralis init first.
+```
+
+**Notes:**
+- Health check only verifies tool directories exist; use `spectralis doctor` for host prerequisites.
+- Without a manifest the command exits `2` and prints the init hint.
 
 ### `spectralis config [<destino>]`
 
@@ -148,6 +324,47 @@ Shows the installed SDD harness configuration: versions, registered tools, tool 
 | Installed | 0 |
 | Not installed (no manifest) | 2 |
 
+**Parameters:**
+
+| Option | Description | Default | Required |
+|--------|-------------|---------|----------|
+| `<destino>` (positional) | Destination project directory | current working directory | no |
+| `--list` | List effective routes with origin | off | no |
+| `--get <key>` | Print effective value of a route/switch | — | no |
+| `--set <key>=<value>` | Set a route or switch (`obsidianSync=0\|1`) | — | no |
+| `--vault <path>` | Shorthand to set `vault_root` | — | no |
+| `--resources <path>` | Shorthand to set `resources_dir` | — | no |
+| `--global` | Apply to global config instead of project manifest | off | no |
+
+**Examples:**
+
+```text
+$ spectralis config --list
+== spectralis config --list ==
+  obsidianSync: 1  [config]
+  vault_root: /home/martinmartinez/Documentos/obsidian_sync_git  [global]
+  templates_dir: (not set)  [not set]
+  requirements_dir: (not set)  [not set]
+  projects_dir: (not set)  [not set]
+  resources_dir: (not set)  [not set]
+  projects_base: /home/martinmartinez/Documentos/Proyectos  [global]
+```
+
+```text
+$ spectralis config --get vault_root
+/home/martinmartinez/Documentos/obsidian_sync_git
+```
+
+```text
+$ spectralis config --set obsidianSync=1
+  obsidianSync: 1  [manifest]     # per-project; add --global for machine-wide
+```
+
+**Notes:**
+- Read-only by default; only `--set`, `--vault`, `--resources` write.
+- Origins shown: `global` (machine-wide config), `manifest` (project), `config`, `detected`, `derived`, `not set`.
+- Without a manifest the command exits `2`.
+
 ### `spectralis check`
 
 Deterministic, LLM-free doctor that validates the SDD flow consistency and the vault note ID conventions. Runs anywhere, never writes to the vault, `.sdd-registry/`, `05_wiki/`, or `openspec/`.
@@ -161,6 +378,47 @@ Deterministic, LLM-free doctor that validates the SDD flow consistency and the v
 - Exit code `0` when there are no errors (warnings do not block); `1` when at least one finding has severity error.
 - `--ids` keeps an mtime cache (`.spectralis/ids-cache.json`) to re-parse only changed notes while always recomputing global uniqueness.
 
+**Parameters:**
+
+| Option | Description | Default | Required |
+|--------|-------------|---------|----------|
+| *(no flags)* | Run both sub-checks (`--registry` + `--ids`) | active | — |
+| `--registry` | Consistency of repo ↔ REGISTRY.md ↔ brain ↔ openspec | off | no |
+| `--ids` | Validate vault note IDs (format, uniqueness, registration) | off | no |
+| `--tdd` | Validate TDD ordering (Step K) in `tasks.md` of active changes | off | no |
+| `-v, --vault-root <path>` | Vault root path override | from config | no |
+| `-p, --project-root <path>` | Project root override | from config/cwd | no |
+
+**Examples:**
+
+```text
+$ spectralis check --registry
+  spectralis check --registry · consistencia del triángulo (spectralis)
+  [FAIL] 9 error(es)
+  error   openspec/changes/add-foo (spectralis)
+         -> Registra el change add-foo en .sdd-registry/REGISTRY.md
+```
+
+```text
+$ spectralis check --ids
+  spectralis check --ids · validación de IDs del vault
+  31 nota(s) re-parseada(s)
+  [FAIL] 82 error(es)
+  error   02_Ideas/some-note.md (obsidian_sync_git)
+         -> Añade id: nota-YYYYMMDD-slug al frontmatter
+  ...  [OK] 20 warning(s)
+```
+
+```text
+$ spectralis check           # all green
+  [OK] 0 error(s) · 0 warning(s)
+```
+
+**Notes:**
+- Read-only: never writes to the vault, `.sdd-registry/`, `05_wiki/`, or `openspec/`.
+- Warnings do not affect the exit code; any severity `error` forces exit `1`.
+- `--tdd` is explicit (not part of the no-flag default).
+
 ### `spectralis notes init` / `spectralis notes sync`
 
 Manage the manual folders of the harness in the **cerebro** (the second brain, `03_Recursos/02_Sistemas_info/`):
@@ -169,6 +427,50 @@ Manage the manual folders of the harness in the **cerebro** (the second brain, `
 - `notes sync` — copies the canonical manuals from `notes/` in the template into the target folder (conflict → backup + ask; identical → skip).
 
 Both work in any installed project and return `0` on success, `1` if no storage root is available.
+
+**Parameters:**
+
+| Option | Description | Default | Required |
+|--------|-------------|---------|----------|
+| `init` / `sync` (subcommand) | Create structure vs. copy manuals | — | yes |
+| `<destino>` (positional) | Project directory to resolve the target | current working directory | no |
+| `-d, --dry-run` | Show the target/subfolders or manuals without writing | off | no |
+| `--demo`, `--dd` | Alias for `--dry-run` | — | no |
+| `--yes` (sync) | Non-interactive; conflicts kept | off | no |
+
+**Examples:**
+
+```text
+$ spectralis notes init --dry-run
+== spectralis notes init ==
+  ✔ notes target (vault): .../03_Recursos/02_Sistemas_info
+  [DRY RUN] Would create subfolders:
+    .../architecture
+    .../local-ai
+    .../spectralis-cli
+```
+
+```text
+$ spectralis notes sync --dry-run
+== spectralis notes sync ==
+  ✔ notes target (vault): .../03_Recursos/02_Sistemas_info
+  [DRY RUN] Would sync the following manuals:
+    architecture/manual.md
+    local-ai/manual.md
+    spectralis-cli/manual.md
+```
+
+```text
+$ spectralis notes sync
+== spectralis notes sync ==
+  ✔ synced to .../03_Recursos/02_Sistemas_info
+    created: 3 · identical: 0 · conflicts: 0 · kept: 0 · backups: 0
+```
+
+**Notes:**
+- Without a second brain (no `resources_dir`, no detected vault), the target falls back to `info/` inside the project and prints a warning.
+- `sync` copies only the canonical manuals in `notes/` of the template; it never deletes manuals already present in the target.
+- Exit `1` when no storage root folder is available (nothing written).
 
 ### `spectralis seed`
 
@@ -181,9 +483,72 @@ Initial load of the machine-local wiki layer (`05_wiki/`): discovers projects un
 
 Requires `projects_base` to be configured (`spectralis config --set projects_base=<path> --global`).
 
+**Parameters:**
+
+| Option | Description | Default | Required |
+|--------|-------------|---------|----------|
+| `-d, --dry-run` | Show projects that would be seeded without writing | off | no |
+| `--demo`, `--dd` | Alias for `--dry-run` | — | no |
+| `--project <name>` | Seed only the given project | all discovered | no |
+
+**Examples:**
+
+```text
+$ spectralis seed --dry-run
+[OK] Detected project from cwd: spectralis (...)
+[DRY RUN] Would seed 6 projects:
+  - procesador_estimacion (3 changes)
+  - spectralis (4 changes)
+  - Personal_Dotfiles (1 changes)
+  - chapur_pay (0 changes)
+```
+
+```text
+$ spectralis seed --project spectralis
+  ✔ seeded 05_wiki/ for spectralis
+  skeleton: decisiones/, errores/, log/
+  _INDEX.json updated (changes count + timestamp)
+```
+
+```text
+$ spectralis seed
+  ✔ seeded 6 project(s) into 05_wiki/
+  _INDEX.json written with per-project changes/updated
+```
+
+**Notes:**
+- Discovers projects with an `openspec/` root under `projects_base`, recursively up to depth 5.
+- Writes `05_wiki/_INDEX.json` with per-project `changes` count and `updated` timestamp.
+- Fails fast with a hint if `projects_base` is not configured.
+
 ### `spectralis projects`
 
 Shows OpenSpec status across local projects found under `projects_base`: name, number of changes, and how many are complete/pending (by checking `tasks.md` checkboxes). `--json` prints the same data as JSON. Requires `projects_base` to be configured.
+
+**Parameters:**
+
+| Option | Description | Default | Required |
+|--------|-------------|---------|----------|
+| `--json` | Print the dashboard as JSON | off | no |
+
+**Examples:**
+
+```text
+$ spectralis projects
+  Project                Changes   Complete   Pending
+  chapur_pay              3         1          2
+  spectralis              4         4          0
+  procesador_estimacion   3         2          1
+```
+
+```text
+$ spectralis projects --json
+[{"project":"chapur_pay","changes":3,"complete":1,"pending":2}, ...]
+```
+
+**Notes:**
+- Requires `projects_base` configured (`spectralis config --set projects_base=<path> --global`).
+- Completeness derives from `tasks.md` checkboxes of each change.
 
 ### `spectralis spec init` / `spectralis spec complete`
 
@@ -194,9 +559,73 @@ Creates and validates the spec folder of a requirement in the brain (`01_Proyect
 
 Return `0` on success, `1` on error (e.g., empty files in `spec complete`).
 
+**Parameters:**
+
+| Parameter | Description | Default | Required |
+|-----------|-------------|---------|----------|
+| `init` / `complete` (action) | Create folder vs. validate + register + distill | — | yes |
+| `<project>` (positional) | Brain project folder name (`01_Proyectos/<project>/`) | — | yes |
+| `<spec-id>` (positional) | Spec id folder (`01_Proyectos/<project>/<spec-id>/`) | — | yes |
+| `-v, --vault-root <path>` | Vault root override | from config | no |
+| `-p, --project-root <path>` | Project root for REGISTRY.md | from config/cwd | no |
+
+**Examples:**
+
+```text
+$ spectralis spec init myproject add-auth
+  ✔ created 01_Proyectos/myproject/add-auth/
+    briefing.md · tests.md · resumen.md
+```
+
+```text
+$ spectralis spec complete myproject add-auth
+  ✔ files validated
+  ✔ registered in .sdd-registry/REGISTRY.md
+  ✔ distilled into 05_wiki/myproject/
+```
+
+```text
+$ spectralis spec complete myproject add-auth   # empty files
+[ERROR] Empty file: briefing.md. Fill all three files before completing.
+```
+
+**Notes:**
+- `spec init` only creates the three-file structure; content must be filled before `spec complete`.
+- `spec complete` fails with exit `1` when any of the files is empty.
+
 ### `spectralis skills [<destino>]`
 
 Detects the skills present in a project (from `.agents/skills/`, `.opencode/skills/`, and agent-specific folders), writes `_INDEX_SKILLS.json`, and updates the `<system-reminder>` block in `AGENTS.md` so agents know which skills are available. `--dry-run` only lists what would change.
+
+**Parameters:**
+
+| Parameter | Description | Default | Required |
+|-----------|-------------|---------|----------|
+| `<destino>` (positional) | Project directory to scan | current working directory | no |
+| `-d, --dry-run` | List what would change without writing | off | no |
+| `--demo`, `--dd` | Alias for `--dry-run` | — | no |
+
+**Examples:**
+
+```text
+$ spectralis skills
+  ✔ detected 24 skills
+  ✔ wrote _INDEX_SKILLS.json
+  ✔ updated <system-reminder> in AGENTS.md
+```
+
+```text
+$ spectralis skills --dry-run
+  [DRY RUN] Would index:
+    .agents/skills/commit/SKILL.md
+    .agents/skills/explain/SKILL.md
+    ... (24 skills)
+  no writes performed
+```
+
+**Notes:**
+- Sources: `.agents/skills/`, `.opencode/skills/`, and agent-specific skill folders.
+- Keeps `AGENTS.md`'s `<system-reminder>` block in sync so agents know which skills are available.
 
 ### `spectralis distill <project>`
 
@@ -219,11 +648,13 @@ Extracts knowledge from completed specifications in `01_Proyectos/<project>/` an
 
 **Options:**
 
-| Option | Effect |
-|--------|--------|
-| `-d, --dry-run` | Show what would be written without modifying files |
-| `--demo`, `--dd` | Alias for `--dry-run` |
-| `-p, --project-root <path>` | Path to the real project code for stack detection |
+| Option | Description | Default | Required |
+|--------|-------------|---------|----------|
+| `<project>` (positional) | Brain project folder to distill (`01_Proyectos/<project>/`) | — | yes |
+| `-d, --dry-run` | Show what would be written without modifying files | off | no |
+| `--demo`, `--dd` | Alias for `--dry-run` | — | no |
+| `-p, --project-root <path>` | Path to the real project code for stack detection | `projects_base` convention | no |
+| `-v, --vault-root <path>` | Vault root override | from config | no |
 
 **LLM configuration** (in `~/.config/spectralis/config.json`):
 
@@ -238,6 +669,36 @@ Extracts knowledge from completed specifications in `01_Proyectos/<project>/` an
 ```
 
 Auto-detected on `spectralis init` and `spectralis update` via `OLLAMA_HOST`.
+
+**Examples:**
+
+```text
+$ spectralis distill myproject
+  ✔ distilled myproject into 05_wiki/myproject/
+    arquitectura.md · decisiones/ · errores/ · log/ · restricciones.md
+  ✔ updated 01_Proyectos/myproject/_README.md
+  ✔ updated 05_wiki/_INDEX.json (stack field)
+```
+
+```text
+$ spectralis distill myproject --dry-run
+  [DRY RUN] Would write for myproject:
+    05_wiki/myproject/arquitectura.md         (overwrite)
+    05_wiki/myproject/decisiones/add-auth.md  (merge by spec-id)
+    ... 
+  no writes performed
+```
+
+```text
+$ spectralis distill myproject --project-root ./code/myproject --dry-run
+  [DRY RUN] stack detection from ./code/myproject:
+    backend: spring-boot · frontend: react · language: Java
+```
+
+**Notes:**
+- Idempotent: re-running merges by `spec-id` instead of duplicating.
+- Ignores vault organization entries (`_Notas/`, `_INDEX.md`, `_README.md`).
+- Without LLM configured, ambiguous entries are discarded instead of classified.
 
 ### `spectralis --version`
 

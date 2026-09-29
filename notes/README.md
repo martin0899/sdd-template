@@ -17,10 +17,7 @@ Cada tema tiene una subcarpeta con su manual (`manual.md`):
 notes/
 ├── README.md                 ← este índice
 ├── architecture/manual.md
-├── git-workflow/manual.md
 ├── local-ai/manual.md
-├── manual-installation/manual.md
-├── spec-from-note/manual.md
 └── spectralis-cli/manual.md
 ```
 
@@ -45,7 +42,4 @@ notes/
 |------|-------------|
 | [Architecture](architecture/manual.md) | Arquitectura del arnés SDD: capas del CLI, inventario de comandos, flujo install/update, doctor, segundo cerebro y convenciones |
 | [spectralis CLI](spectralis-cli/manual.md) | Uso estándar del CLI instalador SDD: comandos, opciones, matriz de agentes, versionado y garantías anti-corrupción |
-| [Git Workflow](git-workflow/manual.md) | Cómo solicitar ramas, commits, pull requests y releases |
-| [Spec-from-Note Workflow](spec-from-note/manual.md) | Cómo las notas de requerimiento de Obsidian se convierten en changes y specs OpenSpec |
 | [Local AI](local-ai/manual.md) | Guía de IA local (Ollama) para tareas de baja demanda |
-| [Manual Installation](manual-installation/manual.md) | Instalación/actualización manual sin bash, multiplataforma |

@@ -37,10 +37,7 @@ Los manuales técnicos del arnés viven en `notes/` (se sincronizan al cerebro c
 |--------|-----------|
 | [Arquitectura](notes/architecture/manual.md) | Organización del CLI, inventario de comandos, flujos install/update, doctor, segundo cerebro y convenciones (EN) |
 | [CLI de spectralis](notes/spectralis-cli/manual.md) | Uso estándar completo del CLI: comandos, opciones, matriz de agentes, versionado y garantías |
-| [Git Workflow](notes/git-workflow/manual.md) | Cómo solicitar ramas, commits, pull requests y releases |
-| [Spec-from-Note](notes/spec-from-note/manual.md) | Cómo las notas de requerimiento de Obsidian se convierten en changes y specs OpenSpec |
 | [IA local (Ollama)](notes/local-ai/manual.md) | Guía de IA local para tareas de baja demanda |
-| [Instalación manual](notes/manual-installation/manual.md) | Instalación/actualización manual sin bash, multiplataforma |
 
 **Qué viaja al destino**: `openspec/` (creada con `openspec init` + contexto español inyectado), `.agents/skills/`, `.opencode/` (sin `node_modules`), `docs/` — con `backend-standards.md` y `frontend-standards.md` **compuestos según el stack detectado** en tu proyecto.
 
@@ -125,6 +122,8 @@ spectralis config --list   # Muestra la ruta efectiva (resources_dir) y su orige
 - Si no hay conexión al segundo cerebro, se usa `info/` **dentro del proyecto** como última opción y se avisa.
 - Si ni siquiera `info/` es viable, no se crea ningún archivo y se avisa que falta carpeta raíz de almacenamiento.
 - La ruta se puede fijar sin preguntar cada vez: `spectralis config --resources <ruta>` (con `--global` para toda la máquina).
+
+Las skills del arnés (p. ej. `obsidian-briefing`, `obsidian-summary`, `obsidian-tests`, `requirements-discovery`) resuelven las rutas del vault desde `spectralis config --get <key>` con cascada **config → REGISTRY.md → vault detectado → preguntar**; nunca usan rutas absolutas como valores por defecto.
 
 ### Orquestación automática (switch obsidianSync)
 
@@ -292,7 +291,7 @@ spectralis init /ruta/a/tu-proyecto
 
 ### Instalación sin bash
 
-¿Windows sin WSL ni Git Bash? **`spectralis` corre nativamente en cualquier plataforma con Node >= 22.** Ver la guía de instalación/actualización manual: **[notes/manual-installation/manual.md](notes/manual-installation/manual.md)**.
+¿Windows sin WSL ni Git Bash? **`spectralis` corre nativamente en cualquier plataforma con Node >= 22.** La instalación y actualización se hacen con el propio CLI (`spectralis init` / `spectralis update`), sin scripts bash.
 
 ### Actualizar proyectos existentes
 
@@ -329,7 +328,7 @@ Cada escritura del onboarding requiere tu confirmación explícita.
 
 ### Solicitar ramas, commits y releases
 
-Consulta la guía [Git Workflow Requests](notes/git-workflow/manual.md) para ver cómo pedir:
+Consulta la skill `commit` del arnés (`.agents/skills/commit/SKILL.md`) para ver cómo pedir:
 
 - creación de ramas `feature/<ticket-o-feature>`;
 - commits con revisión previa;

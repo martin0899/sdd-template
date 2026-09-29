@@ -1,7 +1,7 @@
 import { existsSync, readFileSync, writeFileSync, mkdirSync, readdirSync, statSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import matter from 'gray-matter';
-import { createWikiDir, writeOptimizedNote, readIndex, writeIndex, hybridExtract, generateArquitectura, generateDecisiones, generateErrores, generateLog, generateRestricciones, generateProjectReadme, SourceFile, Decision, ErrorEntry, LogEntry, LlmOptions, ClassifiedEntry } from '../core/distill';
+import { createWikiDir, writeOptimizedNote, readIndex, writeIndex, hybridExtract, generateArquitectura, generateDecisiones, generateErrores, generateLog, generateRestricciones, generateProjectReadme, createDistillCache, SourceFile, Decision, ErrorEntry, LogEntry, LlmOptions, ClassifiedEntry } from '../core/distill';
 import { checkPermissions } from '../core/permissions';
 import { readLlmConfig, resolveProjectRoot, readGlobalConfig, detectProjectFromCwd, setCurrentProjectRoot } from '../core/config';
 import { generateProjectId } from '../core/project-id';
@@ -108,9 +108,11 @@ export async function runDistill(opts: DistillOptions): Promise<number> {
   const sources = readSpecSources(sourceDir);
   console.log(`[INFO] Reading ${sources.length} spec files from ${sourceDir}`);
 
-  // Classify with LLM
+  // Classify with LLM (cached by content hash; only changed files hit the LLM)
   const llm: LlmOptions = readLlmConfig();
-  const result = await hybridExtract(sources, llm);
+  const cache = createDistillCache(wikiRoot);
+  const result = await hybridExtract(sources, llm, cache);
+  cache.flush();
   console.log(`[INFO] Classified ${result.classified.length} entries`);
 
   // Extract sections and generate outputs

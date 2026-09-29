@@ -13,19 +13,20 @@ Genera archivos de test y documentación en Obsidian después de completar una e
 
 > **Override en conversación:** el usuario puede indicar en cualquier momento "el vault está en <ruta>" o "los tests van en <ruta>" y se actualizan para el resto de la sesión.
 
-| Variable | Descripción | Valor por defecto |
+| Variable | Descripción | Resolución |
 |---|---|---|
-| `vault_root` | Raíz del vault de Obsidian | `/home/martinmartinez/Documentos/obsidian_sync_git` |
-| `templates_dir` | Carpeta de plantillas | `{vault_root}/09_Plantilla` |
-| `projects_dir` | Carpeta de proyectos | `{vault_root}/01_Proyectos` |
+| `vault_root` | Raíz del vault de Obsidian | `spectralis config --get vault_root` |
+| `templates_dir` | Carpeta de plantillas | `spectralis config --get templates_dir` (default `{vault_root}/09_Plantilla`) |
+| `projects_dir` | Carpeta de proyectos | `spectralis config --get projects_dir` (default `{vault_root}/01_Proyectos`) |
 | `project_registry` | Registro de requerimientos | `.sdd-registry/REGISTRY.md` (dentro del repo) |
 
 **Resolución de rutas al inicio de cada invocación:**
 
 1. Si el usuario indicó rutas explícitas en la conversación actual → usar esas.
-2. Si existe `.sdd-registry/REGISTRY.md` en el proyecto → leer las rutas registradas.
-3. Si existe el vault en la ruta por defecto → usarlo.
-4. Si ninguna aplica → preguntar al usuario.
+2. Si `spectralis config --get <key>` devuelve la ruta (config global o manifest del proyecto) → usar esa.
+3. Si existe `.sdd-registry/REGISTRY.md` en el proyecto → leer las rutas registradas.
+4. Si se detecta un vault (`.obsidian` o `09_Plantilla`) → usar la ruta por defecto derivada.
+5. Si ninguna aplica → preguntar al usuario.
 
 ## When to Use
 

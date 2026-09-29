@@ -1,5 +1,6 @@
 import { mkdirSync, existsSync, writeFileSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { createHash } from 'node:crypto';
 import matter from 'gray-matter';
 
 /**
@@ -169,6 +170,22 @@ export interface DeterministicResult {
 }
 
 /**
+ * Classifies based on the file name. Spec folders follow a convention:
+ * briefing.md → decision, tests.md → noise, resumen.md → noise unless it
+ * contains post-mortem keywords (checked by classifyByKeywords).
+ */
+export function classifyByFilename(path: string, content: string): LLMClassification | null {
+  const name = path.toLowerCase();
+  if (name.endsWith('briefing.md')) return 'ADR';
+  if (name.endsWith('tests.md')) return 'noise';
+  if (name.endsWith('resumen.md') || name.endsWith('summary.md')) {
+    const kw = classifyByKeywords(content);
+    return kw === 'post-mortem' ? 'post-mortem' : 'noise';
+  }
+  return null;
+}
+
+/**
  * Runs all Level 1 classifiers on source files.
  * Returns classified entries and ambiguous entries.
  */
@@ -181,7 +198,11 @@ export function deterministicExtract(sourceFiles: SourceFile[]): DeterministicRe
     let classification = classifyByHeaders(file.content);
     if (!classification) classification = classifyByKeywords(file.content);
     if (!classification) classification = classifyByFrontmatter(file.frontmatter);
+    if (!classification) classification = classifyByFilename(file.path, file.content);
 
+    if (classification === 'noise') {
+      continue; // deterministically discarded; never sent to the LLM
+    }
     if (classification) {
       classified.push({
         sourcePath: file.path,
@@ -216,6 +237,63 @@ export function buildCandidatePlan(ambiguousEntries: AmbiguousEntry[]): string {
 
 export type LLMClassification = 'ADR' | 'post-mortem' | 'log' | 'noise';
 
+export interface DistillCacheEntry {
+  hash: string;
+  classification: LLMClassification;
+}
+
+export interface DistillCache {
+  get(sourcePath: string, content: string): LLMClassification | null;
+  set(sourcePath: string, content: string, classification: LLMClassification): void;
+  flush(): void;
+}
+
+/**
+ * File-backed LLM classification cache keyed by content hash.
+ * Persists at <wikiRoot>/graphify-out/.distill-cache.json (machine-local,
+ * never committed). Re-runs skip the LLM for unchanged files.
+ */
+export function createDistillCache(wikiRoot: string): DistillCache {
+  const cacheDir = join(wikiRoot, 'graphify-out');
+  const cachePath = join(cacheDir, '.distill-cache.json');
+  let entries = new Map<string, DistillCacheEntry>();
+  let dirty = false;
+
+  try {
+    if (existsSync(cachePath)) {
+      const raw = JSON.parse(readFileSync(cachePath, 'utf8')) as Record<string, DistillCacheEntry>;
+      entries = new Map(Object.entries(raw));
+    }
+  } catch {
+    entries = new Map();
+  }
+
+  const hash = (content: string): string =>
+    createHash('sha256').update(content).digest('hex').slice(0, 32);
+
+  return {
+    get(sourcePath, content) {
+      const entry = entries.get(sourcePath);
+      if (!entry) return null;
+      return entry.hash === hash(content) ? entry.classification : null;
+    },
+    set(sourcePath, content, classification) {
+      entries.set(sourcePath, { hash: hash(content), classification });
+      dirty = true;
+    },
+    flush() {
+      if (!dirty) return;
+      try {
+        mkdirSync(cacheDir, { recursive: true });
+        writeFileSync(cachePath, JSON.stringify(Object.fromEntries(entries), null, 2), 'utf8');
+        dirty = false;
+      } catch {
+        // cache is best-effort; failure must not break distillation
+      }
+    },
+  };
+}
+
 export interface LlmOptions {
   host: string;
   model: string;
@@ -234,7 +312,20 @@ export async function classifyWithLLM(
   if (!llm.enabled || !llm.model) return result;
 
   const prompt = `Classify each entry as exactly one of: ADR, post-mortem, log, or noise.
-Respond with one line per entry in the format: <path> = <classification>
+
+Rules:
+- ADR: technical decision or context about a decision
+- post-mortem: bug, error, root cause, or fix analysis
+- log: change log, history, or learned lesson
+- noise: anything else, do NOT include it in your answer
+
+Output ONLY one line per entry, with no extra text, in this exact format:
+<path> = <classification>
+
+Example:
+add-foo/briefing.md = ADR
+add-bar/post-mortem.md = post-mortem
+
 Entries:
 ${candidatePlan}`;
 
@@ -242,8 +333,14 @@ ${candidatePlan}`;
     const res = await fetch(`${llm.host}/api/generate`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: llm.model, prompt, stream: false }),
-      signal: AbortSignal.timeout(30000)
+      body: JSON.stringify({
+        model: llm.model,
+        prompt,
+        stream: false,
+        think: false,
+        options: { temperature: 0, num_predict: 1000 }
+      }),
+      signal: AbortSignal.timeout(90000)
     });
     if (!res.ok) return result;
     const data = await res.json() as { response?: string };
@@ -269,16 +366,30 @@ ${candidatePlan}`;
  */
 export async function hybridExtract(
   sourceFiles: SourceFile[],
-  llm: LlmOptions
+  llm: LlmOptions,
+  cache?: DistillCache
 ): Promise<DeterministicResult> {
   const { classified, ambiguous } = deterministicExtract(sourceFiles);
 
   if (ambiguous.length > 0 && llm.enabled) {
-    const candidatePlan = buildCandidatePlan(ambiguous);
-    const llmClassifications = await classifyWithLLM(candidatePlan, llm);
+    const cached = new Map<string, LLMClassification>();
+    const toAsk: AmbiguousEntry[] = [];
+    for (const entry of ambiguous) {
+      const hit = cache?.get(entry.sourcePath, entry.content);
+      if (hit) cached.set(entry.sourcePath, hit);
+      else toAsk.push(entry);
+    }
+
+    if (toAsk.length > 0) {
+      const candidatePlan = buildCandidatePlan(toAsk);
+      const llmClassifications = await classifyWithLLM(candidatePlan, llm);
+      for (const [path, cls] of llmClassifications) {
+        if (cls !== 'noise') cached.set(path, cls);
+      }
+    }
 
     for (const entry of ambiguous) {
-      const cls = llmClassifications.get(entry.sourcePath);
+      const cls = cached.get(entry.sourcePath);
       if (cls && cls !== 'noise') {
         classified.push({
           sourcePath: entry.sourcePath,
@@ -286,6 +397,7 @@ export async function hybridExtract(
           content: entry.content,
           frontmatter: entry.frontmatter
         });
+        cache?.set(entry.sourcePath, entry.content, cls);
       }
     }
   }
@@ -414,9 +526,17 @@ export function generateLog(
   if (existsSync(absolutePath)) {
     existingContent = readFileSync(absolutePath, 'utf8');
   }
-  // Append new entries
-  const newContent = entries.map(e => e.content).join('\n\n');
-  const fullContent = existingContent ? `${existingContent}\n\n${newContent}` : newContent;
+  // Append new entries, skipping blocks already present (append-only is idempotent).
+  const newBlocks = entries.map((e) => e.content.trim());
+  const existingBlocks = new Set(
+    existingContent
+      .split(/\n\s*\n\s*\n/)
+      .map((b) => b.trim())
+      .filter(Boolean)
+  );
+  const fresh = newBlocks.filter((b) => !existingBlocks.has(b));
+  const newContent = fresh.join('\n\n\n');
+  const fullContent = newContent ? (existingContent ? `${existingContent}\n\n\n${newContent}` : newContent) : existingContent;
   const frontmatter = {
     id: `log-${date}`,
     tags: ['log'],

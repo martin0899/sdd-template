@@ -21,7 +21,7 @@ export function isObsidianActive(opts: { obsidian?: boolean; noObsidian?: boolea
   return resolveObsidianSync(target).value === 1;
 }
 
-const SUBDIRS = ['architecture', 'git-workflow', 'local-ai', 'manual-installation', 'spec-from-note', 'spectralis-cli'];
+const SUBDIRS = ['architecture', 'local-ai', 'spectralis-cli'];
 
 function templateRoot(): string {
   return join(__dirname, '..', '..');

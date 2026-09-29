@@ -11,21 +11,22 @@ Build a solid Spanish requirement before producing implementation specifications
 
 > **Override en conversación:** el usuario puede indicar en cualquier momento "guarda los requerimientos en <ruta>" o "las plantillas están en <ruta>" y se actualizan para el resto de la sesión.
 
-| Variable | Descripción | Valor por defecto |
+| Variable | Descripción | Resolución |
 |---|---|---|
-| `templates_dir` | Carpeta donde viven las plantillas de requerimiento | `/mnt/c/Users/martin.martinez/Documents/obsidian/Local/obsidian_sync_git/Recursos/Plantilla` (raíz del vault de Obsidian) |
-| `requirements_dir` | Carpeta donde se escriben los requerimientos generados | `/mnt/c/Users/martin.martinez/Documents/obsidian/Local/obsidian_sync_git/Requerimientos` (raíz del vault de Obsidian) |
+| `templates_dir` | Carpeta donde viven las plantillas de requerimiento | `spectralis config --get templates_dir` (default `{vault_root}/09_Plantilla`) |
+| `requirements_dir` | Carpeta donde se escriben los requerimientos generados | `spectralis config --get requirements_dir` (default `{vault_root}/00_Notas`) |
 | `project_registry` | Registro de requerimientos procesados por proyecto | `.sdd-registry/REGISTRY.md` (dentro del repo del proyecto) |
 | `project_briefings` | Briefings técnicos generados durante la investigación | `.sdd-registry/briefings/` (dentro del repo del proyecto) |
 
 **Resolución de rutas al inicio de cada invocación:**
 
 1. Si el usuario indicó rutas explícitas en la conversación actual → usar esas.
-2. Si existe `.sdd-registry/REGISTRY.md` en el proyecto → leer las rutas registradas.
-3. Si existe `Recursos/Plantilla/` en el vault de Obsidian detectado → usar como `templates_dir`.
-4. Si ninguna aplica → preguntar al usuario y registrar en `REGISTRY.md`.
+2. Si `spectralis config --get <key>` devuelve la ruta (config global o manifest del proyecto) → usar esa.
+3. Si existe `.sdd-registry/REGISTRY.md` en el proyecto → leer las rutas registradas.
+4. Si se detecta un vault de Obsidian (`Recursos/Plantilla/`) → usar como `templates_dir`.
+5. Si ninguna aplica → preguntar al usuario y registrar en `REGISTRY.md`.
 
-**Portabilidad a proyectos destino:** esta skill vive en `.agents/skills/` y se distribuye vía `install.sh`. Los valores por defecto asumen un vault de Obsidian con estructura estándar; en proyectos sin vault, el agente pregunta y registra.
+**Portabilidad a proyectos destino:** esta skill vive en `.agents/skills/` y se distribuye vía `install.sh`. Las rutas se resuelven desde `spectralis config --get <key>` y la cascada; en proyectos sin vault, el agente pregunta y registra.
 
 ## Use This Skill When
 
