@@ -39,7 +39,7 @@ test('notes init creates subfolders in resources_dir from manifest', async () =>
   const code = await runNotesInit({ destino: proj });
   assert.equal(code, 0);
   assert.ok(existsSync(join(resources, 'spectralis-cli')));
-  assert.ok(existsSync(join(resources, 'git-workflow')));
+  assert.ok(existsSync(join(resources, 'architecture')));
   assert.ok(existsSync(join(resources, 'local-ai')));
 });
 
@@ -74,7 +74,7 @@ test('notes sync copies manuals to resources_dir', async () => {
   const code = await runNotesSync({ destino: proj, templateRoot: REPO_ROOT });
   assert.equal(code, 0);
   assert.ok(existsSync(join(resources, 'spectralis-cli', 'manual.md')));
-  assert.ok(existsSync(join(resources, 'git-workflow', 'manual.md')));
+  assert.ok(existsSync(join(resources, 'architecture', 'manual.md')));
 });
 
 test('notes sync --dry-run writes nothing', async () => {

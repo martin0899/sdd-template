@@ -12,6 +12,8 @@ import {
   generateDecisiones,
   generateErrores,
   generateLog,
+  generateHistorial,
+  generateOperacion,
   generateRestricciones,
   generateProjectReadme,
   WikiIndex,
@@ -103,7 +105,7 @@ test('generateArquitectura writes arquitectura.md', () => {
   }
 });
 
-test('generateDecisiones writes decision files', () => {
+test('generateDecisiones writes single decisiones.md file', () => {
   const root = scratch();
   try {
     createWikiDir(root, 'my-project');
@@ -112,12 +114,14 @@ test('generateDecisiones writes decision files', () => {
       { specId: 'spec2', content: 'Decision 2 content', frontmatter: { extra: 'value' } },
     ];
     generateDecisiones(root, 'my-project', decisions);
-    const filePath1 = join(root, '05_wiki', 'my-project', 'decisiones', 'spec1.md');
-    const filePath2 = join(root, '05_wiki', 'my-project', 'decisiones', 'spec2.md');
-    assert.ok(existsSync(filePath1));
-    assert.ok(existsSync(filePath2));
-    const content1 = readFileSync(filePath1, 'utf8');
-    assert.ok(content1.includes('Decision 1 content'));
+    // New behavior: single decisiones.md file
+    const filePath = join(root, '05_wiki', 'my-project', 'decisiones.md');
+    assert.ok(existsSync(filePath), 'decisiones.md should exist');
+    const content = readFileSync(filePath, 'utf8');
+    assert.ok(content.includes('Decision 1 content'));
+    assert.ok(content.includes('Decision 2 content'));
+    assert.ok(content.includes('spec1'));
+    assert.ok(content.includes('spec2'));
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -144,14 +148,14 @@ test('generateLog appends to monthly file', () => {
   const root = scratch();
   try {
     createWikiDir(root, 'my-project');
-    const entries1: LogEntry[] = [{ content: 'First entry' }];
+    const entries1: LogEntry[] = [{ specId: 'add-foo', content: 'First entry' }];
     generateLog(root, 'my-project', entries1, '2026-09');
     const filePath = join(root, '05_wiki', 'my-project', 'log', '2026-09.md');
     assert.ok(existsSync(filePath));
     const content1 = readFileSync(filePath, 'utf8');
     assert.ok(content1.includes('First entry'));
     // Append second entry
-    const entries2: LogEntry[] = [{ content: 'Second entry' }];
+    const entries2: LogEntry[] = [{ specId: 'add-bar', content: 'Second entry' }];
     generateLog(root, 'my-project', entries2, '2026-09');
     const content2 = readFileSync(filePath, 'utf8');
     assert.ok(content2.includes('First entry'));

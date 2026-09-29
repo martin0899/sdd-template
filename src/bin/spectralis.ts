@@ -28,6 +28,8 @@ import { runSpecInit, runSpecComplete } from '../commands/spec';
 import { runProjects } from '../commands/projects';
 import { runSeed } from '../commands/seed';
 import { runNotesInit, runNotesSync } from '../commands/notes';
+import { runBacklog } from '../commands/backlog';
+import { runWikiSearch } from '../commands/wiki-search';
 
 const pkg = require('../../package.json') as { version: string };
 
@@ -55,6 +57,9 @@ Examples:
   $ spectralis config                   # Show harness configuration
   $ spectralis doctor                   # Verify host prerequisites
   $ spectralis skills                   # Detect skills and refresh _INDEX_SKILLS.json
+  $ spectralis distill Spectralis        # Distill project specs to wiki
+  $ spectralis backlog Spectralis         # List backlog notes from project
+  $ spectralis wiki search Spectralis arquitectura  # Search in wiki
   $ spectralis --v                      # Show version (alias for --version)
 `);
 
@@ -262,6 +267,31 @@ notesCmd
       process.exitCode = code;
     }
   );
+
+program
+  .command('backlog <proyecto>')
+  .description('List backlog notes from a project\'s _Notas/ folder')
+  .option('--json', 'output as JSON')
+  .option('--status <status>', 'filter by status (pendiente, completado, sin-estado, todos)')
+  .action(async (proyecto: string, opts: { json?: boolean; status?: string }) => {
+    const code = await runBacklog({ project: proyecto, json: opts.json, statusFilter: opts.status });
+    process.exitCode = code;
+  });
+
+const wikiCmd = program
+  .command('wiki')
+  .description('Search and explore the wiki knowledge base');
+
+wikiCmd
+  .command('search <proyecto> [query]')
+  .description('Search in a project\'s wiki aggregated files (arquitectura, decisiones, operacion, historial)')
+  .option('--json', 'output as JSON')
+  .option('--file <nombre>', 'limit search to a specific file (e.g., decisiones.md)')
+  .option('-v, --vault-root <path>', 'vault root path (default: from config)')
+  .action(async (proyecto: string, query: string | undefined, opts: { json?: boolean; file?: string; vaultRoot?: string }) => {
+    const code = await runWikiSearch({ project: proyecto, query, json: opts.json, file: opts.file, vaultRoot: opts.vaultRoot });
+    process.exitCode = code;
+  });
 
 program.parseAsync(process.argv).catch((err: Error) => {
   console.error(`[ERROR] ${err.message}`);

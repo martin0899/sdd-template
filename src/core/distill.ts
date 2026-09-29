@@ -1,5 +1,6 @@
-import { mkdirSync, existsSync, writeFileSync, readFileSync } from 'node:fs';
+import { mkdirSync, existsSync, writeFileSync, readFileSync, renameSync, unlinkSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
+import { createHash } from 'node:crypto';
 import matter from 'gray-matter';
 
 /**
@@ -17,6 +18,7 @@ export function createWikiDir(wikiRoot: string, projectName: string): void {
 
 /**
  * Writes a note with minimal frontmatter (only id + optional tags).
+ * Uses atomic write: temp file + rename for crash safety.
  * @param wikiRoot Root of the wiki directory
  * @param projectName Project name
  * @param filePath Relative path within project directory (e.g., "arquitectura.md")
@@ -39,7 +41,19 @@ export function writeOptimizedNote(
   const absolutePath = join(wikiRoot, '05_wiki', projectName, filePath);
   const dir = join(absolutePath, '..');
   mkdirSync(dir, { recursive: true });
-  writeFileSync(absolutePath, fileContent, 'utf8');
+
+  // Atomic write: temp file + rename
+  const tmpPath = `${absolutePath}.tmp`;
+  writeFileSync(tmpPath, fileContent, 'utf8');
+  // Check if content actually changed before renaming
+  if (existsSync(absolutePath)) {
+    const existing = readFileSync(absolutePath, 'utf8');
+    if (existing === fileContent) {
+      unlinkSync(tmpPath); // No change, just clean up temp
+      return;
+    }
+  }
+  renameSync(tmpPath, absolutePath); // Atomic rename
 }
 
 /**
@@ -169,6 +183,22 @@ export interface DeterministicResult {
 }
 
 /**
+ * Classifies based on the file name. Spec folders follow a convention:
+ * briefing.md → decision, tests.md → noise, resumen.md → noise unless it
+ * contains post-mortem keywords (checked by classifyByKeywords).
+ */
+export function classifyByFilename(path: string, content: string): LLMClassification | null {
+  const name = path.toLowerCase();
+  if (name.endsWith('briefing.md')) return 'ADR';
+  if (name.endsWith('tests.md')) return 'noise';
+  if (name.endsWith('resumen.md') || name.endsWith('summary.md')) {
+    const kw = classifyByKeywords(content);
+    return kw === 'post-mortem' ? 'post-mortem' : 'noise';
+  }
+  return null;
+}
+
+/**
  * Runs all Level 1 classifiers on source files.
  * Returns classified entries and ambiguous entries.
  */
@@ -181,7 +211,11 @@ export function deterministicExtract(sourceFiles: SourceFile[]): DeterministicRe
     let classification = classifyByHeaders(file.content);
     if (!classification) classification = classifyByKeywords(file.content);
     if (!classification) classification = classifyByFrontmatter(file.frontmatter);
+    if (!classification) classification = classifyByFilename(file.path, file.content);
 
+    if (classification === 'noise') {
+      continue; // deterministically discarded; never sent to the LLM
+    }
     if (classification) {
       classified.push({
         sourcePath: file.path,
@@ -216,6 +250,63 @@ export function buildCandidatePlan(ambiguousEntries: AmbiguousEntry[]): string {
 
 export type LLMClassification = 'ADR' | 'post-mortem' | 'log' | 'noise';
 
+export interface DistillCacheEntry {
+  hash: string;
+  classification: LLMClassification;
+}
+
+export interface DistillCache {
+  get(sourcePath: string, content: string): LLMClassification | null;
+  set(sourcePath: string, content: string, classification: LLMClassification): void;
+  flush(): void;
+}
+
+/**
+ * File-backed LLM classification cache keyed by content hash.
+ * Persists at <wikiRoot>/graphify-out/.distill-cache.json (machine-local,
+ * never committed). Re-runs skip the LLM for unchanged files.
+ */
+export function createDistillCache(wikiRoot: string): DistillCache {
+  const cacheDir = join(wikiRoot, 'graphify-out');
+  const cachePath = join(cacheDir, '.distill-cache.json');
+  let entries = new Map<string, DistillCacheEntry>();
+  let dirty = false;
+
+  try {
+    if (existsSync(cachePath)) {
+      const raw = JSON.parse(readFileSync(cachePath, 'utf8')) as Record<string, DistillCacheEntry>;
+      entries = new Map(Object.entries(raw));
+    }
+  } catch {
+    entries = new Map();
+  }
+
+  const hash = (content: string): string =>
+    createHash('sha256').update(content).digest('hex').slice(0, 32);
+
+  return {
+    get(sourcePath, content) {
+      const entry = entries.get(sourcePath);
+      if (!entry) return null;
+      return entry.hash === hash(content) ? entry.classification : null;
+    },
+    set(sourcePath, content, classification) {
+      entries.set(sourcePath, { hash: hash(content), classification });
+      dirty = true;
+    },
+    flush() {
+      if (!dirty) return;
+      try {
+        mkdirSync(cacheDir, { recursive: true });
+        writeFileSync(cachePath, JSON.stringify(Object.fromEntries(entries), null, 2), 'utf8');
+        dirty = false;
+      } catch {
+        // cache is best-effort; failure must not break distillation
+      }
+    },
+  };
+}
+
 export interface LlmOptions {
   host: string;
   model: string;
@@ -234,7 +325,20 @@ export async function classifyWithLLM(
   if (!llm.enabled || !llm.model) return result;
 
   const prompt = `Classify each entry as exactly one of: ADR, post-mortem, log, or noise.
-Respond with one line per entry in the format: <path> = <classification>
+
+Rules:
+- ADR: technical decision or context about a decision
+- post-mortem: bug, error, root cause, or fix analysis
+- log: change log, history, or learned lesson
+- noise: anything else, do NOT include it in your answer
+
+Output ONLY one line per entry, with no extra text, in this exact format:
+<path> = <classification>
+
+Example:
+add-foo/briefing.md = ADR
+add-bar/post-mortem.md = post-mortem
+
 Entries:
 ${candidatePlan}`;
 
@@ -242,8 +346,14 @@ ${candidatePlan}`;
     const res = await fetch(`${llm.host}/api/generate`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: llm.model, prompt, stream: false }),
-      signal: AbortSignal.timeout(30000)
+      body: JSON.stringify({
+        model: llm.model,
+        prompt,
+        stream: false,
+        think: false,
+        options: { temperature: 0, num_predict: 1000 }
+      }),
+      signal: AbortSignal.timeout(90000)
     });
     if (!res.ok) return result;
     const data = await res.json() as { response?: string };
@@ -269,16 +379,30 @@ ${candidatePlan}`;
  */
 export async function hybridExtract(
   sourceFiles: SourceFile[],
-  llm: LlmOptions
+  llm: LlmOptions,
+  cache?: DistillCache
 ): Promise<DeterministicResult> {
   const { classified, ambiguous } = deterministicExtract(sourceFiles);
 
   if (ambiguous.length > 0 && llm.enabled) {
-    const candidatePlan = buildCandidatePlan(ambiguous);
-    const llmClassifications = await classifyWithLLM(candidatePlan, llm);
+    const cached = new Map<string, LLMClassification>();
+    const toAsk: AmbiguousEntry[] = [];
+    for (const entry of ambiguous) {
+      const hit = cache?.get(entry.sourcePath, entry.content);
+      if (hit) cached.set(entry.sourcePath, hit);
+      else toAsk.push(entry);
+    }
+
+    if (toAsk.length > 0) {
+      const candidatePlan = buildCandidatePlan(toAsk);
+      const llmClassifications = await classifyWithLLM(candidatePlan, llm);
+      for (const [path, cls] of llmClassifications) {
+        if (cls !== 'noise') cached.set(path, cls);
+      }
+    }
 
     for (const entry of ambiguous) {
-      const cls = llmClassifications.get(entry.sourcePath);
+      const cls = cached.get(entry.sourcePath);
       if (cls && cls !== 'noise') {
         classified.push({
           sourcePath: entry.sourcePath,
@@ -286,6 +410,7 @@ export async function hybridExtract(
           content: entry.content,
           frontmatter: entry.frontmatter
         });
+        cache?.set(entry.sourcePath, entry.content, cls);
       }
     }
   }
@@ -295,7 +420,8 @@ export async function hybridExtract(
 
 /**
  * Extracts system overview from briefing files and writes arquitectura.md.
- * Overwrite strategy: replaces entirely with most recent briefing synthesis.
+ * Overwrite strategy: replaces entirely - idempotent.
+ * Follows the formal schema from Phase 1 contract.
  * @param wikiRoot Root of the wiki directory
  * @param projectName Project name
  * @param briefings Array of briefing file contents (strings)
@@ -305,13 +431,15 @@ export function generateArquitectura(
   projectName: string,
   briefings: string[]
 ): void {
-  // Simple synthesis: concatenate all briefings with separator
-  const overview = briefings.join('\n\n---\n\n');
   const frontmatter = {
     id: 'arquitectura',
     tags: ['arquitectura', 'overview'],
   };
-  writeOptimizedNote(wikiRoot, projectName, 'arquitectura.md', frontmatter, overview);
+
+  // Build content following the formal schema
+  const content = `# Arquitectura — ${projectName}\n\n## Estado actual\n\n${briefings.length > 0 ? briefings.join('\n\n---\n\n') : 'Sin specs completadas.'}\n\n## Componentes\n\nProyecto de herramientas CLI y automatización.\n\n## Stack\n\nTypeScript · Node.js · Obsidian`;
+
+  writeOptimizedNote(wikiRoot, projectName, 'arquitectura.md', frontmatter, content);
 }
 
 export interface Decision {
@@ -321,8 +449,8 @@ export interface Decision {
 }
 
 /**
- * Writes/updates ADR files to decisiones/<spec-id>.md (merge by spec-id).
- * New decisions added, existing updated only if changed.
+ * Generates a single decisiones.md file aggregating all decisions.
+ * This is idempotent - each run rebuilds from sources.
  * @param wikiRoot Root of the wiki directory
  * @param projectName Project name
  * @param decisions Array of decision objects
@@ -332,24 +460,25 @@ export function generateDecisiones(
   projectName: string,
   decisions: Decision[]
 ): void {
-  for (const decision of decisions) {
-    const filePath = `decisiones/${decision.specId}.md`;
-    const frontmatter = {
-      id: decision.specId,
-      tags: ['decision', 'adr'],
-      ...decision.frontmatter,
-    };
-    // Simple merge: if file exists and content identical, skip
-    const absolutePath = join(wikiRoot, '05_wiki', projectName, filePath);
-    if (existsSync(absolutePath)) {
-      const existing = readFileSync(absolutePath, 'utf8');
-      const existingData = matter(existing);
-      if (existingData.content.trim() === decision.content.trim()) {
-        continue; // no change
-      }
-    }
-    writeOptimizedNote(wikiRoot, projectName, filePath, frontmatter, decision.content);
-  }
+  if (decisions.length === 0) return;
+
+  // Sort by specId for determinism
+  decisions.sort((a, b) => a.specId.localeCompare(b.specId));
+
+  const sections = decisions.map(decision => {
+    const date = decision.frontmatter?.updated
+      ? `Última actualización: ${String(decision.frontmatter.updated).slice(0, 10)}`
+      : '';
+    return `### ${decision.specId}\n\nFuente: \`${decision.specId}\`\nEstado: completado\n${date ? date + '\n' : ''}\n${decision.content.trim()}`;
+  }).join('\n\n---\n\n');
+
+  const frontmatter = {
+    id: 'decisiones',
+    tags: ['decision', 'adr'],
+  };
+
+  const content = `# Decisiones — ${projectName}\n\n${sections}`;
+  writeOptimizedNote(wikiRoot, projectName, 'decisiones.md', frontmatter, content);
 }
 
 export interface ErrorEntry {
@@ -390,6 +519,7 @@ export function generateErrores(
 }
 
 export interface LogEntry {
+  specId: string;
   content: string;
   frontmatter?: Record<string, unknown>;
 }
@@ -414,9 +544,17 @@ export function generateLog(
   if (existsSync(absolutePath)) {
     existingContent = readFileSync(absolutePath, 'utf8');
   }
-  // Append new entries
-  const newContent = entries.map(e => e.content).join('\n\n');
-  const fullContent = existingContent ? `${existingContent}\n\n${newContent}` : newContent;
+  // Append new entries, skipping blocks already present (append-only is idempotent).
+  const newBlocks = entries.map((e) => e.content.trim());
+  const existingBlocks = new Set(
+    existingContent
+      .split(/\n\s*\n\s*\n/)
+      .map((b) => b.trim())
+      .filter(Boolean)
+  );
+  const fresh = newBlocks.filter((b) => !existingBlocks.has(b));
+  const newContent = fresh.join('\n\n\n');
+  const fullContent = newContent ? (existingContent ? `${existingContent}\n\n\n${newContent}` : newContent) : existingContent;
   const frontmatter = {
     id: `log-${date}`,
     tags: ['log'],
@@ -446,6 +584,104 @@ export function generateRestricciones(
 }
 
 /**
+ * Generates historial.md by rebuilding from log entries grouped by month.
+ * This is idempotent - each run rebuilds from sources, no append.
+ * @param wikiRoot Root of the wiki directory
+ * @param projectName Project name
+ * @param entries Array of log entry objects with specId
+ */
+export function generateHistorial(
+  wikiRoot: string,
+  projectName: string,
+  entries: LogEntry[]
+): void {
+  // Group entries by month (YYYY-MM)
+  const byMonth = new Map<string, LogEntry[]>();
+  for (const entry of entries) {
+    // Extract date from frontmatter or use current month
+    let month = new Date().toISOString().slice(0, 7);
+    if (entry.frontmatter?.updated) {
+      const d = new Date(entry.frontmatter.updated as string);
+      if (!isNaN(d.getTime())) month = d.toISOString().slice(0, 7);
+    } else if (entry.frontmatter?.date) {
+      const d = new Date(entry.frontmatter.date as string);
+      if (!isNaN(d.getTime())) month = d.toISOString().slice(0, 7);
+    }
+    if (!byMonth.has(month)) byMonth.set(month, []);
+    byMonth.get(month)!.push(entry);
+  }
+
+  // Build content grouped by month
+  const months = Array.from(byMonth.keys()).sort().reverse(); // Most recent first
+  const sections: string[] = [];
+
+  for (const month of months) {
+    const monthEntries = byMonth.get(month)!;
+    // Sort entries by specId within month for determinism
+    monthEntries.sort((a, b) => a.specId.localeCompare(b.specId));
+
+    const entriesContent = monthEntries.map(entry => {
+      const provenance = `Fuente: \`${entry.specId}\``;
+      const date = entry.frontmatter?.updated
+        ? `Última actualización: ${String(entry.frontmatter.updated).slice(0, 10)}`
+        : '';
+      return `### ${entry.specId}\n\n${provenance}\n${date ? date + '\n' : ''}\n${entry.content.trim()}`;
+    }).join('\n\n---\n\n');
+
+    sections.push(`## ${month}\n\n${entriesContent}`);
+  }
+
+  const frontmatter = {
+    id: 'historial',
+    tags: ['historial', 'log'],
+  };
+
+  const content = sections.join('\n\n');
+  writeOptimizedNote(wikiRoot, projectName, 'historial.md', frontmatter, content);
+}
+
+/**
+ * Generates operacion.md combining errors and restrictions.
+ * This is idempotent - each run rebuilds from sources.
+ * @param wikiRoot Root of the wiki directory
+ * @param projectName Project name
+ * @param errors Array of error entries
+ * @param restrictions Content of restrictions
+ */
+export function generateOperacion(
+  wikiRoot: string,
+  projectName: string,
+  errors: ErrorEntry[],
+  restrictions: string
+): void {
+  const sections: string[] = [];
+
+  // Errors section
+  if (errors.length > 0) {
+    sections.push('## Errores conocidos\n');
+    // Sort by specId for determinism
+    errors.sort((a, b) => a.specId.localeCompare(b.specId));
+    for (const error of errors) {
+      sections.push(`### ${error.specId}\n\nFuente: \`${error.specId}\`\n${error.content.trim()}`);
+    }
+  }
+
+  // Restrictions section
+  if (restrictions.trim()) {
+    sections.push('## Restricciones\n');
+    sections.push(restrictions.trim());
+  }
+
+  const frontmatter = {
+    id: 'operacion',
+    tags: ['operacion', 'errors', 'restrictions'],
+  };
+
+  const content = sections.join('\n\n');
+  writeOptimizedNote(wikiRoot, projectName, 'operacion.md', frontmatter, content);
+}
+
+/**
  * Auto-generates/updates _README.md in 01_Proyectos/<project>/.
  * @param projectDir Path to 01_Proyectos/<project>/
  * @param specs Array of spec objects with name and status
@@ -459,4 +695,34 @@ export function generateProjectReadme(
   const content = `# ${projectDir.split('/').pop()}\n\nStatus: ${completedCount}/${specs.length} specs completed\n\n## Specs\n\n${specList}\n`;
   const readmePath = join(projectDir, '_README.md');
   writeFileSync(readmePath, content, 'utf8');
+}
+
+/**
+ * Cleans up orphaned files in decisiones/ and errores/ directories.
+ * Only removes files that are not in the current active specs list.
+ * @param wikiRoot Root of the wiki directory
+ * @param projectName Project name
+ * @param activeSpecs Set of active spec IDs that should be kept
+ */
+export function cleanupOrphans(
+  wikiRoot: string,
+  projectName: string,
+  activeSpecs: Set<string>
+): void {
+  const projectDir = join(wikiRoot, '05_wiki', projectName);
+
+  for (const subdir of ['decisiones', 'errores']) {
+    const subdirPath = join(projectDir, subdir);
+    if (!existsSync(subdirPath)) continue;
+
+    for (const file of readdirSync(subdirPath)) {
+      if (!file.endsWith('.md')) continue;
+      // Extract spec-id from filename (e.g., "add-foo.md" -> "add-foo")
+      const specId = file.replace(/\.md$/, '');
+      if (!activeSpecs.has(specId)) {
+        // Orphan - remove it
+        unlinkSync(join(subdirPath, file));
+      }
+    }
+  }
 }

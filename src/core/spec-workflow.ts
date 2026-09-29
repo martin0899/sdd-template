@@ -107,4 +107,7 @@ export function registerSpec(projectRoot: string, specId: string, project: strin
     content += row;
     writeFileSync(registryPath, content, 'utf8');
   }
+  if (!existsSync(registryPath)) {
+    throw new Error(`REGISTRY not written to expected location: ${registryPath}`);
+  }
 }
