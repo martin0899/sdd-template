@@ -15,6 +15,7 @@ Build a solid Spanish requirement before producing implementation specifications
 |---|---|---|
 | `templates_dir` | Carpeta donde viven las plantillas de requerimiento | `spectralis config --get templates_dir` (default `{vault_root}/09_Plantilla`) |
 | `requirements_dir` | Carpeta donde se escriben los requerimientos generados | `spectralis config --get requirements_dir` (default `{vault_root}/00_Notas`) |
+| `backlog_cmd` | Comando para listar notas de backlog de un proyecto | `spectralis backlog <proyecto> --json` (lista `01_Proyectos/<proyecto>/_Notas/`) |
 | `project_registry` | Registro de requerimientos procesados por proyecto | `.sdd-registry/REGISTRY.md` (dentro del repo del proyecto) |
 | `project_briefings` | Briefings técnicos generados durante la investigación | `.sdd-registry/briefings/` (dentro del repo del proyecto) |
 

@@ -1,7 +1,7 @@
 import { existsSync, readFileSync, writeFileSync, mkdirSync, readdirSync, statSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import matter from 'gray-matter';
-import { createWikiDir, writeOptimizedNote, readIndex, writeIndex, hybridExtract, generateArquitectura, generateDecisiones, generateErrores, generateLog, generateRestricciones, generateProjectReadme, createDistillCache, SourceFile, Decision, ErrorEntry, LogEntry, LlmOptions, ClassifiedEntry } from '../core/distill';
+import { createWikiDir, writeOptimizedNote, readIndex, writeIndex, hybridExtract, generateArquitectura, generateDecisiones, generateErrores, generateHistorial, generateOperacion, generateRestricciones, generateProjectReadme, cleanupOrphans, createDistillCache, SourceFile, Decision, ErrorEntry, LogEntry, LlmOptions, ClassifiedEntry } from '../core/distill';
 import { checkPermissions } from '../core/permissions';
 import { readLlmConfig, resolveProjectRoot, readGlobalConfig, detectProjectFromCwd, setCurrentProjectRoot } from '../core/config';
 import { generateProjectId } from '../core/project-id';
@@ -121,13 +121,15 @@ export async function runDistill(opts: DistillOptions): Promise<number> {
   const allLogs: LogEntry[] = [];
   let allRules = '';
   const briefings: string[] = [];
+  const activeSpecs = new Set<string>();
 
   for (const entry of result.classified) {
     const sections = extractSections(entry.content);
     const specId = extractSpecId(entry.sourcePath);
+    activeSpecs.add(specId);
     if (sections.decisions) allDecisions.push({ specId, content: sections.decisions });
     if (sections.bugs) allErrors.push({ specId, content: sections.bugs });
-    if (sections.logs) allLogs.push({ content: sections.logs });
+    if (sections.logs) allLogs.push({ specId, content: sections.logs });
     if (sections.rules) allRules += sections.rules + '\n';
     briefings.push(entry.content);
   }
@@ -136,6 +138,7 @@ export async function runDistill(opts: DistillOptions): Promise<number> {
   for (const src of sources) {
     const sections = extractSections(src.content);
     const specId = extractSpecId(src.path);
+    activeSpecs.add(specId);
     if (sections.decisions && !allDecisions.some(d => d.specId === specId)) {
       allDecisions.push({ specId, content: sections.decisions });
     }
@@ -145,20 +148,22 @@ export async function runDistill(opts: DistillOptions): Promise<number> {
     if (sections.rules) allRules += sections.rules + '\n';
   }
 
-  // Generate outputs
+  // Generate outputs (idempotent - rebuild from sources)
   if (briefings.length > 0) generateArquitectura(wikiRoot, project, briefings);
   if (allDecisions.length > 0) generateDecisiones(wikiRoot, project, allDecisions);
-  if (allErrors.length > 0) generateErrores(wikiRoot, project, allErrors);
-  if (allLogs.length > 0) generateLog(wikiRoot, project, allLogs, new Date().toISOString().slice(0, 7));
-  if (allRules) generateRestricciones(wikiRoot, project, allRules);
+  if (allErrors.length > 0 || allRules) generateOperacion(wikiRoot, project, allErrors, allRules);
+  if (allLogs.length > 0) generateHistorial(wikiRoot, project, allLogs);
 
-  // Update _INDEX.json
+  // Cleanup orphaned files in decisiones/ and errores/ folders
+  cleanupOrphans(wikiRoot, project, activeSpecs);
+
+  // Update _INDEX.json - only 4 aggregated files
   const index = readIndex(wikiRoot);
   index[project] = {
     id: generateProjectId(project),
     name: project,
     path: sourceDir,
-    content: ['arquitectura', 'decisiones', 'errores', 'log', 'restricciones'],
+    content: ['arquitectura', 'decisiones', 'operacion', 'historial'],
     stack,
     updated: new Date().toISOString(),
   };

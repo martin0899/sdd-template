@@ -1,6 +1,6 @@
 import { test, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, rmSync, mkdirSync, writeFileSync, readdirSync, readFileSync } from 'node:fs';
+import { mkdtempSync, rmSync, mkdirSync, writeFileSync, readdirSync, readFileSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { readSpecSources, runDistill } from '../../src/commands/distill';
@@ -68,8 +68,10 @@ test('runDistill excludes _Notas content from the wiki output', async () => {
   assert.equal(code, 0);
 
   const wikiProject = join(vault, '05_wiki', 'demo');
-  assert.deepEqual(readdirSync(join(wikiProject, 'decisiones')), ['add-feature-x.md']);
-  const spec = readFileSync(join(wikiProject, 'decisiones', 'add-feature-x.md'), 'utf8');
+  // New behavior: single decisiones.md file, not a folder
+  const decisionesPath = join(wikiProject, 'decisiones.md');
+  assert.ok(existsSync(decisionesPath), 'decisiones.md should exist');
+  const spec = readFileSync(decisionesPath, 'utf8');
   assert.match(spec, /SQLite/);
 
   // No distilled file may contain _Notas content.

@@ -17,6 +17,7 @@ Convierte una nota de requerimiento (Obsidian) en changes y especificaciones Ope
 |---|---|---|
 | `templates_dir` | Carpeta donde viven las plantillas de requerimiento | `Recursos/Plantilla/` (raíz del vault de Obsidian) |
 | `requirements_dir` | Carpeta donde viven los requerimientos generados | `Requerimientos/` (raíz del vault de Obsidian) |
+| `backlog_cmd` | Comando para listar notas de backlog de un proyecto | `spectralis backlog <proyecto> --json` (lista `01_Proyectos/<proyecto>/_Notas/`) |
 | `project_registry` | Registro de requerimientos procesados por proyecto | `.sdd-registry/REGISTRY.md` (dentro del repo del proyecto) |
 | `project_briefings` | Briefings técnicos generados durante la investigación | `.sdd-registry/briefings/` (dentro del repo del proyecto) |
 | `changes_dir` | Carpeta de cambios OpenSpec | `openspec/changes/` (dentro del repo del proyecto) |

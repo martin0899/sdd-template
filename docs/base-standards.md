@@ -103,7 +103,13 @@ This requirement applies to:
 - **Vendor-managed exceptions**: artifacts owned by external CLIs (for example `.opencode/skills/openspec-*`, generated and updated by the OpenSpec CLI) are exempt from `.agents` canonicalization — do not duplicate or symlink them into `.agents`.
 - **Completion Gate**: A change is incomplete if it leaves broken symlinks, stale targets, or duplicated canonical artifacts across agent-specific folders.
 
-## 7. Mandatory OpenSpec Artifact Updates for Post-Apply Changes
+## 7. Second Brain / Obsidian Rules
+
+- **Proyecto activo es el que se está trabajando**: cuando se buscan notas pendientes o se revisan propuestas, **solo** buscar en `01_Proyectos/<proyecto-activo>/_Notas/`. No buscar en otros proyectos.
+- **inbox (`00_Notas/`)**: captures casuales que aún no se depuraron — no son material del proyecto activo hasta que se muevan a `_Notas/` del proyecto correspondiente.
+- **Ciclo de vida**: `_Notas/ → <spec-id>/ → 04_archivado/` — las notas se promueven de inbox a proyecto, de proyecto a spec, y de spec a archivado.
+
+## 8. Mandatory OpenSpec Artifact Updates for Post-Apply Changes
 
 When a new fix/change request appears after `opsx:apply` (or `/apply`) and before `opsx:archive` (or `/archive`), agents must treat it as a spec update first, not as an informal "fix this quickly". It's the core principle of openspec, documentation is the source of truth.
 

@@ -76,6 +76,8 @@ spectralis doctor
 # 4. Instalar en tu proyecto: parado en el proyecto, o pasando la ruta
 cd /ruta/a/tu-proyecto && spectralis init
 # o: spectralis init /ruta/a/tu-proyecto
+
+# Ejecutar `pnpm prepare` o `tsc -p tsconfig.json` para recompilar
 ```
 
 ### Aliases de flags

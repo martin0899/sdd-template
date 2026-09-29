@@ -1,6 +1,6 @@
 import { test, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, rmSync, existsSync, readFileSync } from 'node:fs';
+import { mkdtempSync, rmSync, existsSync, readFileSync, mkdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createSpecFolder, validateSpecComplete, registerSpec } from '../../src/core/spec-workflow';
@@ -58,4 +58,18 @@ test('registerSpec appends row to REGISTRY.md', () => {
   registerSpec(root, 'my-spec', 'TestProject');
   const reg = readFileSync(join(root, '.sdd-registry', 'REGISTRY.md'), 'utf8');
   assert.ok(reg.includes('my-spec'));
+});
+
+test('registerSpec writes REGISTRY in project root, not in parent of separate vault', () => {
+  const base = scratch();
+  const projectRoot = join(base, 'test-project');
+  const vaultRoot = join(base, 'test-vault');
+  mkdirSync(projectRoot, { recursive: true });
+  mkdirSync(vaultRoot, { recursive: true });
+
+  registerSpec(projectRoot, 'my-spec', 'TestProject');
+
+  assert.ok(existsSync(join(projectRoot, '.sdd-registry', 'REGISTRY.md')));
+  assert.ok(!existsSync(join(base, '.sdd-registry')));
+  assert.ok(!existsSync(join(vaultRoot, '.sdd-registry')));
 });

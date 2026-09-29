@@ -1,7 +1,7 @@
 import { resolve } from 'node:path';
 import { createSpecFolder, validateSpecComplete, registerSpec } from '../core/spec-workflow';
 import { runDistill } from './distill';
-import { readGlobalConfig } from '../core/config';
+import { readGlobalConfig, resolveProjectRoot } from '../core/config';
 
 export interface SpecInitOptions {
   project: string;
@@ -40,8 +40,7 @@ export async function runSpecInit(opts: SpecInitOptions): Promise<number> {
 
 export async function runSpecComplete(opts: SpecCompleteOptions): Promise<number> {
   const vaultRoot = resolveVault(opts);
-  const config = readGlobalConfig();
-  const projectRoot = opts.projectRoot ? resolve(opts.projectRoot) : (config.vault_root ? resolve(config.vault_root, '..') : process.cwd());
+  const projectRoot = resolveProjectRoot(opts.project, { projectRoot: opts.projectRoot }) ?? process.cwd();
 
   const validation = validateSpecComplete(vaultRoot, opts.project, opts.specId);
   if (!validation.valid) {

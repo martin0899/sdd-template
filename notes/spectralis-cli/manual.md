@@ -550,6 +550,91 @@ $ spectralis projects --json
 - Requires `projects_base` configured (`spectralis config --set projects_base=<path> --global`).
 - Completeness derives from `tasks.md` checkboxes of each change.
 
+### `spectralis backlog <proyecto>`
+
+Lists backlog notes from a project's `_Notas/` folder (`01_Proyectos/<proyecto>/_Notas/`). Parses frontmatter (`id`, `Tipo`, `Fecha`, `tags`, `status`) and outputs a table (human-readable) or JSON (`--json`). Requires `vault_root` to be configured.
+
+**Parameters:**
+
+| Parameter | Description | Default | Required |
+|-----------|-------------|---------|----------|
+| `<proyecto>` (positional) | Brain project folder name (`01_Proyectos/<proyecto>/_Notas/`) | — | yes |
+| `--json` | Print output as JSON | off | no |
+| `--status <status>` | Filter by status (`pendiente`, `completado`, `sin-estado`, `todos`) | only non-pendiente hidden | no |
+
+**Output (table):**
+
+```
+== <proyecto> — Backlog de <proyecto> ==
+
+  Nota                          | Estado     | Tags                | Fecha
+  ------------------------------|------------|---------------------|----------
+  Propuesta - Comando backlog    | pendiente  | spectralis, p4      | 2026-09-27
+
+  1 item(s)
+```
+
+**Output (JSON):**
+
+```json
+{
+  "project": "Spectralis",
+  "path": "~/01_Proyectos/Spectralis/_Notas",
+  "backlog": [
+    {
+      "file": "Propuesta - Comando backlog.md",
+      "id": "nota-20260927-comando-backlog-proyecto",
+      "status": "pendiente",
+      "tags": ["spectralis", "backlog", "wiki-search"],
+      "date": "2026-09-27"
+    }
+  ],
+  "total": 1
+}
+```
+
+**Examples:**
+
+```text
+$ spectralis backlog Spectralis
+  == Spectralis — Backlog de Spectralis ==
+
+    Nota                          | Estado     | Tags                | Fecha
+    ------------------------------|------------|---------------------|----------
+    Propuesta - Comando backlog    | pendiente  | spectralis, p4      | 2026-09-27
+
+    1 item(s)
+```
+
+```text
+$ spectralis backlog Spectralis --json
+{
+  "project": "Spectralis",
+  ...
+}
+```
+
+```text
+$ spectralis backlog Spectralis --status pendiente
+```
+
+```text
+$ spectralis backlog Spectralis --status todos
+```
+
+**Error cases:**
+
+| Case | Exit code | Message |
+|------|-----------|---------|
+| No `vault_root` configured | 1 | `[ERROR] vault_root not configured. Run: spectralis config --set vault_root=<path> --global` |
+| No `<proyecto>` provided | 1 | `[ERROR] Missing required argument: <proyecto>` |
+| `_Notas/` does not exist | 0 | Empty table with `0 item(s)` |
+
+**Notes:**
+- Searches only `01_Proyectos/<proyecto>/_Notas/` — does not touch `00_Notas/`, `graphify-out/`, or other folders.
+- Notes without a `status` field in frontmatter default to `sin-estado`.
+- `--status` defaults to hiding `sin-estado` items in table view; use `--status todos` to show all.
+
 ### `spectralis spec init` / `spectralis spec complete`
 
 Creates and validates the spec folder of a requirement in the brain (`01_Proyectos/<project>/<spec-id>/`):
@@ -838,6 +923,7 @@ The orchestration logic lives in the `obsidian-orchestration` skill (`.agents/sk
 | `spectralis notes init/sync` | Create/sync manual folders in the second brain |
 | `spectralis seed` | Initial load of `05_wiki/` from discovered projects |
 | `spectralis projects` | Show OpenSpec status across local projects |
+| `spectralis backlog <proyecto>` | List backlog notes from a project's _Notas/ folder |
 | `spectralis spec init/complete` | Create/validate a spec folder in the brain |
 | `spectralis skills` | Detect skills and write `_INDEX_SKILLS.json` + system-reminder |
 | `spectralis distill` | Extract knowledge from specs into 05_wiki/ |

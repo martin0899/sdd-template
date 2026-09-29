@@ -1,0 +1,10 @@
+{
+  "Spectralis": {
+    "id": "proy-20260925-spectralis",
+    "name": "Spectralis",
+    "path": "01_Proyectos/Spectralis",
+    "content": ["arquitectura", "decisiones", "operacion", "historial"],
+    "stack": ["TypeScript", "Node.js", "Obsidian"],
+    "updated": "2026-09-29"
+  }
+}
