@@ -19,13 +19,14 @@ test('discoverProjects finds dirs with openspec/', () => {
   assert.equal(projects.length, 2);
 });
 
-test('seedProject creates wiki structure', () => {
+test('seedProject creates wiki structure (4 aggregates, no obsolete subfolders)', () => {
   const vault = scratch();
   const proj = { name: 'test-proj', path: '/tmp/test-proj', changes: 0, stack: [] };
   const wikiDir = seedProject(vault, proj);
-  assert.ok(existsSync(join(wikiDir, 'decisiones')));
-  assert.ok(existsSync(join(wikiDir, 'errores')));
-  assert.ok(existsSync(join(wikiDir, 'log')));
+  assert.ok(existsSync(wikiDir));
+  assert.ok(!existsSync(join(wikiDir, 'decisiones')));
+  assert.ok(!existsSync(join(wikiDir, 'errores')));
+  assert.ok(!existsSync(join(wikiDir, 'log')));
 });
 
 test('seedIndex writes _INDEX.json', () => {

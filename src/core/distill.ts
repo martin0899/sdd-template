@@ -5,15 +5,14 @@ import matter from 'gray-matter';
 
 /**
  * Creates the wiki directory structure for a project.
+ * Aligned with the 4-aggregate scheme (arquitectura, decisiones, operacion, historial):
+ * only creates the project directory under 05_wiki/, without obsolete subfolders.
  * @param wikiRoot Root of the wiki directory (e.g., vault root)
  * @param projectName Project name (subdirectory under 05_wiki/)
  */
 export function createWikiDir(wikiRoot: string, projectName: string): void {
   const projectDir = join(wikiRoot, '05_wiki', projectName);
-  const subdirs = ['decisiones', 'errores', 'log'];
-  for (const subdir of subdirs) {
-    mkdirSync(join(projectDir, subdir), { recursive: true });
-  }
+  mkdirSync(projectDir, { recursive: true });
 }
 
 /**

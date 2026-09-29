@@ -832,6 +832,29 @@ $ head -5 <project>/.sdd-manifest.json
 - Each component is capped at `99`; the bump carries to the next component.
 - The commit/release skill uses `.sdd-manifest.json → projectVersion` as the canonical version source (fallback: `pom.xml`/`package.json`). Bumps are available in `src/core/project-version.ts` (`bumpPatch`/`bumpMinor`/`bumpMajor`).
 
+### Bump command
+
+The `bump` command increments versions manually:
+
+```bash
+spectralis bump [level] [options]
+
+# level: patch (default) | minor | major
+
+# Options:
+#   -d, --dry-run      show the new version without writing
+#   --spectralis       bump spectralis own version (package.json)
+#   --project          bump project version (.sdd-manifest.json)
+
+# Examples:
+spectralis bump                    # patch projectVersion
+spectralis bump minor              # minor bump projectVersion
+spectralis bump major --spectralis # major bump spectralis version
+spectralis bump --dry-run          # preview without writing
+```
+
+When run inside a project (directory with `.sdd-manifest.json`), `--project` is the default. Use `--spectralis` to bump spectralis itself.
+
 ## Obsidian orchestration switch (`obsidianSync`)
 
 The `obsidianSync` switch (default `0` = off) controls whether the CLI and the OpenSpec workflow synchronize with the **cerebro** (the second brain) automatically. Off by default means **zero extra token cost**.
@@ -919,6 +942,7 @@ The orchestration logic lives in the `obsidian-orchestration` skill (`.agents/sk
 | `spectralis status` | Show installed harness status |
 | `spectralis config` | Show/modify harness configuration |
 | `spectralis doctor` | Verify host prerequisites |
+| `spectralis bump [level]` | Bump version (patch/minor/major) |
 | `spectralis check` | Validate SDD flow consistency and vault note IDs |
 | `spectralis notes init/sync` | Create/sync manual folders in the second brain |
 | `spectralis seed` | Initial load of `05_wiki/` from discovered projects |
