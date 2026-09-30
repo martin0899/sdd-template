@@ -1,6 +1,6 @@
 import { test, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, rmSync, mkdirSync, writeFileSync, existsSync } from 'node:fs';
+import { mkdtempSync, rmSync, mkdirSync, writeFileSync, existsSync, readdirSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { discoverProjects, seedProject, seedIndex } from '../../src/commands/seed';
@@ -37,6 +37,41 @@ test('seedIndex writes _INDEX.json', () => {
   const index = JSON.parse(raw);
   assert.ok(index['proj-a']);
   assert.equal(index['proj-a'].changes, 2);
+});
+
+test('seedProject does not recreate obsolete subfolders on an already-migrated vault', () => {
+  const vault = scratch();
+  const proj = { name: 'migrated', path: '/tmp/migrated', changes: 0, stack: [] };
+  // Simulate a vault already holding the 4 aggregates.
+  const wikiDir = seedProject(vault, proj);
+  for (const f of ['arquitectura.md', 'decisiones.md', 'operacion.md', 'historial.md']) {
+    writeFileSync(join(wikiDir, f), '# content\n');
+  }
+  // Re-seed the same project (idempotence of the seeding step).
+  seedProject(vault, proj);
+  const entries = readdirSync(wikiDir).sort();
+  assert.deepEqual(entries, ['arquitectura.md', 'decisiones.md', 'historial.md', 'operacion.md']);
+});
+
+test('seedIndex records the 4 aggregates in content', () => {
+  const vault = scratch();
+  const projects = [{ name: 'proj-a', path: '/tmp/a', changes: 1, stack: [] }];
+  seedIndex(vault, projects);
+  const index = JSON.parse(readFileSync(join(vault, '05_wiki', '_INDEX.json'), 'utf8'));
+  assert.deepEqual(index['proj-a'].content, ['arquitectura', 'decisiones', 'operacion', 'historial']);
+});
+
+test('seedIndex leaves no temp file behind and fully replaces the index', () => {
+  // Covers the observable half of the atomic-write requirement: the temp file is
+  // always renamed away (never left as a partial file) and the target is replaced
+  // wholesale, not appended to. Crash-safety mid-rename is not unit-observable here.
+  const vault = scratch();
+  const projects = [{ name: 'proj-a', path: '/tmp/a', changes: 1, stack: [] }];
+  seedIndex(vault, projects);
+  const wikiDir = join(vault, '05_wiki');
+  const leftovers = readdirSync(wikiDir).filter((f) => f.endsWith('.tmp'));
+  assert.deepEqual(leftovers, []);
+  assert.ok(readFileSync(join(wikiDir, '_INDEX.json'), 'utf8').includes('"proj-a"'));
 });
 
 test('seedIndex populates stack from project info', () => {

@@ -10,11 +10,9 @@ import {
   writeIndex,
   generateArquitectura,
   generateDecisiones,
-  generateErrores,
   generateLog,
   generateHistorial,
   generateOperacion,
-  generateRestricciones,
   generateProjectReadme,
   WikiIndex,
   Decision,
@@ -127,22 +125,6 @@ test('generateDecisiones writes single decisiones.md file', () => {
   }
 });
 
-test('generateErrores writes error files', () => {
-  const root = scratch();
-  try {
-    createWikiDir(root, 'my-project');
-    const errors: ErrorEntry[] = [
-      { specId: 'bug1', content: 'Bug description' },
-    ];
-    generateErrores(root, 'my-project', errors);
-    const filePath = join(root, '05_wiki', 'my-project', 'errores', 'bug1.md');
-    assert.ok(existsSync(filePath));
-    const content = readFileSync(filePath, 'utf8');
-    assert.ok(content.includes('Bug description'));
-  } finally {
-    rmSync(root, { recursive: true, force: true });
-  }
-});
 
 test('generateLog appends to monthly file', () => {
   const root = scratch();
@@ -160,25 +142,6 @@ test('generateLog appends to monthly file', () => {
     const content2 = readFileSync(filePath, 'utf8');
     assert.ok(content2.includes('First entry'));
     assert.ok(content2.includes('Second entry'));
-  } finally {
-    rmSync(root, { recursive: true, force: true });
-  }
-});
-
-test('generateRestricciones overwrites restricciones.md', () => {
-  const root = scratch();
-  try {
-    createWikiDir(root, 'my-project');
-    generateRestricciones(root, 'my-project', 'Rule 1');
-    const filePath = join(root, '05_wiki', 'my-project', 'restricciones.md');
-    assert.ok(existsSync(filePath));
-    const content = readFileSync(filePath, 'utf8');
-    assert.ok(content.includes('Rule 1'));
-    // Overwrite
-    generateRestricciones(root, 'my-project', 'Rule 2');
-    const content2 = readFileSync(filePath, 'utf8');
-    assert.ok(content2.includes('Rule 2'));
-    assert.ok(!content2.includes('Rule 1'));
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

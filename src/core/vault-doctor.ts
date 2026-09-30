@@ -1,5 +1,6 @@
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, basename } from 'node:path';
+import { decisionesPath, extractSpecIds } from './wiki-structure';
 
 export type Severity = 'error' | 'warning';
 
@@ -23,25 +24,42 @@ export interface RegistryDoctorInput {
   vaultRoot: string;
 }
 
+const REGISTRY_CELLS_PER_ROW = 6;
+
+/**
+ * Parses the REGISTRY.md table.
+ *
+ * A line may hold several rows concatenated with `||`. Splitting on `||` first
+ * (rather than on `|`) separates them without leaving a phantom empty cell,
+ * which is what made the previous cell-count heuristic misjudge such lines.
+ * Dropping the tail silently used to make a registered change look
+ * unregistered, which pushed people to duplicate a row that was already there.
+ */
 export function parseRegistry(content: string): RegistryRow[] {
   const rows: RegistryRow[] = [];
   for (const line of content.split('\n')) {
-    const trimmed = line.trim();
-    if (!trimmed.startsWith('|')) continue;
-    const cells = trimmed.split('|').map((c) => c.trim());
-    if (cells.length < 6) continue;
-    const nota = cells[1];
-    if (nota === 'nota (ruta)' || nota === '' || nota === '-------------') continue;
-    rows.push({
-      nota,
-      requerimiento: cells[2],
-      briefing: cells[3],
-      changes: cells[4]
-        .split(',')
-        .map((c) => c.trim())
-        .filter(Boolean),
-      estado: cells[5]
-    });
+    for (const raw of line.split('||')) {
+      // A concatenated row arrives as `... | completada || Spec/move | ...`: the
+      // `||` doubles as the closing pipe of the first row and the opening pipe of
+      // the next, so the trailing segment arrives without its leading pipe.
+      const stripped = raw.trim();
+      if (!stripped) continue;
+      const trimmed = stripped.startsWith('|') ? stripped : `|${stripped}`;
+      const cells = trimmed.split('|').map((c) => c.trim());
+      if (cells.length < REGISTRY_CELLS_PER_ROW) continue;
+      const nota = cells[1];
+      if (nota === 'nota (ruta)' || nota === '' || nota === '-------------') continue;
+      rows.push({
+        nota,
+        requerimiento: cells[2],
+        briefing: cells[3],
+        changes: cells[4]
+          .split(',')
+          .map((c) => c.trim())
+          .filter(Boolean),
+        estado: cells[5]
+      });
+    }
   }
   return rows;
 }
@@ -60,15 +78,43 @@ export function listActiveChanges(projectRoot: string): string[] {
     .map((d) => d.name);
 }
 
+/**
+ * Collects every change id the registry can legitimately point at.
+ *
+ * `openspec/changes/archive/` stores folders as `YYYY-MM-DD-<spec-id>`, while
+ * REGISTRY.md references the bare `<spec-id>`. Both forms are registered so a
+ * reference resolves against either naming, and consumers of this set inherit
+ * that normalisation for free.
+ */
 function listKnownChanges(projectRoot: string): Set<string> {
   const known = new Set<string>(listActiveChanges(projectRoot));
   const archiveDir = join(projectRoot, 'openspec', 'changes', 'archive');
   if (existsSync(archiveDir)) {
     for (const d of readdirSync(archiveDir, { withFileTypes: true })) {
-      if (d.isDirectory()) known.add(d.name);
+      if (!d.isDirectory()) continue;
+      known.add(d.name);
+      const bare = d.name.replace(/^\d{4}-\d{2}-\d{2}-/, '');
+      if (bare !== d.name) known.add(bare);
     }
   }
   return known;
+}
+
+/**
+ * The spec-ids a registry row points at.
+ *
+ * Only the `changes` column holds spec-ids. The `requerimiento` column holds
+ * requirement ids (`nota-*`, `doc-*`), which were never changes, so validating
+ * it as one produced false positives of a class that should not exist.
+ */
+export function collectChangeRefs(rows: RegistryRow[]): Set<string> {
+  const refs = new Set<string>();
+  for (const row of rows) {
+    for (const c of row.changes) {
+      if (c) refs.add(c);
+    }
+  }
+  return refs;
 }
 
 export function listBrainSpecs(vaultRoot: string, brainProject: string): string[] {
@@ -107,11 +153,7 @@ export function checkChangesWithoutRegistry(
   rows: RegistryRow[]
 ): VaultDoctorFinding[] {
   const findings: VaultDoctorFinding[] = [];
-  const registered = new Set<string>();
-  for (const row of rows) {
-    if (row.requerimiento) registered.add(row.requerimiento);
-    for (const c of row.changes) registered.add(c);
-  }
+  const registered = collectChangeRefs(rows);
   const brainProject = resolveBrainProject(projectRoot, vaultRoot, rows);
   const brainSpecs = brainProject ? listBrainSpecs(vaultRoot, brainProject) : [];
   for (const id of listActiveChanges(projectRoot)) {
@@ -145,23 +187,22 @@ export function checkOrphanedRegistryEntries(
   rows: RegistryRow[]
 ): VaultDoctorFinding[] {
   const findings: VaultDoctorFinding[] = [];
+  // A referenced spec-id is satisfied by any of: an active change, an archived
+  // change (with or without the archive's date prefix), or a vault folder. An
+  // archived change needs no vault folder: its record is the OpenSpec archive
+  // plus the main spec. The vault-folder convention only exists from
+  // 2026-09-25, so demanding it retroactively would produce warnings that can
+  // never reach zero — and a check that never goes green is a check people
+  // learn to ignore.
   const known = listKnownChanges(projectRoot);
-  const brainProject = resolveBrainProject(projectRoot, vaultRoot, rows);
-  const brainSpecs = new Set(brainProject ? listBrainSpecs(vaultRoot, brainProject) : []);
-  const referenced = new Set<string>();
-  for (const row of rows) {
-    if (row.requerimiento) referenced.add(row.requerimiento);
-    for (const c of row.changes) referenced.add(c);
-  }
-  for (const id of referenced) {
-    if (!known.has(id) && !brainSpecs.has(id)) {
-      findings.push({
-        severity: 'warning',
-        project: basename(projectRoot),
-        artifact: `REGISTRY.md -> ${id}`,
-        suggestion: `Elimina la fila de ${id} del registro (referencia huérfana)`
-      });
-    }
+  for (const id of collectChangeRefs(rows)) {
+    if (known.has(id)) continue;
+    findings.push({
+      severity: 'warning',
+      project: basename(projectRoot),
+      artifact: `REGISTRY.md -> ${id}`,
+      suggestion: `Elimina la fila de ${id} del registro (referencia huérfana)`
+    });
   }
   return findings;
 }
@@ -274,6 +315,32 @@ export function checkIndexMisaligned(
   return findings;
 }
 
+/**
+ * Extracts the distilled spec-ids from a `decisiones.md` aggregate.
+ *
+ * Kept as an alias of the shared contract so existing callers keep working; the
+ * implementation now lives in `wiki-structure`, next to the producer that writes
+ * those blocks.
+ */
+export const extractDistilledSpecIds = extractSpecIds;
+
+/**
+ * A registry row counts as completed when its state declares finished work,
+ * regardless of which vocabulary the row happens to use: `completada`,
+ * `applied`, or `N/N applied`. States with open work (`N/M applied` where
+ * N < M, `0/M pending`) do not require distillation yet.
+ */
+export function isCompletedState(estado: string): boolean {
+  const value = estado.trim().toLowerCase();
+  if (value === 'completada' || value === 'applied') return true;
+  const ratio = value.match(/^(\d+)\s*\/\s*(\d+)\s*applied$/);
+  if (ratio) {
+    const [, applied, total] = ratio;
+    return total !== '0' && applied === total;
+  }
+  return false;
+}
+
 export function checkUndistilled(
   projectRoot: string,
   vaultRoot: string,
@@ -282,16 +349,26 @@ export function checkUndistilled(
   const findings: VaultDoctorFinding[] = [];
   const brainProject = resolveBrainProject(projectRoot, vaultRoot, rows);
   if (!brainProject) return findings;
-  const decisionsDir = join(vaultRoot, '05_wiki', brainProject, 'decisiones');
+
+  const decisionsDoc = decisionesPath(vaultRoot, brainProject);
+  const artifact = `05_wiki/${brainProject}/decisiones.md`;
+  // A project that has not been distilled yet has no aggregate at all. Absence of
+  // the file is a different situation from a missing block inside it, and is
+  // already surfaced by the _INDEX.json misalignment check — reporting every
+  // completed change here would flood freshly seeded projects.
+  if (!existsSync(decisionsDoc)) return findings;
+
+  const distilled = extractSpecIds(readFileSync(decisionsDoc, 'utf8'));
+
   for (const row of rows) {
-    if (row.estado !== 'completada' || !row.requerimiento) continue;
-    const decision = join(decisionsDir, `${row.requerimiento}.md`);
-    if (!existsSync(decision)) {
+    if (!isCompletedState(row.estado)) continue;
+    for (const specId of row.changes) {
+      if (!specId || distilled.has(specId)) continue;
       findings.push({
         severity: 'warning',
         project: brainProject,
-        artifact: `05_wiki/${brainProject}/decisiones/${row.requerimiento}.md`,
-        suggestion: `Destila ${row.requerimiento} (spectralis distill) para generar su decisión`
+        artifact,
+        suggestion: `Destila ${specId} (spectralis distill) para generar su decisión en ${artifact}`
       });
     }
   }

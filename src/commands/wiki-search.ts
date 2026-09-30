@@ -2,6 +2,7 @@ import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import matter from 'gray-matter';
 import { readGlobalConfig } from '../core/config';
+import { AGGREGATE_FILES as SHARED_AGGREGATE_FILES } from '../core/wiki-structure';
 
 export interface WikiSearchOptions {
   project: string;
@@ -25,7 +26,7 @@ export interface SearchOutput {
   total: number;
 }
 
-const AGGREGATE_FILES = ['arquitectura.md', 'decisiones.md', 'operacion.md', 'historial.md'];
+const AGGREGATE_FILES = SHARED_AGGREGATE_FILES;
 
 function searchInContent(content: string, query: string, file: string): SearchResult[] {
   const results: SearchResult[] = [];
