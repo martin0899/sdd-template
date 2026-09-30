@@ -1,6 +1,7 @@
 import { existsSync, readdirSync, readFileSync, mkdirSync, writeFileSync, renameSync } from 'node:fs';
 import { join } from 'node:path';
 import { readGlobalConfig, detectProjectFromCwd, setCurrentProjectRoot } from '../core/config';
+import { indexContent } from '../core/wiki-structure';
 
 export interface SeedProjectInfo {
   name: string;
@@ -74,7 +75,7 @@ export function seedIndex(vaultRoot: string, projects: SeedProjectInfo[]): void 
     index[p.name] = {
       name: p.name,
       path: join('05_wiki', p.name),
-      content: ['arquitectura', 'decisiones', 'operacion', 'historial'],
+      content: indexContent(),
       stack: p.stack,
       changes: p.changes,
       updated: new Date().toISOString()

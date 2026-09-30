@@ -4,6 +4,7 @@ import { mkdtempSync, rmSync, mkdirSync, writeFileSync, readdirSync, readFileSyn
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { readSpecSources, runDistill } from '../../src/commands/distill';
+import { checkUndistilled } from '../../src/core/vault-doctor';
 import {
   deterministicExtract,
   classifyByFilename,
@@ -79,6 +80,50 @@ test('runDistill excludes _Notas content from the wiki output', async () => {
     const raw = readFileSync(file, 'utf8');
     assert.doesNotMatch(raw, /ORM todavía|pendiente/i, `_Notas leaked into ${file}`);
   }
+});
+
+test('contract: a real distill output is recognised by checkUndistilled', async () => {
+  // Guards against silent drift: if `distill` changes the shape of decisiones.md,
+  // this test fails instead of leaving checkUndistilled matching nothing in prod.
+  const vault = scratch();
+  const projectDir = join(vault, '01_Proyectos', 'demo');
+  mkdirSync(join(projectDir, 'add-feature-x'), { recursive: true });
+  writeFileSync(
+    join(projectDir, 'add-feature-x', 'briefing.md'),
+    '---\ntipo: decision\n---\n# Decisión\n## Decisiones\nUsar SQLite para persistencia'
+  );
+
+  const code = await runDistill({ project: 'demo', vaultRoot: vault });
+  assert.equal(code, 0);
+
+  // resolveBrainProject derives the project from row.nota / row.briefing (first path
+  // segment) or from basename(projectRoot), so both must point at `demo`.
+  const rows = [
+    {
+      nota: 'demo/add-feature-x',
+      requerimiento: 'nota-20260929-algo',
+      briefing: 'demo/add-feature-x/briefing.md',
+      changes: ['add-feature-x'],
+      estado: 'completada',
+    },
+  ];
+  assert.deepEqual(
+    checkUndistilled(vault, vault, rows),
+    [],
+    'checkUndistilled must recognise what runDistill actually produced'
+  );
+
+  // And a change that was never distilled must still be reported. Adding a second
+  // spec folder without re-distilling it is the realistic way to get here.
+  mkdirSync(join(projectDir, 'add-not-distilled'), { recursive: true });
+  writeFileSync(
+    join(projectDir, 'add-not-distilled', 'briefing.md'),
+    '---\ntipo: decision\n---\n# Decisión\n## Decisiones\nTodavía sin destilar'
+  );
+  const findings = checkUndistilled(vault, vault, [{ ...rows[0], changes: ['add-feature-x', 'add-not-distilled'] }]);
+  assert.equal(findings.length, 1, `expected only the undistilled spec, got: ${JSON.stringify(findings)}`);
+  assert.ok(findings[0].suggestion.includes('add-not-distilled'));
+  assert.ok(!findings[0].suggestion.includes('add-feature-x'));
 });
 
 test('classifyByFilename maps briefing/tests/resumen by convention', () => {

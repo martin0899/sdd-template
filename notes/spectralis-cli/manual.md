@@ -474,7 +474,7 @@ $ spectralis notes sync
 
 ### `spectralis seed`
 
-Initial load of the machine-local wiki layer (`05_wiki/`): discovers projects under `projects_base` (recursively, up to depth 5) that have an `openspec/` root, creates the wiki skeleton (`decisiones/`, `errores/`, `log/`), reads each project's `stack.json`, and writes `05_wiki/_INDEX.json` with per-project `changes` count and `updated` timestamp.
+Initial load of the machine-local wiki layer (`05_wiki/`): discovers projects under `projects_base` (recursively, up to depth 5) that have an `openspec/` root, creates the project directory `05_wiki/<project>/` (4-aggregate scheme — no legacy `decisiones/`, `errores/` or `log/` subfolders), reads each project's `stack.json`, and writes `05_wiki/_INDEX.json` with per-project `content`, `stack`, `changes` count and `updated` timestamp. The index is written atomically (temp file + rename).
 
 | Option | Effect |
 |--------|--------|
@@ -505,9 +505,9 @@ $ spectralis seed --dry-run
 
 ```text
 $ spectralis seed --project spectralis
-  ✔ seeded 05_wiki/ for spectralis
-  skeleton: decisiones/, errores/, log/
-  _INDEX.json updated (changes count + timestamp)
+  ✔ spectralis → /path/to/vault/05_wiki/spectralis
+
+[OK] Seeded 1 projects. _INDEX.json written.
 ```
 
 ```text
@@ -723,13 +723,17 @@ Extracts knowledge from completed specifications in `01_Proyectos/<project>/` an
 **LLM classification:** when Ollama is configured (`llm.enabled: true`), ambiguous entries are classified via LLM. Without LLM, ambiguous entries are discarded.
 
 **Output files:**
-- `05_wiki/<project>/arquitectura.md` — system overview (overwrite)
-- `05_wiki/<project>/decisiones/<spec-id>.md` — architecture decisions (merge by spec-id)
-- `05_wiki/<project>/errores/<spec-id>.md` — post-mortems (merge by spec-id)
-- `05_wiki/<project>/log/YYYY-MM.md` — significant changes (append-only)
-- `05_wiki/<project>/restricciones.md` — hard constraints (overwrite)
-- `05_wiki/_INDEX.json` — metadata index (includes `stack` field)
+
+`distill` writes the **4-aggregate scheme** — each document is rebuilt in full from the canonical sources and replaced atomically (temp file + rename), never appended:
+
+- `05_wiki/<project>/arquitectura.md` — system overview (full rebuild)
+- `05_wiki/<project>/decisiones.md` — architecture decisions, one block per spec-id (full rebuild, sorted by spec-id)
+- `05_wiki/<project>/operacion.md` — known errors + hard constraints (full rebuild, sorted by spec-id)
+- `05_wiki/<project>/historial.md` — significant changes grouped by month (full rebuild)
+- `05_wiki/_INDEX.json` — metadata index (`content` = the 4 aggregates, plus `stack`, `id`, `updated`)
 - `01_Proyectos/<project>/_README.md` — auto-generated project summary
+
+Legacy per-spec subfolders (`decisiones/`, `errores/`, `log/`) and `restricciones.md` are no longer created or written.
 
 **Options:**
 
@@ -760,7 +764,7 @@ Auto-detected on `spectralis init` and `spectralis update` via `OLLAMA_HOST`.
 ```text
 $ spectralis distill myproject
   ✔ distilled myproject into 05_wiki/myproject/
-    arquitectura.md · decisiones/ · errores/ · log/ · restricciones.md
+    arquitectura.md · decisiones.md · operacion.md · historial.md
   ✔ updated 01_Proyectos/myproject/_README.md
   ✔ updated 05_wiki/_INDEX.json (stack field)
 ```
@@ -768,9 +772,11 @@ $ spectralis distill myproject
 ```text
 $ spectralis distill myproject --dry-run
   [DRY RUN] Would write for myproject:
-    05_wiki/myproject/arquitectura.md         (overwrite)
-    05_wiki/myproject/decisiones/add-auth.md  (merge by spec-id)
-    ... 
+    05_wiki/myproject/arquitectura.md   (full rebuild)
+    05_wiki/myproject/decisiones.md    (full rebuild, 1 block per spec-id)
+    05_wiki/myproject/operacion.md      (full rebuild, errors + restrictions)
+    05_wiki/myproject/historial.md      (full rebuild, grouped by month)
+    ...
   no writes performed
 ```
 
@@ -781,7 +787,7 @@ $ spectralis distill myproject --project-root ./code/myproject --dry-run
 ```
 
 **Notes:**
-- Idempotent: re-running merges by `spec-id` instead of duplicating.
+- Idempotent: each of the 4 aggregates is rebuilt in full from the canonical sources, so consecutive runs produce identical content and never duplicate blocks.
 - Ignores vault organization entries (`_Notas/`, `_INDEX.md`, `_README.md`).
 - Without LLM configured, ambiguous entries are discarded instead of classified.
 

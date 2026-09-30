@@ -10,15 +10,39 @@ import {
   generateOperacion,
   generateHistorial,
   writeOptimizedNote,
-  cleanupOrphans,
   Decision,
   ErrorEntry,
   LogEntry,
 } from '../../src/core/distill';
+import { extractSpecIds, decisionesPath } from '../../src/core/wiki-structure';
 
 function scratch(): string {
   return mkdtempSync(join(tmpdir(), 'spectralis-idempotent-'));
 }
+
+test('contract: what distill writes is what the wiki structure module expects', () => {
+  // Ties the real producer to the shared contract: if generateDecisiones changes
+  // its filename or its block anchor, this fails instead of leaving
+  // checkUndistilled and wiki-search silently matching nothing.
+  const root = scratch();
+  try {
+    createWikiDir(root, 'my-project');
+    generateDecisiones(root, 'my-project', [{ specId: 'add-contract', content: 'Contenido' }]);
+
+    const written = join(root, '05_wiki', 'my-project', 'decisiones.md');
+    assert.ok(existsSync(written), 'distill must write the decisions aggregate');
+    assert.equal(
+      decisionesPath(root, 'my-project'),
+      written,
+      'the contract path must match the file the producer actually wrote'
+    );
+
+    const ids = extractSpecIds(readFileSync(written, 'utf8'));
+    assert.ok(ids.has('add-contract'), 'the shared extractor must read the block distill wrote');
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
 
 test('generateArquitectura is idempotent - second run produces same output', () => {
   const root = scratch();
@@ -101,57 +125,9 @@ test('generateHistorial is idempotent - second run produces same output', () => 
   }
 });
 
-test('cleanupOrphans removes files not in active specs', () => {
-  const root = scratch();
-  try {
-    createWikiDir(root, 'my-project');
-    const projectDir = join(root, '05_wiki', 'my-project');
 
-    // Create orphaned files
-    mkdirSync(join(projectDir, 'decisiones'), { recursive: true });
-    writeFileSync(join(projectDir, 'decisiones', 'add-orphan.md'), 'Orphan decision');
-    mkdirSync(join(projectDir, 'errores'), { recursive: true });
-    writeFileSync(join(projectDir, 'errores', 'add-orphan.md'), 'Orphan error');
 
-    // Active specs only contain 'add-foo'
-    const activeSpecs = new Set(['add-foo']);
-
-    cleanupOrphans(root, 'my-project', activeSpecs);
-
-    // Orphan should be removed
-    assert.ok(!existsSync(join(projectDir, 'decisiones', 'add-orphan.md')), 'Orphan decision file should be removed');
-    assert.ok(!existsSync(join(projectDir, 'errores', 'add-orphan.md')), 'Orphan error file should be removed');
-  } finally {
-    rmSync(root, { recursive: true, force: true });
-  }
-});
-
-test('cleanupOrphans keeps files that are in active specs', () => {
-  const root = scratch();
-  try {
-    createWikiDir(root, 'my-project');
-    const projectDir = join(root, '05_wiki', 'my-project');
-
-    // Create files for active spec
-    mkdirSync(join(projectDir, 'decisiones'), { recursive: true });
-    writeFileSync(join(projectDir, 'decisiones', 'add-foo.md'), 'Active decision');
-    mkdirSync(join(projectDir, 'errores'), { recursive: true });
-    writeFileSync(join(projectDir, 'errores', 'add-foo.md'), 'Active error');
-
-    // Active specs contain 'add-foo'
-    const activeSpecs = new Set(['add-foo']);
-
-    cleanupOrphans(root, 'my-project', activeSpecs);
-
-    // Active files should remain
-    assert.ok(existsSync(join(projectDir, 'decisiones', 'add-foo.md')), 'Active decision file should be kept');
-    assert.ok(existsSync(join(projectDir, 'errores', 'add-foo.md')), 'Active error file should be kept');
-  } finally {
-    rmSync(root, { recursive: true, force: true });
-  }
-});
-
-test('Full distill flow produces exactly 4 files', () => {
+test('Full distill flow produces exactly 4 files and no legacy structure', () => {
   const root = scratch();
   try {
     createWikiDir(root, 'my-project');
@@ -166,15 +142,20 @@ test('Full distill flow produces exactly 4 files', () => {
     generateOperacion(root, 'my-project', errors, 'Restrictions');
     generateHistorial(root, 'my-project', logs);
 
-    // Should have exactly 4 files
-    const files = readdirSync(projectDir).filter(f => f.endsWith('.md'));
-    assert.equal(files.length, 4, `Expected 4 files, got ${files.length}: ${files.join(', ')}`);
-
-    // Verify the 4 expected files exist
-    assert.ok(existsSync(join(projectDir, 'arquitectura.md')), 'arquitectura.md should exist');
-    assert.ok(existsSync(join(projectDir, 'decisiones.md')), 'decisiones.md should exist');
-    assert.ok(existsSync(join(projectDir, 'operacion.md')), 'operacion.md should exist');
-    assert.ok(existsSync(join(projectDir, 'historial.md')), 'historial.md should exist');
+    // Assert on the whole directory, not just .md files: the legacy scheme showed
+    // up as folders (decisiones/, errores/, log/), which an extension filter hides.
+    const entries = readdirSync(projectDir, { withFileTypes: true });
+    const names = entries.map((e) => e.name).sort();
+    assert.deepEqual(
+      names,
+      ['arquitectura.md', 'decisiones.md', 'historial.md', 'operacion.md'],
+      `the wiki dir must hold exactly the 4 aggregates, got: ${names.join(', ')}`
+    );
+    assert.ok(entries.every((e) => e.isFile()), 'no legacy folder may be created');
+    for (const legacy of ['decisiones', 'errores', 'log']) {
+      assert.ok(!names.includes(legacy), `legacy folder ${legacy}/ must not be created`);
+    }
+    assert.ok(!names.includes('restricciones.md'), 'restricciones.md must not be created');
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

@@ -2,6 +2,7 @@ import { mkdirSync, existsSync, writeFileSync, readFileSync, renameSync, unlinkS
 import { join } from 'node:path';
 import { createHash } from 'node:crypto';
 import matter from 'gray-matter';
+import { aggregateFile, wikiProjectPath } from './wiki-structure';
 
 /**
  * Creates the wiki directory structure for a project.
@@ -11,8 +12,7 @@ import matter from 'gray-matter';
  * @param projectName Project name (subdirectory under 05_wiki/)
  */
 export function createWikiDir(wikiRoot: string, projectName: string): void {
-  const projectDir = join(wikiRoot, '05_wiki', projectName);
-  mkdirSync(projectDir, { recursive: true });
+  mkdirSync(wikiProjectPath(wikiRoot, projectName), { recursive: true });
 }
 
 /**
@@ -438,7 +438,7 @@ export function generateArquitectura(
   // Build content following the formal schema
   const content = `# Arquitectura — ${projectName}\n\n## Estado actual\n\n${briefings.length > 0 ? briefings.join('\n\n---\n\n') : 'Sin specs completadas.'}\n\n## Componentes\n\nProyecto de herramientas CLI y automatización.\n\n## Stack\n\nTypeScript · Node.js · Obsidian`;
 
-  writeOptimizedNote(wikiRoot, projectName, 'arquitectura.md', frontmatter, content);
+  writeOptimizedNote(wikiRoot, projectName, aggregateFile('arquitectura'), frontmatter, content);
 }
 
 export interface Decision {
@@ -477,44 +477,13 @@ export function generateDecisiones(
   };
 
   const content = `# Decisiones — ${projectName}\n\n${sections}`;
-  writeOptimizedNote(wikiRoot, projectName, 'decisiones.md', frontmatter, content);
+  writeOptimizedNote(wikiRoot, projectName, aggregateFile('decisiones'), frontmatter, content);
 }
 
 export interface ErrorEntry {
   specId: string;
   content: string;
   frontmatter?: Record<string, unknown>;
-}
-
-/**
- * Writes/updates post-mortem files to errores/<spec-id>.md (merge by spec-id).
- * New errors added, existing updated only if changed.
- * @param wikiRoot Root of the wiki directory
- * @param projectName Project name
- * @param errors Array of error entry objects
- */
-export function generateErrores(
-  wikiRoot: string,
-  projectName: string,
-  errors: ErrorEntry[]
-): void {
-  for (const error of errors) {
-    const filePath = `errores/${error.specId}.md`;
-    const frontmatter = {
-      id: error.specId,
-      tags: ['bug', 'post-mortem'],
-      ...error.frontmatter,
-    };
-    const absolutePath = join(wikiRoot, '05_wiki', projectName, filePath);
-    if (existsSync(absolutePath)) {
-      const existing = readFileSync(absolutePath, 'utf8');
-      const existingData = matter(existing);
-      if (existingData.content.trim() === error.content.trim()) {
-        continue;
-      }
-    }
-    writeOptimizedNote(wikiRoot, projectName, filePath, frontmatter, error.content);
-  }
 }
 
 export interface LogEntry {
@@ -559,27 +528,6 @@ export function generateLog(
     tags: ['log'],
   };
   writeOptimizedNote(wikiRoot, projectName, filePath, frontmatter, fullContent);
-}
-
-/**
- * Overwrites restricciones.md with current hard rules.
- * @param wikiRoot Root of the wiki directory
- * @param projectName Project name
- * @param rules Content of hard rules (string)
- * @param frontmatter Optional frontmatter fields
- */
-export function generateRestricciones(
-  wikiRoot: string,
-  projectName: string,
-  rules: string,
-  frontmatter?: Record<string, unknown>
-): void {
-  const baseFrontmatter = {
-    id: 'restricciones',
-    tags: ['restricciones', 'rules'],
-    ...frontmatter,
-  };
-  writeOptimizedNote(wikiRoot, projectName, 'restricciones.md', baseFrontmatter, rules);
 }
 
 /**
@@ -636,7 +584,7 @@ export function generateHistorial(
   };
 
   const content = sections.join('\n\n');
-  writeOptimizedNote(wikiRoot, projectName, 'historial.md', frontmatter, content);
+  writeOptimizedNote(wikiRoot, projectName, aggregateFile('historial'), frontmatter, content);
 }
 
 /**
@@ -677,7 +625,7 @@ export function generateOperacion(
   };
 
   const content = sections.join('\n\n');
-  writeOptimizedNote(wikiRoot, projectName, 'operacion.md', frontmatter, content);
+  writeOptimizedNote(wikiRoot, projectName, aggregateFile('operacion'), frontmatter, content);
 }
 
 /**
@@ -694,34 +642,4 @@ export function generateProjectReadme(
   const content = `# ${projectDir.split('/').pop()}\n\nStatus: ${completedCount}/${specs.length} specs completed\n\n## Specs\n\n${specList}\n`;
   const readmePath = join(projectDir, '_README.md');
   writeFileSync(readmePath, content, 'utf8');
-}
-
-/**
- * Cleans up orphaned files in decisiones/ and errores/ directories.
- * Only removes files that are not in the current active specs list.
- * @param wikiRoot Root of the wiki directory
- * @param projectName Project name
- * @param activeSpecs Set of active spec IDs that should be kept
- */
-export function cleanupOrphans(
-  wikiRoot: string,
-  projectName: string,
-  activeSpecs: Set<string>
-): void {
-  const projectDir = join(wikiRoot, '05_wiki', projectName);
-
-  for (const subdir of ['decisiones', 'errores']) {
-    const subdirPath = join(projectDir, subdir);
-    if (!existsSync(subdirPath)) continue;
-
-    for (const file of readdirSync(subdirPath)) {
-      if (!file.endsWith('.md')) continue;
-      // Extract spec-id from filename (e.g., "add-foo.md" -> "add-foo")
-      const specId = file.replace(/\.md$/, '');
-      if (!activeSpecs.has(specId)) {
-        // Orphan - remove it
-        unlinkSync(join(subdirPath, file));
-      }
-    }
-  }
 }

@@ -1,10 +1,11 @@
 import { existsSync, readFileSync, writeFileSync, mkdirSync, readdirSync, statSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import matter from 'gray-matter';
-import { createWikiDir, writeOptimizedNote, readIndex, writeIndex, hybridExtract, generateArquitectura, generateDecisiones, generateErrores, generateHistorial, generateOperacion, generateRestricciones, generateProjectReadme, cleanupOrphans, createDistillCache, SourceFile, Decision, ErrorEntry, LogEntry, LlmOptions, ClassifiedEntry } from '../core/distill';
+import { createWikiDir, writeOptimizedNote, readIndex, writeIndex, hybridExtract, generateArquitectura, generateDecisiones, generateHistorial, generateOperacion, generateProjectReadme, createDistillCache, SourceFile, Decision, ErrorEntry, LogEntry, LlmOptions, ClassifiedEntry } from '../core/distill';
 import { checkPermissions } from '../core/permissions';
 import { readLlmConfig, resolveProjectRoot, readGlobalConfig, detectProjectFromCwd, setCurrentProjectRoot } from '../core/config';
 import { generateProjectId } from '../core/project-id';
+import { indexContent } from '../core/wiki-structure';
 import { detectStack } from '../core/detect-stack';
 
 export interface DistillOptions {
@@ -154,16 +155,13 @@ export async function runDistill(opts: DistillOptions): Promise<number> {
   if (allErrors.length > 0 || allRules) generateOperacion(wikiRoot, project, allErrors, allRules);
   if (allLogs.length > 0) generateHistorial(wikiRoot, project, allLogs);
 
-  // Cleanup orphaned files in decisiones/ and errores/ folders
-  cleanupOrphans(wikiRoot, project, activeSpecs);
-
   // Update _INDEX.json - only 4 aggregated files
   const index = readIndex(wikiRoot);
   index[project] = {
     id: generateProjectId(project),
     name: project,
     path: sourceDir,
-    content: ['arquitectura', 'decisiones', 'operacion', 'historial'],
+    content: indexContent(),
     stack,
     updated: new Date().toISOString(),
   };

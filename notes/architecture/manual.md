@@ -127,7 +127,7 @@ The doctor is a deterministic, LLM-free validator of the SDD flow. It has two su
   - registered change with no folder (orphan) → warning;
   - registered change without `briefing.md` → error;
   - `05_wiki/_INDEX.json` misaligned with `01_Proyectos/` + `openspec/changes/` (missing projects, stale `changes`, stale `updated`) → warning;
-  - completed change without a decision in `05_wiki/<project>/decisiones/` → warning.
+  - completed change without a `### <spec-id>` block in `05_wiki/<project>/decisiones.md` → warning (correlated by spec-id against the `changes` column of REGISTRY, not by requirement id).
 - `--ids` (`src/core/vault-ids.ts`) — vault note ID convention (`docs/base-standards.md` §4, extended with the harness-generated prefixes `res-`/`brief-`/`test-`):
   - missing `id` in frontmatter → error;
   - non-conformant format `TYPE-YYYYMMDD-slug` (invalid prefix, missing/malformed date where required, slug with uppercase/accents/spaces) → error;
