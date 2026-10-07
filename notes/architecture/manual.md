@@ -164,3 +164,29 @@ Fixtures are **read-only from the tests' perspective**: tests that need to write
 - **Idempotence**: managed blocks, payload copies, note syncs, and validations are safe to re-run.
 - **Machine-local policy**: `openspec/`, `.sdd-registry/`, `graphify-out/`, `05_wiki/`, and `.spectralis/` are never versioned or distributed (managed `.gitignore` block).
 - **Exit codes are the contract**: commands return an integer that the CLI maps to `process.exitCode`; automation (e.g., `update --check`, `check`) relies on them.
+
+---
+
+## 9. ODD artifact layout
+
+The ODD philosophy ('philosophy: odd', resolved by `add-mode-philosophy-cascade`) has its own artifact contract, implemented in `src/core/odd-layout.ts`. It is only active when the effective mode is `odd`; SDD projects keep the `openspec/changes/<id>/` layout untouched.
+
+- **Source of truth**: the authoritative record of an ODD change is `odd/changes/<id>/feature.md` **inside the project** (`resolveOddFeaturePath`). No mirror or duplicate is created elsewhere.
+- **Independence from OpenSpec**: ODD never creates, detects, invokes or requires `openspec/` nor the OpenSpec CLI. The cycle works in a project without `openspec/`; the layout functions never read or write `openspec/` (the only writer there is the authorized promotion).
+- **Live `feature.md` template**: a single growing document with, at minimum, `Contexto`, `Decisiones` and `Evidencia` — the evidence records the reference to the work-unit commit (`featureTemplate`, `createFeatureDoc`).
+- **Size by the resume test, not by counts**: a change that can be resumed from the request plus the `git diff` is *small* and requires no formal documentation; otherwise it is *substantial* and must produce its `feature.md` before the first code write (`classifyOddChangeSize`, `checkOddChangeRequirements`).
+- **Explicit ODD→SDD promotion**: `promoteOddToSdd` runs only with user authorization; it generates the formal SDD artifacts (`proposal.md`, `design.md`, `tasks.md`) from `feature.md`, conserves `odd/changes/<id>/` as history and declares the resulting source of truth (`openspec/changes/<id>`). It never runs automatically.
+- **Strict folder separation**: `odd/changes/<id>/` and `openspec/changes/<id>/` never mix silently. `guardLayoutSeparation` flags coexistence without an authorized promotion and blocks the mix; the authorized promotion is the only legitimate transit path.
+
+---
+
+## 10. ODD close migration
+
+When an ODD change finishes with **green test evidence**, the `coordinador` detects the close and consolidates a structured documenter request; the `documentador` prepares content and **Spectralis** publishes/distills to `05_wiki/` reusing the existing pipeline (`src/core/distill.ts`). Implemented in `src/core/odd-close.ts`; depends on `add-odd-artifact-layout` (where the change lives) and `add-documenter-request-contract` (request shape).
+
+- **Detection (`detectOddClose`)**: a close is detected only in mode `odd` with green test evidence; without tests or with failing tests it is not a close and the absence/failure is reported.
+- **Structured request (`makeDocumenterRequest`)**: the coordinator's dispatch uses the shared contract fields (`mode`, `changeId`, `affectedPaths`, `testEvidence`, `risk`, `pending`), never ad-hoc text; incomplete requests are rejected with the missing fields.
+- **Documentador prepares, Spectralis publishes**: `documentadorPrepara` builds the content (the resolver never writes to `05_wiki/`); `publicationViaDistill` reuses `runDistill` (`src/core/distill.ts`) — no new pipeline.
+- **Proposal and confirmation**: migration is proposed and only published after explicit confirmation; without confirmation it stays proposed.
+- **Test gate**: without green tests the migration is not proposed and the system reports it.
+- **Safe fallback**: if the documentador has no suitable profile it returns an explicit pending, reported without silently blocking the close.
