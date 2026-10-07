@@ -17,7 +17,7 @@ import { writeManifest } from '../core/manifest';
 import { runPostChecks } from '../core/post-checks';
 import { installGitHooks } from '../core/git-hooks';
 import { detectOllama, configureLlm } from '../core/ollama';
-import { detectVaultRoot, readGlobalConfig, writeGlobalConfig } from '../core/config';
+import { detectVaultRoot, readGlobalConfig, writeGlobalConfig, resolveEffectivePhilosophy } from '../core/config';
 import { resolveAgent } from '../agents/profiles';
 import { selectTools } from '../core/tool-selector';
 import { buildInitPlan } from './plan';
@@ -34,6 +34,8 @@ export interface InitOptions {
   noObsidian?: boolean;
   confirmFactory?: typeof makeConfirm;
   projectVersion?: string;
+  odd?: boolean;
+  sdd?: boolean;
 }
 
 function templateRoot(): string {
@@ -118,11 +120,20 @@ export async function runInit(opts: InitOptions = {}): Promise<number> {
     return 1;
   }
 
+  // 0. Effective philosophy: openspec is only required/installed in SDD mode.
+  let philosophy;
+  try {
+    philosophy = resolveEffectivePhilosophy({ odd: opts.odd, sdd: opts.sdd }, target);
+  } catch (err: unknown) {
+    console.error(`[ERROR] ${err instanceof Error ? err.message : String(err)}`);
+    return 1;
+  }
+
   // 1. Prerequisites gate: nothing is written when something is missing.
   let steps = 0;
   const step = (label: string, result: string) =>
     console.log(phaseLine(++steps, 12, label, result, pal));
-  const prereqs = checkPrereqs(realProbe, process.platform);
+  const prereqs = checkPrereqs(realProbe, process.platform, philosophy.value);
   if (!prereqs.ok) {
     console.log(pal.bold('Missing prerequisites:'));
     for (const r of prereqs.results.filter((r) => !r.ok)) {
@@ -163,8 +174,10 @@ export async function runInit(opts: InitOptions = {}): Promise<number> {
     return 1;
   }
 
-  // 3. openspec init (non-interactive) when the root is missing.
-  if (!existsSync(join(target, 'openspec'))) {
+  // 3. openspec init (non-interactive) when the root is missing — only in SDD.
+  if (philosophy.value === 'odd') {
+    console.log(`  ${pal.dim('→')} openspec init ...... skipped (odd mode; OpenSpec is optional)`);
+  } else if (!existsSync(join(target, 'openspec'))) {
     console.log('[..] Running openspec init in the destination...');
     const result = spawnSync(
       'openspec',
@@ -180,14 +193,18 @@ export async function runInit(opts: InitOptions = {}): Promise<number> {
     console.log(`  ${pal.check} openspec init ...... preserved`);
   }
 
-  // 4. Spanish context injection (APPEND semantics).
-  const configFile = join(target, 'openspec/config.yaml');
-  if (existsSync(configFile)) {
-    writeFileSync(configFile, injectSpanishContext(readFileSync(configFile, 'utf8')));
-    console.log(`  ${pal.green('✔')} Spanish context ..... injected`);
+  // 4. Spanish context injection (APPEND semantics) — SDD only.
+  if (philosophy.value === 'odd') {
+    console.log(`  ${pal.dim('→')} Spanish context ..... skipped (no openspec/ in odd mode)`);
   } else {
-    console.error('[ERROR] openspec/config.yaml not found; cannot inject context.');
-    return 1;
+    const configFile = join(target, 'openspec/config.yaml');
+    if (existsSync(configFile)) {
+      writeFileSync(configFile, injectSpanishContext(readFileSync(configFile, 'utf8')));
+      console.log(`  ${pal.green('✔')} Spanish context ..... injected`);
+    } else {
+      console.error('[ERROR] openspec/config.yaml not found; cannot inject context.');
+      return 1;
+    }
   }
 
   // 5. Managed blocks: AGENTS.md and .gitignore (idempotent).
@@ -228,7 +245,7 @@ export async function runInit(opts: InitOptions = {}): Promise<number> {
       ...listPayloadFiles(root, includeOpencode),
       ...listDocsFiles(root),
       'AGENTS.md',
-      'openspec/config.yaml',
+      ...(philosophy.value !== 'odd' ? ['openspec/config.yaml'] : []),
       ...(stack.backend !== 'none' ? [COMPOSED_STANDARDS[0]] : []),
       ...(stack.frontend !== 'none' ? [COMPOSED_STANDARDS[1]] : [])
     ])

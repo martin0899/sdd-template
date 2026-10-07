@@ -11,6 +11,16 @@ Historial de versiones de **spectralis** (el arnés SDD). Este changelog aplica 
 
 ---
 
+## v1.2.40 — 2026-10-06
+
+Conteo de especificaciones: **40**.
+
+### 2026-10-06 (1)
+
+- **add-openspec-optional-prereq** — `openspec` deja de ser prerequisito incondicional: solo se exige en modo `sdd`. Añade el parámetro de modo a `checkPrereqs`, reporte condicional en `spectralis doctor` (requerido SDD / opcional ODD), y `init` que omite `openspec init` y la inyección de `openspec/config.yaml` en proyectos odd-only, sin gestionar `openspec/` en el manifest.
+
+---
+
 ## v1.2.39 — 2026-10-06
 
 Conteo de especificaciones: **39**.

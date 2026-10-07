@@ -78,14 +78,16 @@ program
   .option('--yes', 'non-interactive mode (always with backup)')
   .option('--obsidian', 'force obsidian orchestration (notes sync) even if obsidianSync=0')
   .option('--no-obsidian', 'disable obsidian orchestration even if obsidianSync=1')
+  .option('--odd', 'install as odd-only project (no openspec prerequisite)')
+  .option('--sdd', 'install as sdd project (openspec required and initialized)')
   .action(
     async (
       destino: string | undefined,
-      opts: { agent?: string; dryRun?: boolean; demo?: boolean; dd?: boolean; yes?: boolean; obsidian?: boolean; noObsidian?: boolean }
+      opts: { agent?: string; dryRun?: boolean; demo?: boolean; dd?: boolean; yes?: boolean; obsidian?: boolean; noObsidian?: boolean; odd?: boolean; sdd?: boolean }
     ) => {
       // Agent validation happens before any write-capable action.
       resolveAgent(opts.agent);
-      const code = await runInit({ destino, agent: opts.agent, dryRun: opts.dryRun || opts.demo || opts.dd, yes: opts.yes, obsidian: opts.obsidian, noObsidian: opts.noObsidian });
+      const code = await runInit({ destino, agent: opts.agent, dryRun: opts.dryRun || opts.demo || opts.dd, yes: opts.yes, obsidian: opts.obsidian, noObsidian: opts.noObsidian, odd: opts.odd, sdd: opts.sdd });
       process.exitCode = code;
     }
   );
