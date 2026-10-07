@@ -206,15 +206,17 @@ program
   .description('Spec workflow: init creates folder structure, complete validates and distills')
   .option('-v, --vault-root <path>', 'vault root path (default: from config)')
   .option('-p, --project-root <path>', 'project root for REGISTRY.md (default: from config)')
+  .option('--odd', 'force ODD mode (organic philosophy) for this change')
+  .option('--sdd', 'force SDD mode (formal philosophy) for this change')
   .action(
     async (
       action: string,
       project: string,
       specId: string,
-      opts: { vaultRoot?: string; projectRoot?: string }
+      opts: { vaultRoot?: string; projectRoot?: string; odd?: boolean; sdd?: boolean }
     ) => {
       if (action === 'init') {
-        const code = await runSpecInit({ project, specId, vaultRoot: opts.vaultRoot });
+        const code = await runSpecInit({ project, specId, vaultRoot: opts.vaultRoot, projectRoot: opts.projectRoot, odd: opts.odd, sdd: opts.sdd });
         process.exitCode = code;
       } else if (action === 'complete') {
         const code = await runSpecComplete({ project, specId, vaultRoot: opts.vaultRoot, projectRoot: opts.projectRoot });

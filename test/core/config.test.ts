@@ -30,6 +30,7 @@ test('readGlobalConfig returns defaults when no file exists', () => {
     resources_dir: '',
     autoUpdate: false,
     obsidianSync: 0,
+    philosophy: 'sdd',
     current_project_root: ''
   });
   const cfg = readGlobalConfig();
@@ -50,6 +51,7 @@ test('writeGlobalConfig and readGlobalConfig round-trip', () => {
     resources_dir: '/tmp/test-resources',
     autoUpdate: false,
     obsidianSync: 0,
+    philosophy: 'sdd',
     current_project_root: ''
   };
   writeGlobalConfig(testCfg);

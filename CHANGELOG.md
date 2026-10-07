@@ -11,6 +11,16 @@ Historial de versiones de **spectralis** (el arnés SDD). Este changelog aplica 
 
 ---
 
+## v1.2.39 — 2026-10-06
+
+Conteo de especificaciones: **39**.
+
+### 2026-10-06 (1)
+
+- **add-mode-philosophy-cascade** — campo `philosophy` (`sdd`|`odd`) en `.sdd-manifest.json` y en la config global, con cascada determinista `--odd/--sdd` > manifiesto > global > `sdd` (default retrocompatible). Añade `spectralis config --set/--get/--list philosophy`, flags mutuamente excluyentes `--odd`/`--sdd` en `spectralis spec init`, y preservación de `philosophy`/`obsidianSync` en `spectralis update`.
+
+---
+
 ## v1.2.38 — 2026-10-06
 
 Conteo de especificaciones: **38**.

@@ -1,7 +1,7 @@
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve, join } from 'node:path';
 import { readManifest } from '../core/manifest';
-import { readGlobalConfig, writeGlobalConfig, setRoute, resolveRoute, detectVaultRoot, resolveObsidianSync, setObsidianSync, RouteConfig, SpectralisConfig } from '../core/config';
+import { readGlobalConfig, writeGlobalConfig, setRoute, resolveRoute, detectVaultRoot, resolveObsidianSync, setObsidianSync, resolvePhilosophy, setPhilosophy, RouteConfig, SpectralisConfig } from '../core/config';
 import { currentPalette, printBanner, green, dim } from '../util/ui';
 
 export interface ConfigOptions {
@@ -73,6 +73,15 @@ export async function runConfig(opts: ConfigOptions = {}): Promise<number> {
       console.log(`[OK] obsidianSync set to ${parsed} (${global ? 'global' : 'project'})`);
       return 0;
     }
+    if (key === 'philosophy') {
+      if (value !== 'sdd' && value !== 'odd') {
+        console.error(`[ERROR] Valor inválido para philosophy: "${value}". Valores admitidos: sdd, odd.`);
+        return 1;
+      }
+      setPhilosophy(value, global, projectRoot);
+      console.log(`[OK] philosophy set to ${value} (${global ? 'global' : 'project'})`);
+      return 0;
+    }
     setRoute(key as keyof RouteConfig, resolve(value), global, projectRoot);
     console.log(`[OK] ${key} set to ${value} (${global ? 'global' : 'project'})`);
     return 0;
@@ -84,6 +93,13 @@ export async function runConfig(opts: ConfigOptions = {}): Promise<number> {
     if (opts.get === 'obsidianSync') {
       const res = resolveObsidianSync(projectRoot);
       console.log(`${res.value} [${res.origin}]`);
+      return 0;
+    }
+    if (opts.get === 'philosophy') {
+      const res = resolvePhilosophy(projectRoot);
+      if (res.warning) console.error(`[WARN] ${res.warning}`);
+      const origin = res.origin === 'manifest' ? 'manifiesto' : res.origin;
+      console.log(`${res.value} [${origin}]`);
       return 0;
     }
     const value = resolveRoute(opts.get as keyof RouteConfig, projectRoot);
@@ -109,6 +125,9 @@ export async function runConfig(opts: ConfigOptions = {}): Promise<number> {
     ];
     const obsidian = resolveObsidianSync(target);
     console.log(`  obsidianSync: ${obsidian.value}  [${obsidian.origin}]`);
+    const philosophy = resolvePhilosophy(target);
+    const philosophyOrigin = philosophy.origin === 'manifest' ? 'manifiesto' : philosophy.origin;
+    console.log(`  philosophy: ${philosophy.value}  [${philosophyOrigin}]`);
     for (const [key, value, origin] of routes) {
       console.log(`  ${key}: ${value || '(not set)'}  [${origin}]`);
     }
