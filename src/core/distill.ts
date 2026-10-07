@@ -125,11 +125,19 @@ export function classifyByKeywords(content: string): string | null {
 }
 
 /**
- * Classifies based on frontmatter fields (status, tipo, tags).
+ * Classifies based on frontmatter fields (status, Tipo/tipo, tags).
+ * The type key is resolved case-insensitively (the vault writes `Tipo`);
+ * the value whitelist is unchanged, so `Especificación` maps to no class.
  * Returns classification string or null if cannot determine.
  */
 export function classifyByFrontmatter(frontmatter: Record<string, unknown>): string | null {
-  const tipo = typeof frontmatter.tipo === 'string' ? frontmatter.tipo.toLowerCase() : null;
+  const rawTipo =
+    typeof frontmatter.tipo === 'string'
+      ? frontmatter.tipo
+      : typeof frontmatter.Tipo === 'string'
+        ? frontmatter.Tipo
+        : null;
+  const tipo = rawTipo ? rawTipo.toLowerCase() : null;
   const status = typeof frontmatter.status === 'string' ? frontmatter.status.toLowerCase() : null;
   const tags = Array.isArray(frontmatter.tags) ? frontmatter.tags.map(t => String(t).toLowerCase()) : [];
 

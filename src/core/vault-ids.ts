@@ -1,10 +1,13 @@
 import { existsSync, readFileSync, readdirSync, statSync, mkdirSync, writeFileSync } from 'node:fs';
 import { join, basename, dirname, relative } from 'node:path';
 import matter from 'gray-matter';
+import { classifyArtifact, isGeneratedArtifact } from './spec-artifact';
 import { VaultDoctorFinding } from './vault-doctor';
 
+export { classifyArtifact, isGeneratedArtifact } from './spec-artifact';
+
 const EXCLUDED_DIRS = new Set(['docs', '05_wiki', '.git', 'node_modules', '.obsidian']);
-const VALID_PREFIXES = ['nota-', 'proy-', 'idea-', 'doc-', 'rec-', 'arc-', 'res-', 'brief-', 'test-'] as const;
+const VALID_PREFIXES = ['nota-', 'proy-', 'idea-', 'doc-', 'rec-', 'arc-', 'res-', 'brief-', 'test-', 'spec-'] as const;
 const PREFIX_REQUIRES_DATE = new Set(['nota-', 'proy-', 'idea-', 'arc-']);
 const TYPE_BY_PREFIX: Record<string, string> = {
   'nota-': 'Nota',
@@ -12,7 +15,8 @@ const TYPE_BY_PREFIX: Record<string, string> = {
   'idea-': 'Idea',
   'doc-': 'Documentación',
   'rec-': 'Recurso',
-  'arc-': 'Archivo'
+  'arc-': 'Archivo',
+  'spec-': 'Especificación'
 };
 const DATE_RE = /^\d{8}$/;
 const SLUG_RE = /^[a-z0-9]+(-[a-z0-9]+)*$/;
@@ -48,12 +52,6 @@ function walkMarkdown(dir: string, out: string[]): void {
       out.push(join(dir, entry.name));
     }
   }
-}
-
-export function isGeneratedArtifact(relPath: string): boolean {
-  const base = basename(relPath);
-  if (['briefing.md', 'tests.md', 'resumen.md'].includes(base)) return true;
-  return relPath.includes('.sdd-registry/briefings/');
 }
 
 function normalizeRel(vaultRoot: string, filePath: string): string {
@@ -280,6 +278,35 @@ export function checkIdTipoCoherente(entries: NoteIdEntry[], vaultRoot: string):
   return findings;
 }
 
+/**
+ * Folder-note coherence (D4b): a folder note must expose the canonical
+ * `## Decisiones técnicas` heading so its deterministic ADR classification
+ * does not depend on the filename classifier. Identity stays structural; the
+ * heading is corroboration, consulted only by this check.
+ */
+export function checkSpecArtifactCoherence(
+  entries: NoteIdEntry[],
+  vaultRoot: string,
+  contentSource?: (relPath: string) => string
+): VaultDoctorFinding[] {
+  const findings: VaultDoctorFinding[] = [];
+  const read = contentSource ?? ((relPath: string) =>
+    existsSync(join(vaultRoot, relPath)) ? readFileSync(join(vaultRoot, relPath), 'utf8') : '');
+  for (const e of entries) {
+    if (classifyArtifact(e.path) !== 'spec') continue;
+    const content = read(e.path);
+    if (!/^##\s+Decisiones\b/im.test(content)) {
+      findings.push({
+        severity: 'warning',
+        project: basename(vaultRoot),
+        artifact: e.path,
+        suggestion: 'Folder note sin el encabezado canónico "## Decisiones técnicas": añádelo para que la clasificación determinista (ADR) no dependa del nombre.'
+      });
+    }
+  }
+  return findings;
+}
+
 export function checkVaultIds(opts: VaultIdsOptions): { findings: VaultDoctorFinding[]; reparsed: number } {
   const { entries, reparsed } = scanVaultIds(opts);
   const findings = [
@@ -287,7 +314,8 @@ export function checkVaultIds(opts: VaultIdsOptions): { findings: VaultDoctorFin
     ...checkIdFormat(entries, opts.vaultRoot),
     ...checkIdUniqueness(entries, opts.vaultRoot),
     ...checkIndexIdRegistration(entries, opts.vaultRoot),
-    ...checkIdTipoCoherente(entries, opts.vaultRoot)
+    ...checkIdTipoCoherente(entries, opts.vaultRoot),
+    ...checkSpecArtifactCoherence(entries, opts.vaultRoot)
   ];
   return { findings, reparsed };
 }

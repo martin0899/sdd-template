@@ -66,8 +66,7 @@ graphify query "tests for <module>"
 
 ### Step 3: Generate Test Documentation
 
-Create test documentation at:
-`{projects_dir}/<Proyecto>/<subtema>/<change-name>-tests.md`
+**Target (consolidado):** escribe la sección de tests **dentro** del folder note único `{projects_dir}/<Proyecto>/<spec-id>/<spec-id>.md` (creándolo si no existe) bajo el heading canónico `## Tests de regresión`. **No crees `tests.md`** ni un archivo aparte. Idempotente: si la sección existe, actualízala sin duplicar el heading.
 
 Use the template from `{templates_dir}/Tests de Regresion.md`.
 

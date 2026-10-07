@@ -116,3 +116,15 @@ test('check --tdd returns exit 0 when there are no active changes', async () => 
   const code = await runCheck({ tdd: true, projectRoot: root, vaultRoot: '' });
   assert.equal(code, 0);
 });
+
+test('check --rules executes the rules sub-check (only rules)', async () => {
+  const root = scratch();
+  mkdirSync(join(root, '.agents', 'skills', 'agent-rules-contract'), { recursive: true });
+  writeFileSync(
+    join(root, '.agents', 'skills', 'agent-rules-contract', 'SKILL.md'),
+    '# agent-rules-contract\n',
+    'utf8'
+  );
+  const code = await runCheck({ rules: true, projectRoot: root, vaultRoot: '' });
+  assert.equal(code, 0);
+});

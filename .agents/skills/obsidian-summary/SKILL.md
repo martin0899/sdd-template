@@ -63,8 +63,8 @@ Read the following files from the change directory:
 
 ### Step 3: Generate Summary
 
-Create a summary document at:
-`{projects_dir}/<Proyecto>/<subtema>/<change-name>-resumen.md`
+Create a summary **section inside the folder note** at:
+`{projects_dir}/<Proyecto>/<spec-id>/<spec-id>.md` — escribe/actualiza los headings canónicos `## Cambios realizados` y `## Lecciones aprendidas`. No crees `resumen.md` ni un archivo aparte (folder note único con `id: spec-<spec-id>`, `Tipo: Especificación`). Idempotente: no añadas un segundo heading igual.
 
 Use the template from `{templates_dir}/Resumen de Especificacion.md`.
 

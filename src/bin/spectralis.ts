@@ -140,10 +140,11 @@ program
   .option('-r, --registry', 'check repo ↔ REGISTRY ↔ brain ↔ openspec consistency')
   .option('-i, --ids', 'validate vault note IDs (format, uniqueness, _INDEX_ID, tipo)')
   .option('-t, --tdd', 'validate TDD ordering (Step K) in tasks.md of active OpenSpec changes')
+  .option('--rules', 'validate the centralized agent-rules contract (duplicates/contradictions)')
   .option('-v, --vault-root <path>', 'vault root path (default: from config)')
   .option('-p, --project-root <path>', 'project root (default: from config or cwd)')
-  .action(async (opts: { registry?: boolean; ids?: boolean; tdd?: boolean; vaultRoot?: string; projectRoot?: string }) => {
-    const code = await runCheck({ registry: opts.registry, ids: opts.ids, tdd: opts.tdd, vaultRoot: opts.vaultRoot, projectRoot: opts.projectRoot });
+  .action(async (opts: { registry?: boolean; ids?: boolean; tdd?: boolean; rules?: boolean; vaultRoot?: string; projectRoot?: string }) => {
+    const code = await runCheck({ registry: opts.registry, ids: opts.ids, tdd: opts.tdd, rules: opts.rules, vaultRoot: opts.vaultRoot, projectRoot: opts.projectRoot });
     process.exitCode = code;
   });
 

@@ -12,6 +12,7 @@ import {
   checkUndistilled,
   checkRegistryConsistency,
   listActiveChanges,
+  listBrainSpecs,
   hasErrors
 } from '../../src/core/vault-doctor';
 
@@ -502,4 +503,42 @@ test('fixtures registry-doctor trigger the expected findings', () => {
   assert.ok(artifacts.some((a) => a.includes('add-nobrief')), 'briefing faltante');
   assert.ok(artifacts.some((a) => a.includes('_INDEX.json')), 'índice desalineado');
   assert.ok(hasErrors(findings));
+});
+test('checkMissingBriefings accepts the folder note as the brain artifact and reports its path when missing', () => {
+  const root = scratch();
+  writeRepo(root, ['add-fn', 'add-none']);
+  const vault = scratch();
+  mkdirSync(join(vault, '01_Proyectos', 'Spec', 'add-fn'), { recursive: true });
+  writeFileSync(join(vault, '01_Proyectos', 'Spec', 'add-fn', 'add-fn.md'), '# add-fn\n\n## Decisiones técnicas\nContenido.\n', 'utf8');
+  const rows = parseRegistry(
+    REGISTRY +
+      '| Spec/add-fn | add-fn | Spec/add-fn/add-fn.md | add-fn | completada |\n' +
+      '| Spec/add-none | add-none | Spec/add-none/add-none.md | add-none | completada |\n'
+  );
+  const findings = checkMissingBriefings(root, vault, rows);
+  assert.ok(!findings.some((f) => f.artifact.includes('add-fn') && f.severity === 'error'), 'folder note satisface el contrato');
+  const none = findings.filter((f) => f.artifact.includes('add-none'));
+  assert.equal(none.filter((f) => f.severity === 'error').length, 1);
+  assert.match(none[0].artifact, /add-none\/add-none\.md/, 'reporta la ruta esperada del folder note');
+});
+
+test('checkMissingBriefings accepts the legacy trio as the brain artifact', () => {
+  const root = scratch();
+  writeRepo(root, ['add-legacy']);
+  const vault = scratch();
+  const dir = join(vault, '01_Proyectos', 'Spec', 'add-legacy');
+  mkdirSync(dir, { recursive: true });
+  for (const f of ['briefing.md', 'tests.md', 'resumen.md']) {
+    writeFileSync(join(dir, f), '# Contenido\n', 'utf8');
+  }
+  const rows = parseRegistry(REGISTRY + '| Spec/add-legacy | add-legacy | Spec/add-legacy/briefing.md | add-legacy | completada |\n');
+  const findings = checkMissingBriefings(root, vault, rows);
+  assert.ok(!findings.some((f) => f.artifact.includes('add-legacy') && f.severity === 'error'), 'legacy trio satisface el contrato');
+});
+
+test('listBrainSpecs ignores loose md files in the project root', () => {
+  const vault = scratch();
+  mkdirSync(join(vault, '01_Proyectos', 'Spec', 'add-a'), { recursive: true });
+  writeFileSync(join(vault, '01_Proyectos', 'Spec', 'LOOSE.md'), '# Loose\n', 'utf8');
+  assert.deepEqual(listBrainSpecs(vault, 'Spec'), ['add-a']);
 });

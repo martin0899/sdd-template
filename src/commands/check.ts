@@ -7,12 +7,14 @@ import {
 } from '../core/vault-doctor';
 import { checkVaultIds } from '../core/vault-ids';
 import { checkTddOrdering } from '../core/tdd-check';
+import { checkRulesContract } from '../core/rules-contract';
 import { currentPalette, green, red, dim, bold } from '../util/ui';
 
 export interface CheckOptions {
   registry?: boolean;
   ids?: boolean;
   tdd?: boolean;
+  rules?: boolean;
   vaultRoot?: string;
   projectRoot?: string;
   cacheRoot?: string;
@@ -49,10 +51,11 @@ export async function runCheck(opts: CheckOptions = {}): Promise<number> {
   const projectRoot = opts.projectRoot || detected?.root || config.current_project_root || process.cwd();
   const vaultRoot = opts.vaultRoot || config.vault_root || detectVaultRoot(projectRoot) || '';
 
-  const noFlags = !opts.registry && !opts.ids && !opts.tdd;
+  const noFlags = !opts.registry && !opts.ids && !opts.tdd && !opts.rules;
   const doRegistry = opts.registry === true || noFlags;
   const doIds = opts.ids === true || noFlags;
   const doTdd = opts.tdd === true;
+  const doRules = opts.rules === true;
 
   let exitCode = 0;
 
@@ -85,6 +88,13 @@ export async function runCheck(opts: CheckOptions = {}): Promise<number> {
   if (doTdd) {
     console.log(`\n  ${pal.bold('spectralis check --tdd')} · validación del orden TDD en tasks.md (changes activos)`);
     const findings = checkTddOrdering(projectRoot);
+    printFindings(findings);
+    if (hasErrors(findings)) exitCode = 1;
+  }
+
+  if (doRules) {
+    console.log(`\n  ${pal.bold('spectralis check --rules')} · reglas del ciclo centralizadas (duplicación/contradicción)`);
+    const findings = checkRulesContract(projectRoot);
     printFindings(findings);
     if (hasErrors(findings)) exitCode = 1;
   }
