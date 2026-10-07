@@ -40,12 +40,10 @@ export async function runSpecInit(opts: SpecInitOptions): Promise<number> {
   console.log(`  philosophy: ${philosophy.value} [${philosophy.origin}]`);
 
   try {
-    const dir = createSpecFolder(vaultRoot, opts.project, opts.specId);
-    console.log(`[OK] Spec folder created: ${dir}`);
-    console.log('  - briefing.md');
-    console.log('  - tests.md');
-    console.log('  - resumen.md');
-    console.log(`\nNext: fill the files, then run spectralis spec complete ${opts.project} ${opts.specId}`);
+    const res = createSpecFolder(vaultRoot, opts.project, opts.specId);
+    console.log(`[OK] Spec folder created: ${res.specDir}`);
+    console.log(`  - ${opts.specId}.md (folder note, Tipo: Especificación)`);
+    console.log(`\nNext: fill the sections, then run spectralis spec complete ${opts.project} ${opts.specId}`);
     return 0;
   } catch (err: unknown) {
     console.error(`[ERROR] ${err instanceof Error ? err.message : String(err)}`);

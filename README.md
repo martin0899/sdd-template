@@ -195,8 +195,8 @@ spectralis init --no-obsidian                   # desactivarla en esta instalaci
 Con `obsidianSync=1` (o `--obsidian`):
 
 - `spectralis init` / `spectralis update` ejecutan automáticamente `notes init` + `notes sync`.
-- `/opsx-apply` invoca la skill `obsidian-orchestration` → genera `obsidian-briefing` al completar la implementación.
-- `/opsx-archive` invoca `obsidian-orchestration` → genera `obsidian-summary` + `obsidian-tests` + `spectralis spec complete` antes de archivar.
+- `/opsx-apply` invoca la skill `obsidian-orchestration` → la skill `obsidian-briefing` escribe la sección de briefing **dentro del folder note único** de la spec (`<spec-id>/<spec-id>.md`).
+- `/opsx-archive` invoca `obsidian-orchestration` → `obsidian-summary` + `obsidian-tests` escriben sus secciones **en el mismo folder note** y luego `spectralis spec complete` lo valida antes de archivar.
 
 La orquestación es idempotente (no regenera documentos ya correctos) y no modifica los comandos `opsx-*` (vendor-managed por OpenSpec).
 
@@ -439,4 +439,6 @@ Re-ejecuta el instalador tras clonar la plantilla actualizada: los archivos nuev
 - Este repo usa su propio workflow SDD: los cambios se gestionan con `/opsx:propose`, `/opsx:apply`, `/opsx:archive`.
 - Las exploraciones nuevas deben pasar el briefing gate antes de `openspec new change` (protocolo: `.agents/skills/exploration-briefing/SKILL.md`).
 - Los skills nuevos van en `.agents/skills/<nombre>/SKILL.md` (frontmatter: `name`, `description`, `author`, `version`).
+- **El trabajo documental se delega mediante el contrato de solicitud estructurada** (`documenter-delegation`): los subagentes solicitan al coordinador y nunca publican por su cuenta (detalle en la skill).
+- **Las reglas del ciclo viven en el contrato `agent-rules-contract`** y se validan con `spectralis check --rules` (define una sola vez, referencia en vez de redefinir).
 - Después de cambios de código: `graphify update .`

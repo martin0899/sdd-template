@@ -12,6 +12,8 @@ import {
   checkIndexIdRegistration,
   checkIdTipoCoherente,
   checkVaultIds,
+  checkSpecArtifactCoherence,
+  isGeneratedArtifact,
   loadIdsCache
 } from '../../src/core/vault-ids';
 
@@ -174,4 +176,51 @@ test('fixtures vault-ids trigger duplicated, non-conformant and incoherent ids',
   assert.ok(findings.some((f) => f.artifact.includes('bad-format.md')), 'id no conforme');
   assert.ok(findings.some((f) => f.artifact.includes('tipo-mismatch.md')), 'tipo incoherente');
   assert.ok(!findings.some((f) => f.artifact.includes('briefing.md')), 'artefacto generado sin hallazgo de formato');
+});
+test('isGeneratedArtifact: folder note estructural solo dentro de 01_Proyectos/', () => {
+  assert.equal(isGeneratedArtifact('01_Proyectos/Spec/add-x/add-x.md'), true, 'folder note dentro de 01_Proyectos');
+  assert.equal(isGeneratedArtifact('01_Proyectos/Spec/add-x/briefing.md'), true, 'legacy dentro de 01_Proyectos');
+  assert.equal(isGeneratedArtifact('.sdd-registry/briefings/nota-x.md'), true, 'briefing del registry');
+  assert.equal(isGeneratedArtifact('03_Recursos/Files/agents/gertrudis.md'), false, 'nota de contenido');
+  assert.equal(isGeneratedArtifact('00_Notas/sub/sub.md'), false, 'fuera de 01_Proyectos no se exime (D4)');
+});
+
+test('validateIdFormat acepta spec- sin exigir fecha', () => {
+  assert.equal(validateIdFormat('spec-add-foo'), null);
+  assert.equal(validateIdFormat('spec-20261007-add-foo'), null);
+});
+
+test('folder note sin id produce exactamente un hallazgo (id ausente) y ninguno de registro', () => {
+  const root = scratch();
+  const rel = '01_Proyectos/Spec/spec-a/spec-a.md';
+  const path = join(root, rel);
+  mkdirSync(join(path, '..'), { recursive: true });
+  writeFileSync(path, '---\nTipo: Especificación\n---\n\n## Decisiones técnicas\nContenido.\n', 'utf8');
+  const { findings } = checkVaultIds({ vaultRoot: root, cacheRoot: scratch() });
+  const noteFindings = findings.filter((f) => f.artifact === rel);
+  assert.equal(noteFindings.length, 1, 'un solo hallazgo sobre el folder note');
+  assert.match(noteFindings[0].suggestion, /id/i);
+});
+
+test('checkSpecArtifactCoherence: conforme, tipo incoherente y encabezado ausente', () => {
+  const root = scratch();
+  const entries = [
+    { path: '01_Proyectos/Spec/a/a.md', id: 'spec-a', tipo: 'Especificación', generated: true, mtimeMs: 1 },
+    { path: '01_Proyectos/Spec/b/b.md', id: 'spec-b', tipo: 'Briefing', generated: true, mtimeMs: 1 },
+    { path: '01_Proyectos/Spec/c/c.md', id: 'spec-c', tipo: 'Especificación', generated: true, mtimeMs: 1 }
+  ];
+  const content = (rel: string) =>
+    rel.includes('/a/')
+      ? '# a\n\n## Decisiones técnicas\nX\n'
+      : rel.includes('/b/')
+        ? '# b\n\n## Decisiones técnicas\nX\n'
+        : '# c\n\n## Contexto\nSin decision heading\n';
+  const coherence = checkSpecArtifactCoherence(entries, root, content);
+  const warnings = coherence.filter((f) => f.severity === 'warning');
+  assert.equal(warnings.length, 1, 'solo el folder note sin encabezado advierte');
+  assert.match(warnings[0].artifact, /c\.md/);
+
+  const tipo = checkIdTipoCoherente(entries, root);
+  assert.ok(tipo.some((f) => f.artifact.includes('b.md')), 'spec- con Tipo incoherente (espec vs Briefing)');
+  assert.ok(!tipo.some((f) => f.artifact.includes('a.md')), 'spec- conforme no genera hallazgo de tipo');
 });

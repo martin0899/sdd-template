@@ -1,6 +1,7 @@
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, basename } from 'node:path';
 import { decisionesPath, extractSpecIds } from './wiki-structure';
+import { hasSpecArtifact } from './spec-artifact';
 
 export type Severity = 'error' | 'warning';
 
@@ -228,14 +229,19 @@ export function checkMissingBriefings(
     }
     candidates.push(join(registryBriefingsDir, `${id}.md`));
     if (brainProject) {
-      candidates.push(join(vaultRoot, '01_Proyectos', brainProject, id, 'briefing.md'));
+      const specDir = join(vaultRoot, '01_Proyectos', brainProject, id);
+      if (hasSpecArtifact(specDir, id)) {
+        // Folder note or legacy trio satisfy the documentation contract.
+        candidates.push(join(specDir, `${id}.md`));
+        candidates.push(join(specDir, 'briefing.md'));
+      }
     }
     if (!candidates.some((p) => existsSync(p))) {
       findings.push({
         severity: 'error',
         project: basename(projectRoot),
-        artifact: `${id}/briefing.md`,
-        suggestion: `Genera el briefing de ${id} (spectralis spec init o .sdd-registry/briefings/${id}.md)`
+        artifact: `${id}/${id}.md`,
+        suggestion: `Genera el artefacto de ${id} (spectralis spec init crea el folder note ${id}/${id}.md, o .sdd-registry/briefings/${id}.md)`
       });
     }
   }

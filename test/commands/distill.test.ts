@@ -171,3 +171,52 @@ test('hybridExtract with zero ambiguous entries never calls the LLM', async () =
   assert.equal(result.classified.length, 1);
   assert.equal(result.classified[0].classification, 'ADR');
 });
+test('folder note distills: full note to arquitectura, sections to aggregates, tests not fed', async () => {
+  const vault = scratch();
+  const projectDir = join(vault, '01_Proyectos', 'demo');
+  const specDir = join(projectDir, 'add-folder-note');
+  mkdirSync(specDir, { recursive: true });
+  const note = [
+    '---',
+    'id: spec-add-folder-note',
+    'Tipo: Especificación',
+    '---',
+    '# add-folder-note',
+    '',
+    '## Contexto',
+    'Contexto de la especificación.',
+    '## Decisiones técnicas',
+    'Elegimos SQLite para persistencia.',
+    '## Impacto',
+    'No cambia la API.',
+    '## Lecciones aprendidas',
+    'Documentar cada hallazgo.',
+    '## Cambios realizados',
+    'Se añadió el módulo core.',
+    '## Tests de regresión',
+    'npm test 1/1 verde.',
+    ''
+  ].join('\n');
+  writeFileSync(join(specDir, 'add-folder-note.md'), note, 'utf8');
+
+  const code = await runDistill({ project: 'demo', vaultRoot: vault });
+  assert.equal(code, 0);
+
+  const wiki = join(vault, '05_wiki', 'demo');
+  const arquitectura = readFileSync(join(wiki, 'arquitectura.md'), 'utf8');
+  assert.match(arquitectura, /Decisiones técnicas/, 'arquitectura es el resumen por spec con el folder note completo');
+  assert.match(arquitectura, /Cambios realizados/);
+
+  const decisiones = readFileSync(join(wiki, 'decisiones.md'), 'utf8');
+  assert.match(decisiones, /SQLite/);
+
+  const historial = readFileSync(join(wiki, 'historial.md'), 'utf8');
+  assert.match(historial, /Documentar cada hallazgo/, 'lecciones van al agregado de historial');
+
+  for (const file of walkFiles(wiki)) {
+    if (!file.endsWith('.md') || file.endsWith('arquitectura.md') || file.endsWith('_INDEX.json') === false && file.includes('_INDEX')) continue;
+    if (file.endsWith('_INDEX.json')) continue;
+    if (file.endsWith('arquitectura.md')) continue;
+    assert.doesNotMatch(readFileSync(file, 'utf8'), /npm test 1\/1 verde/, `tests section leaked into ${file}`);
+  }
+});

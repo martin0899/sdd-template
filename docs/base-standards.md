@@ -108,6 +108,7 @@ This requirement applies to:
 - **Proyecto activo es el que se está trabajando**: cuando se buscan notas pendientes o se revisan propuestas, **solo** buscar en `01_Proyectos/<proyecto-activo>/_Notas/`. No buscar en otros proyectos.
 - **inbox (`00_Notas/`)**: captures casuales que aún no se depuraron — no son material del proyecto activo hasta que se muevan a `_Notas/` del proyecto correspondiente.
 - **Ciclo de vida**: `_Notas/ → <spec-id>/ → 04_archivado/` — las notas se promueven de inbox a proyecto, de proyecto a spec, y de spec a archivado.
+- **Artefacto de spec — folder note**: el contenido de `<spec-id>/` es un **único folder note** `01_Proyectos/<proyecto>/<spec-id>/<spec-id>.md` con `id: spec-<spec-id>`, `Tipo: Especificación` y los headings canónicos `## Contexto`, `## Decisiones técnicas`, `## Impacto`, `## Lecciones aprendidas`, `## Cambios realizados`, `## Tests de regresión`. Las tres skills de documentación escriben sus secciones **dentro** de ese archivo (nada de `briefing.md`/`tests.md`/`resumen.md` separados). El layout legacy (tres archivos) sigue siendo aceptado por los consumidores durante la transición.
 
 ## 8. Mandatory OpenSpec Artifact Updates for Post-Apply Changes
 
