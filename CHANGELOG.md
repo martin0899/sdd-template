@@ -11,6 +11,16 @@ Historial de versiones de **spectralis** (el arnés SDD). Este changelog aplica 
 
 ---
 
+## v1.2.43 — 2026-10-07
+
+Conteo de especificaciones: **43**.
+
+### 2026-10-07 (1)
+
+- **add-briefing-at-propose** — el coordinador rellena el briefing técnico del folder note (`## Contexto`, `## Decisiones técnicas`, `## Impacto`) **al proponer** un change (SDD y ODD), antes de crear `proposal`/specs/`design`/`tasks`; `obsidian-briefing`/`obsidian-orchestration` suman el disparo de propuesta y la regla queda en `AGENTS.md` y `coordinador.md`.
+
+---
+
 ## v1.2.42 — 2026-10-06
 
 Conteo de especificaciones: **42**.

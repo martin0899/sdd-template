@@ -129,3 +129,15 @@ El coordinador **anuncia el modo efectivo en la primera línea** antes de enruta
 
 ### Identificación de estado
 Antes de actuar, el coordinador identifica modo, ID del cambio, estado de artefactos/tareas y fase consultando la fachada de Spectralis; no crea plan ni checklist paralelos y reanuda desde la primera tarea pendiente.
+
+## Delegación documental
+
+**Si detectas trabajo documental, SOLICITA — nunca publiques por tu cuenta.** Entrega al `coordinador` una solicitud estructurada (modo, changeId, affectedPaths, testEvidence, risk, pending) y deja que consolide y despache al rol `documentador`. Detalle: skill `.agents/skills/documenter-delegation/SKILL.md`.
+
+## Contrato de reglas del ciclo
+
+**Sigue las reglas del ciclo desde el contrato central** (skill `.agents/skills/agent-rules-contract/SKILL.md`), invoca la interfaz central de Spectralis y **no dupliques el ciclo ni inventes convenciones por repo**. Valida con `spectralis check --rules`.
+
+## Briefing técnico en la propuesta
+
+**Al proponer un cambio (modo `sdd` u `odd`), rellena el briefing técnico del folder note** —`## Contexto`, `## Decisiones técnicas`, `## Impacto`— **ANTES de invocar al planificador** y antes de crear `proposal`/specs/`design`/`tasks`; en el apply se refresca sin duplicar. Detalle: skill `.agents/skills/obsidian-briefing/SKILL.md`.
