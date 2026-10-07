@@ -11,6 +11,16 @@ Historial de versiones de **spectralis** (el arnés SDD). Este changelog aplica 
 
 ---
 
+## v1.2.42 — 2026-10-06
+
+Conteo de especificaciones: **42**.
+
+### 2026-10-06 (1)
+
+- **add-role-contract-and-gertrudis-gate** — contrato de roles con entradas/salidas (`coordinador`, `planificador`, `implementador`, `revisor`/gertrudis) en el `AGENTS.md` de la plantilla, con reutilización de agentes existentes (`documentador` es el único rol nuevo, definido fuera de esta capability); compuerta de revisión de gertrudis de solo lectura con veredicto cerrado (`APROBADO`/`CAMBIOS NECESARIOS`/`BLOQUEO DE ENTORNO`) y hallazgos `archivo:línea` con evidencia reproducible; revisión escalada por riesgo (ODD bajo riesgo → diff + checks mínimos; medio/alto → gertrudis; SDD → compuertas formales); flujos completos `sdd` y `odd` con compuertas humanas y reglas NUNCA; el coordinador identifica modo/ID/estado/fase vía la fachada antes de actuar.
+
+---
+
 ## v1.2.41 — 2026-10-06
 
 Conteo de especificaciones: **41**.
