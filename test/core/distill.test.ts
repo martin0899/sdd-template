@@ -42,13 +42,23 @@ test('classifyByKeywords returns null for no matching keyword', () => {
   assert.equal(classifyByKeywords(content), null);
 });
 
-test('classifyByFrontmatter classifies by tipo', () => {
-  const fm = { tipo: 'adr' };
+test('classifyByFrontmatter classifies by Tipo (mayúscula, como lo produce el vault)', () => {
+  const fm = { Tipo: 'adr' };
   assert.equal(classifyByFrontmatter(fm), 'ADR');
-  const fm2 = { tipo: 'bug' };
+  const fm2 = { Tipo: 'bug' };
   assert.equal(classifyByFrontmatter(fm2), 'post-mortem');
-  const fm3 = { tipo: 'log' };
+  const fm3 = { Tipo: 'log' };
   assert.equal(classifyByFrontmatter(fm3), 'log');
+});
+
+test('Tipo "Especificación" → null (decisión deliberada D1: no mapea a ninguna clase, no es un forgot)', () => {
+  assert.equal(classifyByFrontmatter({ Tipo: 'Especificación' }), null);
+});
+
+test('Tipo fuera de la whitelist (Briefing) → null sin alterar la cascada', () => {
+  assert.equal(classifyByFrontmatter({ Tipo: 'Briefing' }), null);
+  // Leer Tipo no rompe el fallback por status ni el resto de la cascada.
+  assert.equal(classifyByFrontmatter({ Tipo: 'Briefing', status: 'aprobada' }), 'ADR');
 });
 
 test('classifyByFrontmatter classifies by status', () => {
@@ -106,4 +116,10 @@ test('hybridExtract discards ambiguous when LLM disabled', async () => {
   const result = await hybridExtract(files, { host: 'http://localhost:1', model: '', enabled: false });
   assert.equal(result.classified.length, 0);
   assert.equal(result.ambiguous.length, 0);
+});
+
+test('classifyByHeaders classifies a folder note as ADR via ## Decisiones técnicas', () => {
+  const note =
+    '# add-x\n\n## Contexto\nContexto de la spec.\n## Decisiones técnicas\nElegimos X.\n## Impacto\nImpacto.\n';
+  assert.equal(classifyByHeaders(note), 'ADR');
 });
