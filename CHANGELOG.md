@@ -11,6 +11,16 @@ Historial de versiones de **spectralis** (el arnés SDD). Este changelog aplica 
 
 ---
 
+## v1.2.38 — 2026-10-06
+
+Conteo de especificaciones: **38**.
+
+### 2026-10-06 (1)
+
+- **add-lessons-log** — regla de Lessons en el `AGENTS.md` de la plantilla: el agente registra cada corrección como `- Cuando X, haz Y` en `01_Proyectos/<Proyecto>/_Notas/_lessons.md`, reescribe la lección ante repetición y carga las lecciones del proyecto antes de actuar. Incluye test de integración que ancla la regla en la plantilla.
+
+---
+
 ## v1.2.37 — 2026-09-29
 
 Conteo de especificaciones: **37**.

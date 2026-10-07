@@ -83,3 +83,13 @@ When working with requirements and specifications:
 ## Obsidian Orchestration (switch obsidianSync)
 
 **Al aplicar (`/opsx-apply`) o archivar (`/opsx-archive`) un change OpenSpec, consulta el switch de orquestación `spectralis config --get obsidianSync` (o los flags `--obsidian`/`--no-obsidian`). Si está activo, consulta la skill `.agents/skills/obsidian-orchestration/SKILL.md` y sigue su protocolo: `obsidian-briefing` al completar apply; `obsidian-summary` + `obsidian-tests` + `spectralis spec complete` antes de archivar. Con el switch en `0` (o `--no-obsidian`), no escribir nada en el cerebro. Los comandos `.opencode/commands/opsx-*` son vendor-managed por OpenSpec y NO se modifican.**
+
+## Lessons
+
+**Carga obligatoria:** antes de actuar en un proyecto, lee `01_Proyectos/<Proyecto>/_Notas/_lessons.md` (vault) y aplica sus reglas. Si no existe, continúa sin error; se crea al registrar la primera corrección.
+
+**Registro:** cuando el usuario corrija al agente, añade una línea `- Cuando X, haz Y` a la sección `Lessons` de ese archivo, sin borrar las lecciones existentes. Si la corrección no se puede expresar como regla accionable, pide precisión antes de escribir; no inventes la lección.
+
+**Anti-repetición:** si el mismo error ocurre dos veces, reescribe la lección existente para hacerla inequívoca; no añadas una línea duplicada.
+
+**Ubicación:** `01_Proyectos/<Proyecto>/_Notas/_lessons.md`. Al ser una entrada `_`-prefijada queda excluida del escaneo de IDs y de la destilación a `05_wiki/`.
