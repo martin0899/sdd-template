@@ -11,6 +11,16 @@ Historial de versiones de **spectralis** (el arnés SDD). Este changelog aplica 
 
 ---
 
+## v1.2.41 — 2026-10-06
+
+Conteo de especificaciones: **41**.
+
+### 2026-10-06 (1)
+
+- **add-spec-facade-commands** — fachada común y consciente del modo (`src/core/spec-facade.ts`) para iniciar, consultar, validar, completar y cerrar un cambio: en SDD delega en OpenSpec (sin reimplementarlo; si falta, informa y se detiene) y en ODD opera sobre `odd/changes/<id>/feature.md` sin OpenSpec. Garantiza un solo ejecutor activo por cambio (apply no se relanza tras delegar) y `apply` ejecuta solo las tareas existentes, deteniéndose ante artefactos esenciales incompletos sin llamar al planificador.
+
+---
+
 ## v1.2.40 — 2026-10-06
 
 Conteo de especificaciones: **40**.

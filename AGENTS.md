@@ -93,3 +93,10 @@ When working with requirements and specifications:
 **Anti-repetición:** si el mismo error ocurre dos veces, reescribe la lección existente para hacerla inequívoca; no añadas una línea duplicada.
 
 **Ubicación:** `01_Proyectos/<Proyecto>/_Notas/_lessons.md`. Al ser una entrada `_`-prefijada queda excluida del escaneo de IDs y de la destilación a `05_wiki/`.
+
+## Fachada del ciclo spec (límites)
+
+**La fachada enruta el ciclo; no planifica ni reimplementa OpenSpec.**
+- **Un solo ejecutor activo por cambio:** nunca ejecutes la misma fase por dos rutas a la vez ni relances `apply` una vez delegado a un ejecutor.
+- **`apply` ejecuta solo las tareas existentes:** ante artefactos esenciales incompletos (SDD: `proposal`/`design`/`tasks`; ODD: `feature.md`) detente e informa qué falta; nunca llames al planificador ni regeneres el plan en un apply.
+- **SDD delega en OpenSpec** (validación y estado los decide OpenSpec, no la fachada). **ODD** opera sobre `odd/changes/<id>/feature.md` sin invocar, detectar ni requerir OpenSpec.
