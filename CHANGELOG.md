@@ -11,6 +11,66 @@ Historial de versiones de **spectralis** (el arnés SDD). Este changelog aplica 
 
 ---
 
+## v1.2.43 — 2026-10-07
+
+Conteo de especificaciones: **43**.
+
+### 2026-10-07 (1)
+
+- **add-briefing-at-propose** — el coordinador rellena el briefing técnico del folder note (`## Contexto`, `## Decisiones técnicas`, `## Impacto`) **al proponer** un change (SDD y ODD), antes de crear `proposal`/specs/`design`/`tasks`; `obsidian-briefing`/`obsidian-orchestration` suman el disparo de propuesta y la regla queda en `AGENTS.md` y `coordinador.md`.
+
+---
+
+## v1.2.42 — 2026-10-06
+
+Conteo de especificaciones: **42**.
+
+### 2026-10-06 (1)
+
+- **add-role-contract-and-gertrudis-gate** — contrato de roles con entradas/salidas (`coordinador`, `planificador`, `implementador`, `revisor`/gertrudis) en el `AGENTS.md` de la plantilla, con reutilización de agentes existentes (`documentador` es el único rol nuevo, definido fuera de esta capability); compuerta de revisión de gertrudis de solo lectura con veredicto cerrado (`APROBADO`/`CAMBIOS NECESARIOS`/`BLOQUEO DE ENTORNO`) y hallazgos `archivo:línea` con evidencia reproducible; revisión escalada por riesgo (ODD bajo riesgo → diff + checks mínimos; medio/alto → gertrudis; SDD → compuertas formales); flujos completos `sdd` y `odd` con compuertas humanas y reglas NUNCA; el coordinador identifica modo/ID/estado/fase vía la fachada antes de actuar.
+
+---
+
+## v1.2.41 — 2026-10-06
+
+Conteo de especificaciones: **41**.
+
+### 2026-10-06 (1)
+
+- **add-spec-facade-commands** — fachada común y consciente del modo (`src/core/spec-facade.ts`) para iniciar, consultar, validar, completar y cerrar un cambio: en SDD delega en OpenSpec (sin reimplementarlo; si falta, informa y se detiene) y en ODD opera sobre `odd/changes/<id>/feature.md` sin OpenSpec. Garantiza un solo ejecutor activo por cambio (apply no se relanza tras delegar) y `apply` ejecuta solo las tareas existentes, deteniéndose ante artefactos esenciales incompletos sin llamar al planificador.
+
+---
+
+## v1.2.40 — 2026-10-06
+
+Conteo de especificaciones: **40**.
+
+### 2026-10-06 (1)
+
+- **add-openspec-optional-prereq** — `openspec` deja de ser prerequisito incondicional: solo se exige en modo `sdd`. Añade el parámetro de modo a `checkPrereqs`, reporte condicional en `spectralis doctor` (requerido SDD / opcional ODD), y `init` que omite `openspec init` y la inyección de `openspec/config.yaml` en proyectos odd-only, sin gestionar `openspec/` en el manifest.
+
+---
+
+## v1.2.39 — 2026-10-06
+
+Conteo de especificaciones: **39**.
+
+### 2026-10-06 (1)
+
+- **add-mode-philosophy-cascade** — campo `philosophy` (`sdd`|`odd`) en `.sdd-manifest.json` y en la config global, con cascada determinista `--odd/--sdd` > manifiesto > global > `sdd` (default retrocompatible). Añade `spectralis config --set/--get/--list philosophy`, flags mutuamente excluyentes `--odd`/`--sdd` en `spectralis spec init`, y preservación de `philosophy`/`obsidianSync` en `spectralis update`.
+
+---
+
+## v1.2.38 — 2026-10-06
+
+Conteo de especificaciones: **38**.
+
+### 2026-10-06 (1)
+
+- **add-lessons-log** — regla de Lessons en el `AGENTS.md` de la plantilla: el agente registra cada corrección como `- Cuando X, haz Y` en `01_Proyectos/<Proyecto>/_Notas/_lessons.md`, reescribe la lección ante repetición y carga las lecciones del proyecto antes de actuar. Incluye test de integración que ancla la regla en la plantilla.
+
+---
+
 ## v1.2.37 — 2026-09-29
 
 Conteo de especificaciones: **37**.

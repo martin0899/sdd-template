@@ -78,14 +78,16 @@ program
   .option('--yes', 'non-interactive mode (always with backup)')
   .option('--obsidian', 'force obsidian orchestration (notes sync) even if obsidianSync=0')
   .option('--no-obsidian', 'disable obsidian orchestration even if obsidianSync=1')
+  .option('--odd', 'install as odd-only project (no openspec prerequisite)')
+  .option('--sdd', 'install as sdd project (openspec required and initialized)')
   .action(
     async (
       destino: string | undefined,
-      opts: { agent?: string; dryRun?: boolean; demo?: boolean; dd?: boolean; yes?: boolean; obsidian?: boolean; noObsidian?: boolean }
+      opts: { agent?: string; dryRun?: boolean; demo?: boolean; dd?: boolean; yes?: boolean; obsidian?: boolean; noObsidian?: boolean; odd?: boolean; sdd?: boolean }
     ) => {
       // Agent validation happens before any write-capable action.
       resolveAgent(opts.agent);
-      const code = await runInit({ destino, agent: opts.agent, dryRun: opts.dryRun || opts.demo || opts.dd, yes: opts.yes, obsidian: opts.obsidian, noObsidian: opts.noObsidian });
+      const code = await runInit({ destino, agent: opts.agent, dryRun: opts.dryRun || opts.demo || opts.dd, yes: opts.yes, obsidian: opts.obsidian, noObsidian: opts.noObsidian, odd: opts.odd, sdd: opts.sdd });
       process.exitCode = code;
     }
   );
@@ -206,15 +208,17 @@ program
   .description('Spec workflow: init creates folder structure, complete validates and distills')
   .option('-v, --vault-root <path>', 'vault root path (default: from config)')
   .option('-p, --project-root <path>', 'project root for REGISTRY.md (default: from config)')
+  .option('--odd', 'force ODD mode (organic philosophy) for this change')
+  .option('--sdd', 'force SDD mode (formal philosophy) for this change')
   .action(
     async (
       action: string,
       project: string,
       specId: string,
-      opts: { vaultRoot?: string; projectRoot?: string }
+      opts: { vaultRoot?: string; projectRoot?: string; odd?: boolean; sdd?: boolean }
     ) => {
       if (action === 'init') {
-        const code = await runSpecInit({ project, specId, vaultRoot: opts.vaultRoot });
+        const code = await runSpecInit({ project, specId, vaultRoot: opts.vaultRoot, projectRoot: opts.projectRoot, odd: opts.odd, sdd: opts.sdd });
         process.exitCode = code;
       } else if (action === 'complete') {
         const code = await runSpecComplete({ project, specId, vaultRoot: opts.vaultRoot, projectRoot: opts.projectRoot });

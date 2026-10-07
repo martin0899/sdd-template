@@ -16,11 +16,14 @@ export interface RouteConfig {
   resources_dir: string;
 }
 
+export type Philosophy = 'sdd' | 'odd';
+
 export interface SpectralisConfig extends RouteConfig {
   llm: LlmConfig;
   projects_base: string;
   autoUpdate: boolean;
   obsidianSync: 0 | 1;
+  philosophy: Philosophy;
   current_project_root: string;
 }
 
@@ -40,6 +43,7 @@ const DEFAULT_CONFIG: SpectralisConfig = {
   resources_dir: '',
   autoUpdate: false,
   obsidianSync: 0,
+  philosophy: 'sdd',
   current_project_root: ''
 };
 
@@ -47,7 +51,7 @@ function globalConfigDir(): string {
   return join(homedir(), '.config', 'spectralis');
 }
 
-function globalConfigPath(): string {
+export function globalConfigPath(): string {
   return join(globalConfigDir(), 'config.json');
 }
 
@@ -66,6 +70,7 @@ export function readGlobalConfig(): SpectralisConfig {
       resources_dir: raw.resources_dir ?? '',
       autoUpdate: raw.autoUpdate ?? false,
       obsidianSync: raw.obsidianSync === 1 ? 1 : 0,
+      philosophy: raw.philosophy === 'odd' ? 'odd' : 'sdd',
       current_project_root: raw.current_project_root ?? ''
     };
   } catch {
@@ -204,6 +209,101 @@ export function setObsidianSync(value: 0 | 1, global: boolean, projectRoot?: str
     manifest.obsidianSync = value;
     writeFileSync(manifestPath, JSON.stringify(manifest, null, 2) + '\n', 'utf8');
   }
+}
+
+export interface PhilosophyResolution {
+  value: Philosophy;
+  origin: 'manifest' | 'global' | 'default';
+  warning?: string;
+}
+
+function isPhilosophy(value: unknown): value is Philosophy {
+  return value === 'sdd' || value === 'odd';
+}
+
+/**
+ * Resolve the working philosophy for a project:
+ * 1. philosophy in the project manifest (.sdd-manifest.json)
+ * 2. philosophy in the global config
+ * 3. default 'sdd' (backwards compatible)
+ *
+ * Invalid stored values are ignored (tolerant read), fall back to 'sdd'
+ * and surface a readable warning.
+ */
+export function resolvePhilosophy(projectRoot?: string): PhilosophyResolution {
+  if (projectRoot) {
+    const manifestPath = join(projectRoot, '.sdd-manifest.json');
+    if (existsSync(manifestPath)) {
+      try {
+        const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
+        if (manifest.philosophy !== undefined) {
+          if (isPhilosophy(manifest.philosophy)) {
+            return { value: manifest.philosophy, origin: 'manifest' };
+          }
+          return {
+            value: 'sdd',
+            origin: 'default',
+            warning: `Valor de philosophy inválido en el manifiesto: "${String(manifest.philosophy)}". Se usa el default "sdd".`
+          };
+        }
+      } catch {}
+    }
+  }
+  const config = readGlobalConfig();
+  if (config.philosophy === 'odd') {
+    return { value: 'odd', origin: 'global' };
+  }
+  try {
+    const rawPath = globalConfigPath();
+    if (existsSync(rawPath)) {
+      const raw = JSON.parse(readFileSync(rawPath, 'utf8'));
+      if (raw.philosophy !== undefined && !isPhilosophy(raw.philosophy)) {
+        return {
+          value: 'sdd',
+          origin: 'default',
+          warning: `Valor de philosophy inválido en la configuración global: "${String(raw.philosophy)}". Se usa el default "sdd".`
+        };
+      }
+    }
+  } catch {}
+  return { value: 'sdd', origin: 'default' };
+}
+
+export function setPhilosophy(value: Philosophy, global: boolean, projectRoot?: string): void {
+  if (global) {
+    const config = readGlobalConfig();
+    config.philosophy = value;
+    writeGlobalConfig(config);
+  } else if (projectRoot) {
+    const manifestPath = join(projectRoot, '.sdd-manifest.json');
+    const manifest = existsSync(manifestPath) ? JSON.parse(readFileSync(manifestPath, 'utf8')) : {};
+    manifest.philosophy = value;
+    writeFileSync(manifestPath, JSON.stringify(manifest, null, 2) + '\n', 'utf8');
+  }
+}
+
+export interface EffectivePhilosophyResolution {
+  value: Philosophy;
+  origin: 'flag' | 'manifest' | 'global' | 'default';
+  warning?: string;
+}
+
+/**
+ * Resolve the effective philosophy for a command run, applying the
+ * explicit `--odd`/`--sdd` flags before the project cascade.
+ * Precedence: --odd > --sdd > manifest > global > sdd.
+ * Passing both flags is a hard error (mutually exclusive).
+ */
+export function resolveEffectivePhilosophy(
+  flags: { odd?: boolean; sdd?: boolean } = {},
+  projectRoot?: string
+): EffectivePhilosophyResolution {
+  if (flags.odd && flags.sdd) {
+    throw new Error('Los flags --odd y --sdd son mutuamente excluyentes. Usa solo uno.');
+  }
+  if (flags.odd) return { value: 'odd', origin: 'flag' };
+  if (flags.sdd) return { value: 'sdd', origin: 'flag' };
+  return resolvePhilosophy(projectRoot);
 }
 
 export function detectProjectFromCwd(cwd: string): { project: string; root: string } | null {

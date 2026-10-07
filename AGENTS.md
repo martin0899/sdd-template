@@ -83,3 +83,61 @@ When working with requirements and specifications:
 ## Obsidian Orchestration (switch obsidianSync)
 
 **Al aplicar (`/opsx-apply`) o archivar (`/opsx-archive`) un change OpenSpec, consulta el switch de orquestación `spectralis config --get obsidianSync` (o los flags `--obsidian`/`--no-obsidian`). Si está activo, consulta la skill `.agents/skills/obsidian-orchestration/SKILL.md` y sigue su protocolo: `obsidian-briefing` al completar apply; `obsidian-summary` + `obsidian-tests` + `spectralis spec complete` antes de archivar. Con el switch en `0` (o `--no-obsidian`), no escribir nada en el cerebro. Los comandos `.opencode/commands/opsx-*` son vendor-managed por OpenSpec y NO se modifican.**
+
+## Lessons
+
+**Carga obligatoria:** antes de actuar en un proyecto, lee `01_Proyectos/<Proyecto>/_Notas/_lessons.md` (vault) y aplica sus reglas. Si no existe, continúa sin error; se crea al registrar la primera corrección.
+
+**Registro:** cuando el usuario corrija al agente, añade una línea `- Cuando X, haz Y` a la sección `Lessons` de ese archivo, sin borrar las lecciones existentes. Si la corrección no se puede expresar como regla accionable, pide precisión antes de escribir; no inventes la lección.
+
+**Anti-repetición:** si el mismo error ocurre dos veces, reescribe la lección existente para hacerla inequívoca; no añadas una línea duplicada.
+
+**Ubicación:** `01_Proyectos/<Proyecto>/_Notas/_lessons.md`. Al ser una entrada `_`-prefijada queda excluida del escaneo de IDs y de la destilación a `05_wiki/`.
+
+## Fachada del ciclo spec (límites)
+
+**La fachada enruta el ciclo; no planifica ni reimplementa OpenSpec.**
+- **Un solo ejecutor activo por cambio:** nunca ejecutes la misma fase por dos rutas a la vez ni relances `apply` una vez delegado a un ejecutor.
+- **`apply` ejecuta solo las tareas existentes:** ante artefactos esenciales incompletos (SDD: `proposal`/`design`/`tasks`; ODD: `feature.md`) detente e informa qué falta; nunca llames al planificador ni regeneres el plan en un apply.
+- **SDD delega en OpenSpec** (validación y estado los decide OpenSpec, no la fachada). **ODD** opera sobre `odd/changes/<id>/feature.md` sin invocar, detectar ni requerir OpenSpec.
+
+## Contrato de roles y compuerta de revisión
+
+### Entradas y salidas por rol
+- **coordinador**: consume el pedido y el estado del cambio (vía la fachada) → produce clasificación, enrutado y fase.
+- **planificador**: consume un pedido autorizado a planificar → produce `proposal`, specs, `design` y `tasks`.
+- **implementador**: consume las tareas existentes → produce cambios de código con sus pruebas ejecutadas.
+- **revisor (gertrudis)**: consume modo, ID del cambio, documento fuente, diff, pruebas y riesgo → produce veredicto con hallazgos.
+
+### Reutilización de agentes
+Reutiliza y mejora los agentes existentes; **no crees agentes nuevos**. El único rol nuevo del programa es `documentador`, definido en otro change.
+
+### Compuerta de gertrudis (solo lectura)
+gertrudis **reporta y NO modifica** código ni artefactos. Emite un veredicto cerrado: `APROBADO` | `CAMBIOS NECESARIOS` | `BLOQUEO DE ENTORNO`. Los hallazgos usan el formato `archivo:línea`, nombran el criterio incumplido y adjuntan evidencia reproducible. Nunca emitas `APROBADO` sin evidencia reproducible: si no hay evidencia, reporta la carencia.
+
+### Revisión por riesgo
+- **ODD de bajo riesgo**: basta el diff con checks mínimos, sin revisión pesada bloqueante.
+- **Riesgo medio/alto**: invoca a **gertrudis** con su contrato de entrada y salida.
+- **SDD**: aplica las compuertas formales del modo, con independencia del tamaño percibido.
+
+### Flujos por modo
+El coordinador **anuncia el modo efectivo en la primera línea** antes de enrutar.
+
+- **SDD**: `pending → spec_ready → ⏸ aprobación humana → in_progress → [implementador → gertrudis] → done`. **NUNCA** lances al implementador en `pending`: los artefactos deben completarse y validarse (`spec_ready`) y ser aprobados antes de implementar.
+- **ODD**: ciclo orgánico **sin OpenSpec**. Cambio pequeño: ruta directa al implementador (diff + checks mínimos, sin documentación formal). Cambio sustancial: `odd/changes/<id>/feature.md` como fuente de verdad (se crea antes del primer write y se registra cada commit como evidencia). Cierre ODD: propón al humano la migración propuesta y, si se confirma, despáchala al `documentador`.
+- Reglas duras: **NUNCA** invocar OpenSpec en ODD; **NUNCA**: no publicar al brain ni a `05_wiki/` sin despacho del coordinador; **un solo ejecutor activo** por cambio (no relances apply).
+
+### Identificación de estado
+Antes de actuar, el coordinador identifica modo, ID del cambio, estado de artefactos/tareas y fase consultando la fachada de Spectralis; no crea plan ni checklist paralelos y reanuda desde la primera tarea pendiente.
+
+## Delegación documental
+
+**Si detectas trabajo documental, SOLICITA — nunca publiques por tu cuenta.** Entrega al `coordinador` una solicitud estructurada (modo, changeId, affectedPaths, testEvidence, risk, pending) y deja que consolide y despache al rol `documentador`. Detalle: skill `.agents/skills/documenter-delegation/SKILL.md`.
+
+## Contrato de reglas del ciclo
+
+**Sigue las reglas del ciclo desde el contrato central** (skill `.agents/skills/agent-rules-contract/SKILL.md`), invoca la interfaz central de Spectralis y **no dupliques el ciclo ni inventes convenciones por repo**. Valida con `spectralis check --rules`.
+
+## Briefing técnico en la propuesta
+
+**Al proponer un cambio (modo `sdd` u `odd`), rellena el briefing técnico del folder note** —`## Contexto`, `## Decisiones técnicas`, `## Impacto`— **ANTES de invocar al planificador** y antes de crear `proposal`/specs/`design`/`tasks`; en el apply se refresca sin duplicar. Detalle: skill `.agents/skills/obsidian-briefing/SKILL.md`.

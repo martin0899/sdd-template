@@ -9,6 +9,7 @@ Orquesta la documentación del **cerebro** (el segundo cerebro) durante el flujo
 
 ## Cuándo se dispara
 
+- Al **proponer** un change (`/opsx-propose`): `obsidian-briefing` rellena el briefing del folder note **antes** de crear los artefactos formales, en modo `sdd` y `odd`.
 - Al **completar** la implementación de un change (`/opsx-apply`) con la orquestación activa.
 - **Antes** de archivar un change (`/opsx-archive`) con la orquestación activa.
 - La regla persistente vive en el bloque gestionado de `AGENTS.md` y ordena consultar esta skill en esos momentos.
@@ -32,13 +33,13 @@ Regla de precedencia:
 ### Al completar `/opsx-apply` (orquestación activa)
 
 1. Invoca la skill `obsidian-briefing`.
-2. Genera `briefing.md` en `01_Proyectos/<proyecto>/<change>/` con contexto, decisiones técnicas e impacto.
-3. **Idempotente**: si el `briefing.md` ya existe y está completo, no lo regenera ni lo duplica.
+2. Escribe/actualiza la sección de briefing **dentro del folder note único** `01_Proyectos/<Proyecto>/<change>/<change>.md` (headings canónicos `## Contexto`, `## Decisiones técnicas`, `## Impacto`), creándolo si falta.
+3. **Idempotente**: si la sección ya existe y está completa, no la regenera ni duplica.
 
 ### Antes de `/opsx-archive` (orquestación activa)
 
-1. Invoca la skill `obsidian-summary` → resumen del change.
-2. Invoca la skill `obsidian-tests` → documentación de tests.
+1. Invoca la skill `obsidian-summary` → sección `## Cambios realizados`/`## Lecciones aprendidas` **en el mismo folder note**.
+2. Invoca la skill `obsidian-tests` → sección `## Tests de regresión` **en el mismo folder note** (las tres skills escriben en el único artefacto de la spec).
 3. Ejecuta `spectralis spec complete <proyecto> <change>` para validar, registrar en REGISTRY.md y destilar a `05_wiki/`.
 4. **Si `spec complete` falla** (archivos vacíos o faltantes): informa el fallo pero **NO bloquea el archive**.
 

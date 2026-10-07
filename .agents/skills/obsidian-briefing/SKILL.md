@@ -5,7 +5,12 @@ description: Generate technical briefing in Obsidian for OpenSpec changes. Creat
 
 # Obsidian Briefing
 
-> **Orquestada**: cuando `obsidianSync=1` (o `--obsidian`), esta skill se invoca automáticamente desde `obsidian-orchestration` al completar un apply (`/opsx-apply`). Con el switch en `0`, se usa solo por invocación explícita.
+> **Orquestada**: cuando `obsidianSync=1` (o `--obsidian`), esta skill se invoca automáticamente desde `obsidian-orchestration` al **proponer** y al **completar un apply** (`/opsx-apply`). Con el switch en `0`, se usa solo por invocación explícita.
+
+## Cuándo se dispara
+
+- **Propuesta** (SDD y ODD): rellena el briefing del folder note **antes** de crear los artefactos formales. Aplica igual en `sdd` y `odd` (el folder note es independiente del motor de OpenSpec).
+- **Apply**: refresca las secciones sin duplicarlas.
 
 Genera un briefing técnico en Obsidian para cambios OpenSpec. Crea un resumen técnico portátil para referencia entre máquinas.
 
@@ -61,8 +66,7 @@ Read the briefing file to understand:
 
 ### Step 3: Generate Obsidian Briefing
 
-Create a briefing document at:
-`{projects_dir}/<Proyecto>/<subtema>/<req-id>-briefing.md`
+**Target (consolidado): el artefacto de spec es un folder note único.** Escribe la sección de briefing **dentro** del folder note `{projects_dir}/<Proyecto>/<spec-id>/<spec-id>.md` (creándolo si no existe), bajo los headings canónicos `## Contexto`, `## Decisiones técnicas` e `## Impacto`. **No crees `briefing.md`** ni un archivo aparte, y no uses el sufijo `-briefing` en el id (el folder note usa `id: spec-<spec-id>`, `Tipo: Especificación`). Idempotente: si la sección ya existe, actualízala sin duplicar el heading.
 
 ### Step 4: Fill Briefing Content
 
