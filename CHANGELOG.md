@@ -11,6 +11,12 @@ Historial de versiones de **spectralis** (el arnés SDD). Este changelog aplica 
 
 ---
 
+## Unreleased
+
+- **consolidate-rules-eliminate-ollama-optimize-tokens** — se elimina el flujo redundante de Ollama (`src/core/ollama.ts` y sus llamadas en `init`/`update`) y la clasificación LLM de `distill` (sustituida por heurística determinista; las entradas ambiguas se descartan); se añade la sección "No Yapping" a `docs/base-standards.md`; `AGENTS.md` se reduce a un enrutador mínimo (~40 líneas) que delega en `docs/base-standards.md` y en skills; `update` refresca el bloque gestionado de `AGENTS.md` igual que `init`; la skill `grill-me` se fusiona en `grilling` y se crean las skills `subagent-contract`, `graphify-usage` y `lessons`.
+
+---
+
 ## v1.2.43 — 2026-10-07
 
 Conteo de especificaciones: **43**.

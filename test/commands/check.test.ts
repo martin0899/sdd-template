@@ -4,6 +4,9 @@ import { mkdtempSync, rmSync, mkdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { runCheck } from '../../src/commands/check';
+import { manageAgentsMd, AGENTS_MARKER_BEGIN, AGENTS_MARKER_END } from '../../src/core/agents-md';
+
+const REPO = join(__dirname, '..', '..', '..');
 
 const created: string[] = [];
 
@@ -126,5 +129,29 @@ test('check --rules executes the rules sub-check (only rules)', async () => {
     'utf8'
   );
   const code = await runCheck({ rules: true, projectRoot: root, vaultRoot: '' });
+  assert.equal(code, 0);
+});
+
+test('check --agents returns exit 1 when the managed block is stale', async () => {
+  const root = scratch();
+  writeFileSync(
+    join(root, 'AGENTS.md'),
+    `${AGENTS_MARKER_BEGIN}\nSTALE MANAGED BLOCK\n${AGENTS_MARKER_END}\n`,
+    'utf8'
+  );
+  const code = await runCheck({ agents: true, projectRoot: root, vaultRoot: '' });
+  assert.equal(code, 1);
+});
+
+test('check --agents returns exit 1 when AGENTS.md is missing', async () => {
+  const root = scratch();
+  const code = await runCheck({ agents: true, projectRoot: root, vaultRoot: '' });
+  assert.equal(code, 1);
+});
+
+test('check --agents returns exit 0 when the managed block is in sync', async () => {
+  const root = scratch();
+  manageAgentsMd(REPO, root, { confirmFn: () => true });
+  const code = await runCheck({ agents: true, projectRoot: root, vaultRoot: '', templateRoot: REPO });
   assert.equal(code, 0);
 });

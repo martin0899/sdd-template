@@ -109,7 +109,7 @@ The Obsidian vault (second brain) is the portable knowledge layer; `05_wiki/` is
 
 - `notes init/sync` keep canonical manuals (`notes/`) mirrored into `03_Recursos/02_Sistemas_info/` (or `info/` fallback).
 - `seed` discovers projects under `projects_base`, writes the `05_wiki/` skeleton and `_INDEX.json` (per-project `changes` count + `updated`).
-- `distill` reads spec sources from the brain (`01_Proyectos/<project>/<spec-id>/`, ignoring `_Notas/` and `_`-prefixed entries), classifies content deterministically (`src/core/distill.ts`) and, when enabled, uses a local LLM (Ollama) only for ambiguous entries; writes optimized notes to `05_wiki/`.
+- `distill` reads spec sources from the brain (`01_Proyectos/<project>/<spec-id>/`, ignoring `_Notas/` and `_`-prefixed entries), classifies content deterministically (`src/core/distill.ts`) and discards ambiguous entries (no LLM); writes optimized notes to `05_wiki/`.
 - `spec init/complete` create the spec folder (`briefing.md`, `tests.md`, `resumen.md`) and register the spec in `.sdd-registry/REGISTRY.md` (`src/core/spec-workflow.ts`).
 
 ### `.sdd-registry/`

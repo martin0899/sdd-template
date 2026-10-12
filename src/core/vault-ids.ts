@@ -6,7 +6,8 @@ import { VaultDoctorFinding } from './vault-doctor';
 
 export { classifyArtifact, isGeneratedArtifact } from './spec-artifact';
 
-const EXCLUDED_DIRS = new Set(['docs', '05_wiki', '.git', 'node_modules', '.obsidian']);
+const EXCLUDED_DIRS = new Set(['docs', '05_wiki', '.git', 'node_modules', '.obsidian', '09_Plantilla', 'graphify-out']);
+const SYSTEM_ROOT_FILES = new Set(['README.md', 'AGENTS.md']);
 const VALID_PREFIXES = ['nota-', 'proy-', 'idea-', 'doc-', 'rec-', 'arc-', 'res-', 'brief-', 'test-', 'spec-'] as const;
 const PREFIX_REQUIRES_DATE = new Set(['nota-', 'proy-', 'idea-', 'arc-']);
 const TYPE_BY_PREFIX: Record<string, string> = {
@@ -57,6 +58,15 @@ function walkMarkdown(dir: string, out: string[]): void {
 function normalizeRel(vaultRoot: string, filePath: string): string {
   const rel = relative(vaultRoot, filePath).split('\\').join('/');
   return rel.startsWith('/') ? rel.slice(1) : rel;
+}
+
+/**
+ * System files at the vault root (project metadata such as README/AGENTS) are
+ * not user notes, so their ids must not be validated. Scoped to the root only:
+ * a file with the same name inside a subdirectory is still a regular note.
+ */
+function isSystemRootFile(relPath: string): boolean {
+  return !relPath.includes('/') && SYSTEM_ROOT_FILES.has(basename(relPath));
 }
 
 export function idPrefix(id: string): string {
@@ -180,6 +190,7 @@ export function scanVaultIds(opts: VaultIdsOptions): { entries: NoteIdEntry[]; r
 export function checkIdPresent(entries: NoteIdEntry[], vaultRoot: string): VaultDoctorFinding[] {
   const findings: VaultDoctorFinding[] = [];
   for (const e of entries) {
+    if (isSystemRootFile(e.path)) continue;
     if (!e.id) {
       findings.push({
         severity: 'error',
@@ -195,6 +206,7 @@ export function checkIdPresent(entries: NoteIdEntry[], vaultRoot: string): Vault
 export function checkIdFormat(entries: NoteIdEntry[], vaultRoot: string): VaultDoctorFinding[] {
   const findings: VaultDoctorFinding[] = [];
   for (const e of entries) {
+    if (isSystemRootFile(e.path)) continue;
     if (!e.id) continue;
     const err = validateIdFormat(e.id);
     if (err) {

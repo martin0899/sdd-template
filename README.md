@@ -37,7 +37,7 @@ Los manuales técnicos del arnés viven en `notes/` (se sincronizan al cerebro c
 |--------|-----------|
 | [Arquitectura](notes/architecture/manual.md) | Organización del CLI, inventario de comandos, flujos install/update, doctor, segundo cerebro y convenciones (EN) |
 | [CLI de spectralis](notes/spectralis-cli/manual.md) | Uso estándar completo del CLI: comandos, opciones, matriz de agentes, versionado y garantías |
-| [IA local (Ollama)](notes/local-ai/manual.md) | Guía de IA local para tareas de baja demanda |
+| [IA local](notes/local-ai/manual.md) | Guía de IA local para tareas de baja demanda |
 
 **Qué viaja al destino**: `openspec/` (creada con `openspec init` + contexto español inyectado), `.agents/skills/`, `.opencode/` (sin `node_modules`), `docs/` — con `backend-standards.md` y `frontend-standards.md` **compuestos según el stack detectado** en tu proyecto.
 

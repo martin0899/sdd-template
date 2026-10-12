@@ -16,7 +16,6 @@ import { fillPlaceholders, resolveVariantFile, findUnresolvedPlaceholders, repor
 import { writeManifest } from '../core/manifest';
 import { runPostChecks } from '../core/post-checks';
 import { installGitHooks } from '../core/git-hooks';
-import { detectOllama, configureLlm } from '../core/ollama';
 import { detectVaultRoot, readGlobalConfig, writeGlobalConfig, resolveEffectivePhilosophy } from '../core/config';
 import { resolveAgent } from '../agents/profiles';
 import { selectTools } from '../core/tool-selector';
@@ -259,16 +258,6 @@ export async function runInit(opts: InitOptions = {}): Promise<number> {
     console.log(`  ${pal.green('✔')} git hooks ........... post-merge installed`);
   } else if (hookResult.skipped) {
     console.log(`  ${pal.check} git hooks ........... ${hookResult.skipped}`);
-  }
-
-  // 10. LLM detection (Ollama).
-  const ollama = await detectOllama();
-  if (ollama.available && ollama.models.length > 0) {
-    const modelName = ollama.models[0].name;
-    await configureLlm(modelName);
-    console.log(`  ${pal.green('✔')} llm ................. Ollama detected, model: ${modelName}`);
-  } else {
-    console.log(`  ${pal.check} llm ................. Ollama not detected (LLM classification disabled)`);
   }
 
   console.log(pal.bold(`Installed with spectralis ${version} (template ${version})`));

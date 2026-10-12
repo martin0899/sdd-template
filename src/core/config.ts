@@ -2,12 +2,6 @@ import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { join, resolve, dirname } from 'node:path';
 import { homedir } from 'node:os';
 
-export interface LlmConfig {
-  host: string;
-  model: string;
-  enabled: boolean;
-}
-
 export interface RouteConfig {
   vault_root: string;
   templates_dir: string;
@@ -19,7 +13,6 @@ export interface RouteConfig {
 export type Philosophy = 'sdd' | 'odd';
 
 export interface SpectralisConfig extends RouteConfig {
-  llm: LlmConfig;
   projects_base: string;
   autoUpdate: boolean;
   obsidianSync: 0 | 1;
@@ -27,14 +20,7 @@ export interface SpectralisConfig extends RouteConfig {
   current_project_root: string;
 }
 
-const DEFAULT_LLM: LlmConfig = {
-  host: 'http://localhost:11434',
-  model: '',
-  enabled: false
-};
-
 const DEFAULT_CONFIG: SpectralisConfig = {
-  llm: DEFAULT_LLM,
   projects_base: join(homedir(), 'Documentos', 'Proyectos'),
   vault_root: '',
   templates_dir: '',
@@ -57,11 +43,10 @@ export function globalConfigPath(): string {
 
 export function readGlobalConfig(): SpectralisConfig {
   const path = globalConfigPath();
-  if (!existsSync(path)) return { ...DEFAULT_CONFIG, llm: { ...DEFAULT_LLM } };
+  if (!existsSync(path)) return { ...DEFAULT_CONFIG };
   try {
     const raw = JSON.parse(readFileSync(path, 'utf8'));
     return {
-      llm: { ...DEFAULT_LLM, ...(raw.llm ?? {}) },
       projects_base: raw.projects_base ?? DEFAULT_CONFIG.projects_base,
       vault_root: raw.vault_root ?? '',
       templates_dir: raw.templates_dir ?? '',
@@ -74,7 +59,7 @@ export function readGlobalConfig(): SpectralisConfig {
       current_project_root: raw.current_project_root ?? ''
     };
   } catch {
-    return { ...DEFAULT_CONFIG, llm: { ...DEFAULT_LLM } };
+    return { ...DEFAULT_CONFIG };
   }
 }
 
@@ -82,21 +67,6 @@ export function writeGlobalConfig(config: SpectralisConfig): void {
   const dir = globalConfigDir();
   if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
   writeFileSync(globalConfigPath(), JSON.stringify(config, null, 2) + '\n', 'utf8');
-}
-
-export function readLlmConfig(): LlmConfig {
-  const envHost = process.env.OLLAMA_HOST;
-  const config = readGlobalConfig();
-  return {
-    ...config.llm,
-    host: envHost || config.llm.host || DEFAULT_LLM.host
-  };
-}
-
-export function writeLlmConfig(llm: LlmConfig): void {
-  const config = readGlobalConfig();
-  config.llm = llm;
-  writeGlobalConfig(config);
 }
 
 export function resolveRoute(key: keyof RouteConfig, projectRoot?: string): string {
