@@ -224,3 +224,47 @@ test('checkSpecArtifactCoherence: conforme, tipo incoherente y encabezado ausent
   assert.ok(tipo.some((f) => f.artifact.includes('b.md')), 'spec- con Tipo incoherente (espec vs Briefing)');
   assert.ok(!tipo.some((f) => f.artifact.includes('a.md')), 'spec- conforme no genera hallazgo de tipo');
 });
+
+test('scanVaultIds skips 09_Plantilla and graphify-out dirs', () => {
+  const root = scratch();
+  note(root, '00_Notas/ok.md', 'nota-20260926-ok', 'Nota');
+  note(root, '09_Plantilla/plantilla.md', 'nota-20260926-plantilla', 'Nota');
+  note(root, 'graphify-out/artifact.md', 'nota-20260926-artifact', 'Nota');
+  const { entries } = scanVaultIds({ vaultRoot: root });
+  assert.equal(entries.length, 1);
+  assert.ok(entries[0].path.endsWith('00_Notas/ok.md'));
+  assert.ok(!entries.some((e) => e.path.includes('09_Plantilla')), '09_Plantilla no se recorre');
+  assert.ok(!entries.some((e) => e.path.includes('graphify-out')), 'graphify-out no se recorre');
+});
+
+test('checkIdPresent skips system root files but flags real notes', () => {
+  const root = scratch();
+  note(root, 'README.md');
+  note(root, 'AGENTS.md');
+  note(root, '01_Proyectos/Proy/nota.md');
+  const { entries } = scanVaultIds({ vaultRoot: root });
+  const findings = checkIdPresent(entries, root);
+  assert.ok(!findings.some((f) => f.artifact === 'README.md'), 'README.md raíz omitido');
+  assert.ok(!findings.some((f) => f.artifact === 'AGENTS.md'), 'AGENTS.md raíz omitido');
+  assert.ok(findings.some((f) => f.artifact.endsWith('Proy/nota.md')), 'nota real sigue marcada');
+});
+
+test('checkIdFormat skips system root files with non-conformant ids', () => {
+  const root = scratch();
+  note(root, 'README.md', 'nota-doctor', 'Nota');
+  note(root, 'AGENTS.md', 'foo-20260926-x', 'Nota');
+  note(root, '01_Proyectos/Proy/bad.md', 'nota-doctor', 'Nota');
+  const { entries } = scanVaultIds({ vaultRoot: root });
+  const findings = checkIdFormat(entries, root);
+  assert.ok(!findings.some((f) => f.artifact === 'README.md'), 'README.md raíz omitido');
+  assert.ok(!findings.some((f) => f.artifact === 'AGENTS.md'), 'AGENTS.md raíz omitido');
+  assert.ok(findings.some((f) => f.artifact.endsWith('Proy/bad.md')), 'nota real con id inválido sigue marcada');
+});
+
+test('system root files exclusion applies only to vault root, not subdirectories', () => {
+  const root = scratch();
+  note(root, '03_Recursos/README.md');
+  const { entries } = scanVaultIds({ vaultRoot: root });
+  const findings = checkIdPresent(entries, root);
+  assert.ok(findings.some((f) => f.artifact === '03_Recursos/README.md'), 'README.md en subdirectorio sí se valida');
+});
