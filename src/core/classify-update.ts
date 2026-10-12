@@ -1,7 +1,7 @@
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { sha256File, readManifest } from './manifest';
-import { listPayloadFiles, listDocsFiles } from './copy-payload';
+import { listPayloadFiles, listDocsFiles, COMPOSED_STANDARDS } from './copy-payload';
 import type { ManifestData } from './manifest';
 
 export type FileStatus = 'unchanged' | 'updatable' | 'conflict' | 'new' | 'retired';
@@ -10,6 +10,14 @@ export interface ClassifiedFile {
   rel: string;
   status: FileStatus;
 }
+
+/** Files managed outside the template payload: they are neither compared nor
+ * retired, so update can preserve their manifest entries (see update.ts). */
+const SPECIAL_MANAGED_PATHS = new Set([
+  'AGENTS.md',
+  'openspec/config.yaml',
+  ...COMPOSED_STANDARDS
+]);
 
 export function classifyFiles(
   target: string,
@@ -74,7 +82,7 @@ export function classifyFiles(
   if (manifest) {
     const templateSet = new Set(templatePayload);
     for (const entry of manifest.files) {
-      if (!templateSet.has(entry.path)) {
+      if (!templateSet.has(entry.path) && !SPECIAL_MANAGED_PATHS.has(entry.path)) {
         result.push({ rel: entry.path, status: 'retired' });
       }
     }

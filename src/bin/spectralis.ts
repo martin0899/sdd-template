@@ -101,16 +101,17 @@ program
   .option('-c, --check', 'check for updates without writing (exit 0=up-to-date, 1=updates, 2=error)')
   .option('--yes', 'non-interactive mode (always with backup)')
   .option('-a, --auto', 'apply all updates without asking (alias for --yes + autoUpdate config)')
+  .option('--repair-agents', 'rebuild the managed AGENTS.md block (repairs skipped-* states with backup + confirmation)')
   .option('--agent <agente>', 'target agent profile (opencode | antigravity | claude | all)')
   .option('--obsidian', 'force obsidian orchestration (notes sync) even if obsidianSync=0')
   .option('--no-obsidian', 'disable obsidian orchestration even if obsidianSync=1')
   .action(
     async (
       destino: string | undefined,
-      opts: { dryRun?: boolean; demo?: boolean; dd?: boolean; check?: boolean; yes?: boolean; auto?: boolean; agent?: string; obsidian?: boolean; noObsidian?: boolean }
+      opts: { dryRun?: boolean; demo?: boolean; dd?: boolean; check?: boolean; yes?: boolean; auto?: boolean; repairAgents?: boolean; agent?: string; obsidian?: boolean; noObsidian?: boolean }
     ) => {
       if (opts.agent) resolveAgent(opts.agent);
-      const code = await runUpdate({ destino, dryRun: opts.dryRun || opts.demo || opts.dd, check: opts.check, yes: opts.yes, auto: opts.auto, obsidian: opts.obsidian, noObsidian: opts.noObsidian });
+      const code = await runUpdate({ destino, dryRun: opts.dryRun || opts.demo || opts.dd, check: opts.check, yes: opts.yes, auto: opts.auto, repairAgents: opts.repairAgents, obsidian: opts.obsidian, noObsidian: opts.noObsidian });
       process.exitCode = code;
     }
   );
@@ -141,10 +142,11 @@ program
   .option('-i, --ids', 'validate vault note IDs (format, uniqueness, _INDEX_ID, tipo)')
   .option('-t, --tdd', 'validate TDD ordering (Step K) in tasks.md of active OpenSpec changes')
   .option('--rules', 'validate the centralized agent-rules contract (duplicates/contradictions)')
+  .option('--agents', 'validate the managed AGENTS.md block against the template (drift detection)')
   .option('-v, --vault-root <path>', 'vault root path (default: from config)')
   .option('-p, --project-root <path>', 'project root (default: from config or cwd)')
-  .action(async (opts: { registry?: boolean; ids?: boolean; tdd?: boolean; rules?: boolean; vaultRoot?: string; projectRoot?: string }) => {
-    const code = await runCheck({ registry: opts.registry, ids: opts.ids, tdd: opts.tdd, rules: opts.rules, vaultRoot: opts.vaultRoot, projectRoot: opts.projectRoot });
+  .action(async (opts: { registry?: boolean; ids?: boolean; tdd?: boolean; rules?: boolean; agents?: boolean; vaultRoot?: string; projectRoot?: string }) => {
+    const code = await runCheck({ registry: opts.registry, ids: opts.ids, tdd: opts.tdd, rules: opts.rules, agents: opts.agents, vaultRoot: opts.vaultRoot, projectRoot: opts.projectRoot });
     process.exitCode = code;
   });
 

@@ -121,6 +121,40 @@ test('retired file detected when manifest has file removed from plantilla', () =
   }
 });
 
+test('special managed entries (AGENTS.md, openspec config, compound standards) are never retired', () => {
+  const tpl = makeTemplate();
+  const dst = scratch('dst');
+  try {
+    installDestination(dst, tpl);
+    // Register special managed entries that live outside the template payload.
+    mkdirSync(join(dst, 'openspec'), { recursive: true });
+    writeFileSync(join(dst, 'openspec/config.yaml'), 'schema: spec-driven\n');
+    writeFileSync(join(dst, 'AGENTS.md'), '# Agents\n');
+    writeFileSync(join(dst, 'docs', 'backend-standards.md'), 'backend standard\n');
+    const payloadFiles = [
+      '.agents/skills/commit/SKILL.md',
+      '.opencode/package.json',
+      '.opencode/package-lock.json',
+      'docs/base.md'
+    ];
+    writeManifest(
+      dst,
+      [...payloadFiles, 'AGENTS.md', 'openspec/config.yaml', 'docs/backend-standards.md'],
+      '1.0.0',
+      '1.0.0'
+    );
+
+    const { files } = classifyFiles(dst, tpl, true);
+    for (const rel of ['AGENTS.md', 'openspec/config.yaml', 'docs/backend-standards.md']) {
+      assert.ok(!files.some((f) => f.rel === rel), `${rel} must not be listed as retired/changed`);
+    }
+    assert.equal(hasChanges(files), false, 'special entries do not create phantom changes');
+  } finally {
+    rmSync(tpl, { recursive: true, force: true });
+    rmSync(dst, { recursive: true, force: true });
+  }
+});
+
 test('no manifest returns all files as new (no updatable/conflict)', () => {
   const tpl = makeTemplate();
   const dst = scratch('dst');
