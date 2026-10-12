@@ -123,3 +123,15 @@ Required order:
 
 Do not apply direct code-only fixes in this window without updating OpenSpec artifacts.
 
+## 9. No Yapping
+
+Every token counts; users prefer concise answers.
+
+- Don't repeat context the reader already has.
+- Get to the point; skip preamble.
+- Don't explain basic concepts unless asked.
+- Don't list rejected alternatives unless asked.
+- Don't restate the user's prompt in your answer.
+- Avoid filler phrases: "In summary", "As I mentioned", "It's worth noting".
+- If the answer is short, don't pad it with unnecessary explanations.
+

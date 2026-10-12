@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdtempSync, rmSync, existsSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { readGlobalConfig, writeGlobalConfig, readLlmConfig, writeLlmConfig, resolveProjectRoot, detectVaultRoot, setRoute, resolveRoute, detectProjectFromCwd, setCurrentProjectRoot, resolveNotesDir, resolveObsidianSync, setObsidianSync, SpectralisConfig } from '../../src/core/config';
+import { readGlobalConfig, writeGlobalConfig, resolveProjectRoot, detectVaultRoot, setRoute, resolveRoute, detectProjectFromCwd, setCurrentProjectRoot, resolveNotesDir, resolveObsidianSync, setObsidianSync, SpectralisConfig } from '../../src/core/config';
 
 let savedConfig: SpectralisConfig;
 let savedHome: string | undefined;
@@ -21,7 +21,6 @@ afterEach(() => {
 
 test('readGlobalConfig returns defaults when no file exists', () => {
   writeGlobalConfig({
-    llm: { host: 'http://localhost:11434', model: '', enabled: false },
     projects_base: join(tmpdir(), 'test-projects'),
     vault_root: '',
     templates_dir: '',
@@ -34,15 +33,14 @@ test('readGlobalConfig returns defaults when no file exists', () => {
     current_project_root: ''
   });
   const cfg = readGlobalConfig();
-  assert.equal(cfg.llm.enabled, false);
-  assert.equal(cfg.llm.host, 'http://localhost:11434');
+  assert.equal(cfg.obsidianSync, 0);
+  assert.equal(cfg.philosophy, 'sdd');
   assert.ok(cfg.projects_base.length > 0);
 });
 
 test('writeGlobalConfig and readGlobalConfig round-trip', () => {
   const original = readGlobalConfig();
   const testCfg: SpectralisConfig = {
-    llm: { host: 'http://localhost:9999', model: 'test-model', enabled: true },
     projects_base: '/tmp/test-projects',
     vault_root: '/tmp/test-vault',
     templates_dir: '',
@@ -56,27 +54,9 @@ test('writeGlobalConfig and readGlobalConfig round-trip', () => {
   };
   writeGlobalConfig(testCfg);
   const read = readGlobalConfig();
-  assert.equal(read.llm.host, 'http://localhost:9999');
-  assert.equal(read.llm.model, 'test-model');
-  assert.equal(read.llm.enabled, true);
+  assert.equal(read.vault_root, '/tmp/test-vault');
   assert.equal(read.projects_base, '/tmp/test-projects');
   assert.equal(read.resources_dir, '/tmp/test-resources');
-  writeGlobalConfig(original);
-});
-
-test('readLlmConfig prefers OLLAMA_HOST env var', () => {
-  process.env.OLLAMA_HOST = 'http://env-host:11434';
-  const llm = readLlmConfig();
-  assert.equal(llm.host, 'http://env-host:11434');
-  delete process.env.OLLAMA_HOST;
-});
-
-test('writeLlmConfig persists to global config', () => {
-  const original = readGlobalConfig();
-  writeLlmConfig({ host: 'http://llm:11434', model: 'llama3', enabled: true });
-  const llm = readLlmConfig();
-  assert.equal(llm.model, 'llama3');
-  assert.equal(llm.enabled, true);
   writeGlobalConfig(original);
 });
 

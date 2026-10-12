@@ -1,10 +1,12 @@
 import { existsSync, readFileSync, mkdirSync, copyFileSync } from 'node:fs';
 import { resolve, join } from 'node:path';
-import { readManifest, sha256File } from '../core/manifest';
+import { readManifest, writeManifest, type ManifestData } from '../core/manifest';
 import { classifyFiles, countByStatus, hasChanges, type ClassifiedFile } from '../core/classify-update';
+import { manageAgentsMd, detectAgentsMdDrift } from '../core/agents-md';
+import { COMPOSED_STANDARDS } from '../core/copy-payload';
 import { makeConfirm } from '../util/prompt';
 import { readGlobalConfig } from '../core/config';
-import { currentPalette, phaseLine, printBanner, promptMark } from '../util/ui';
+import { currentPalette, printBanner, promptMark } from '../util/ui';
 import { runNotesInit, runNotesSync, isObsidianActive } from './notes';
 
 export interface UpdateOptions {
@@ -13,9 +15,14 @@ export interface UpdateOptions {
   check?: boolean;
   yes?: boolean;
   auto?: boolean;
+  repairAgents?: boolean;
   obsidian?: boolean;
   noObsidian?: boolean;
 }
+
+/** Special entries that must survive a manifest rewrite even when they are not
+ * part of `classifyFiles` (AGENTS.md, openspec config and composed standards). */
+const MANIFEST_SPECIAL_PATHS = ['AGENTS.md', 'openspec/config.yaml'];
 
 function templateRoot(): string {
   return join(__dirname, '..', '..');
@@ -53,6 +60,41 @@ function copyFromPlantilla(rel: string, target: string, templateRoot: string): v
   copyFileSync(src, dest);
 }
 
+function preservedManifestPaths(target: string, manifest: ManifestData): string[] {
+  const special = new Set([...MANIFEST_SPECIAL_PATHS, ...COMPOSED_STANDARDS]);
+  return manifest.files
+    .map((f) => f.path)
+    .filter((rel) => special.has(rel) && existsSync(join(target, rel)));
+}
+
+interface AgentsStep {
+  ok: boolean;
+  status?: string;
+}
+
+/**
+ * Runs manageAgentsMd without swallowing failures: a thrown exception or a
+ * `failed-*` status is reported and marks the step as failed (the caller then
+ * avoids rewriting the manifest).
+ */
+function manageAgentsStep(
+  root: string,
+  target: string,
+  confirmFn: (question: string) => boolean,
+  repair: boolean
+): AgentsStep {
+  try {
+    const result = manageAgentsMd(root, target, { confirmFn, repair });
+    console.log(`[OK] AGENTS.md managed: ${result.status}`);
+    for (const w of result.warnings) console.log(`[WARN] ${w}`);
+    return { ok: !result.status.startsWith('failed-'), status: result.status };
+  } catch (err) {
+    const detail = err instanceof Error ? err.message : String(err);
+    console.error(`[ERROR] AGENTS.md management failed: ${detail}`);
+    return { ok: false };
+  }
+}
+
 export async function runUpdate(opts: UpdateOptions = {}): Promise<number> {
   const root = templateRoot();
   const version = pkgVersion();
@@ -74,19 +116,33 @@ export async function runUpdate(opts: UpdateOptions = {}): Promise<number> {
 
   const { files } = classifyFiles(target, root, true);
   const counts = countByStatus(files);
+  const changes = hasChanges(files);
 
-  // Check mode: only report status, never write
+  // AGENTS.md managed-block drift is independent of the classified file tree.
+  let agentsDrift = false;
+  try {
+    agentsDrift = detectAgentsMdDrift(root, target);
+  } catch (err) {
+    // Inspection failure is not fatal here: manageAgentsMd will surface it later.
+    console.error(`[ERROR] Could not inspect AGENTS.md: ${err instanceof Error ? err.message : String(err)}`);
+  }
+
+  const shouldAuto = opts.auto || opts.yes || readGlobalConfig().autoUpdate === true;
+  const confirmFn = makeConfirm(shouldAuto);
+
+  // Check mode: only report status, never write.
   if (opts.check) {
     console.log('\n== spectralis update --check ==');
     console.log(`  tools: ${(manifest.tools || []).join(', ') || 'none registered'}`);
     console.log('');
-    
-    if (!hasChanges(files)) {
+
+    if (!changes && !agentsDrift) {
       console.log('✓ Destination is up to date with the template.');
       return 0;
     }
 
     console.log('Updates available:');
+    if (agentsDrift) console.log('  ~ AGENTS.md (managed block drift)');
     if (counts.new > 0) console.log(`  + ${counts.new} new file(s)`);
     if (counts.updatable > 0) console.log(`  ~ ${counts.updatable} updatable file(s)`);
     if (counts.conflict > 0) console.log(`  ! ${counts.conflict} conflict(s)`);
@@ -96,23 +152,29 @@ export async function runUpdate(opts: UpdateOptions = {}): Promise<number> {
     return 1;
   }
 
-  if (!hasChanges(files)) {
+  // Nothing classified changed and AGENTS.md is fine (no repair requested):
+  // still honor the "update ALWAYS manages AGENTS.md" contract (a no-op when
+  // synced) before reporting success.
+  if (!changes && !agentsDrift && !opts.repairAgents) {
+    const agentsStep = manageAgentsStep(root, target, confirmFn, false);
     console.log('Destination is up to date with the template. Nothing to do.');
-    return 0;
+    return agentsStep.ok ? 0 : 1;
   }
 
-  // Show plan.
-  console.log('\n== spectralis update plan ==');
-  console.log(`  unchanged: ${counts.unchanged}`);
-  console.log(`  updatable: ${counts.updatable}`);
-  console.log(`  new:       ${counts.new}`);
-  console.log(`  conflict:  ${counts.conflict}`);
-  console.log(`  retired:   ${counts.retired}`);
-  console.log('');
-  for (const line of formatPlan(files)) console.log(line);
+  // Show plan when there are classified changes to apply.
+  if (changes) {
+    console.log('\n== spectralis update plan ==');
+    console.log(`  unchanged: ${counts.unchanged}`);
+    console.log(`  updatable: ${counts.updatable}`);
+    console.log(`  new:       ${counts.new}`);
+    console.log(`  conflict:  ${counts.conflict}`);
+    console.log(`  retired:   ${counts.retired}`);
+    console.log('');
+    for (const line of formatPlan(files)) console.log(line);
 
-  if (counts.retired > 0) {
-    console.log('\nRetired files will be reported but NOT deleted automatically.');
+    if (counts.retired > 0) {
+      console.log('\nRetired files will be reported but NOT deleted automatically.');
+    }
   }
 
   if (opts.dryRun) {
@@ -120,10 +182,8 @@ export async function runUpdate(opts: UpdateOptions = {}): Promise<number> {
     return 0;
   }
 
-  // Confirm.
-  const shouldAuto = opts.auto || opts.yes || readGlobalConfig().autoUpdate === true;
-  const confirmFn = makeConfirm(shouldAuto);
-  if (!shouldAuto && !confirmFn(promptMark('Apply this update?'))) {
+  // Confirm applying the classified changes (nothing to confirm otherwise).
+  if (changes && !shouldAuto && !confirmFn(promptMark('Apply this update?'))) {
     console.log('Update cancelled by the user.');
     return 0;
   }
@@ -180,32 +240,30 @@ export async function runUpdate(opts: UpdateOptions = {}): Promise<number> {
     }
   }
 
-  // Rewrite manifest on success.
-  if (!partial) {
-    const allManaged = files.map((f) => f.rel).filter((r) => !files.some((f) => f.rel === r && f.status === 'retired'));
-    const { writeManifest } = require('../core/manifest');
+  // Manage AGENTS.md ALWAYS: independent of `partial` and of the copy result.
+  const agentsStep = manageAgentsStep(root, target, confirmFn, opts.repairAgents === true);
+  const agentsOk = agentsStep.ok;
+
+  // Rewrite manifest only when nothing failed; preserve special entries.
+  if (!partial && agentsOk) {
+    const classified = files.filter((f) => f.status !== 'retired').map((f) => f.rel);
+    const allManaged = Array.from(
+      new Set([...classified, ...preservedManifestPaths(target, manifest)])
+    );
     const projectFields: Record<string, unknown> = {};
     if (manifest.obsidianSync !== undefined) projectFields.obsidianSync = manifest.obsidianSync;
     if (manifest.philosophy !== undefined) projectFields.philosophy = manifest.philosophy;
     writeManifest(target, allManaged, manifest.projectVersion ?? '1.0.0', version, manifest.tools, projectFields);
     console.log(`\n[OK] Update complete. ${updatedPaths.length} file(s) updated.`);
-
-    // LLM detection (Ollama).
-    const { detectOllama, configureLlm } = require('../core/ollama');
-    const ollama = await detectOllama();
-    if (ollama.available && ollama.models.length > 0) {
-      const modelName = ollama.models[0].name;
-      await configureLlm(modelName);
-      console.log(`[OK] LLM: Ollama detected, model: ${modelName}`);
-    } else {
-      console.log('[--] LLM: Ollama not detected (LLM classification disabled)');
-    }
-  } else {
+  } else if (partial) {
     console.error(`\n[WARN] Partial update. Backups preserved in ${backupRoot}.`);
+    if (!agentsOk) console.error('[ERROR] AGENTS.md management also failed.');
+  } else {
+    console.error('\n[ERROR] Update aborted: AGENTS.md management failed; the manifest was not rewritten.');
   }
 
   // Orchestration: notes init/sync when obsidianSync is active (only on success).
-  if (!partial) {
+  if (!partial && agentsOk) {
     const obsidianActive = isObsidianActive({ obsidian: opts.obsidian, noObsidian: opts.noObsidian }, target);
     if (obsidianActive) {
       console.log('');
@@ -215,5 +273,5 @@ export async function runUpdate(opts: UpdateOptions = {}): Promise<number> {
     }
   }
 
-  return partial ? 1 : 0;
+  return !partial && agentsOk ? 0 : 1;
 }

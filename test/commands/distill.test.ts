@@ -159,17 +159,17 @@ test('distillCache round-trips by content hash and invalidates on change', () =>
   assert.equal(cache.get('add-foo/briefing.md', 'contenido v2'), null);
 });
 
-test('hybridExtract with zero ambiguous entries never calls the LLM', async () => {
+test('hybridExtract with deterministic-only classification leaves noise out', async () => {
   const sources = [
     { path: 'add-foo/briefing.md', content: '## Decisiones\nUsar X', frontmatter: {} },
     { path: 'add-foo/tests.md', content: '# Tests\nCaso 1', frontmatter: {} },
   ];
-  const llm = { host: 'http://127.0.0.1:9', model: 'x', enabled: true }; // unreachable on purpose
   const dir = scratch();
   const cache = createDistillCache(dir);
-  const result = await hybridExtract(sources, llm, cache);
+  const result = await hybridExtract(sources, cache);
   assert.equal(result.classified.length, 1);
   assert.equal(result.classified[0].classification, 'ADR');
+  assert.equal(result.ambiguous.length, 0);
 });
 test('folder note distills: full note to arquitectura, sections to aggregates, tests not fed', async () => {
   const vault = scratch();

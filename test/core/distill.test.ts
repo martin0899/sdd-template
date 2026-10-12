@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { classifyByHeaders, classifyByKeywords, classifyByFrontmatter, deterministicExtract, classifyWithLLM, hybridExtract, SourceFile } from '../../src/core/distill';
+import { classifyByHeaders, classifyByKeywords, classifyByFrontmatter, deterministicExtract, deterministicClassification, hybridExtract, SourceFile } from '../../src/core/distill';
 
 test('classifyByHeaders detects Decisiones', () => {
   const content = '## Decisiones\nSome text';
@@ -99,21 +99,47 @@ test('deterministicExtract classifies files correctly', () => {
   assert.equal(result.classified[0].classification, 'ADR');
   assert.equal(result.classified[1].classification, 'post-mortem');
 });
-test('classifyWithLLM returns empty when disabled', async () => {
-  const result = await classifyWithLLM('some plan', { host: 'http://localhost:1', model: 'test', enabled: false });
-  assert.equal(result.size, 0);
+test('deterministicClassification identifies ADR entries', () => {
+  assert.equal(deterministicClassification('Elegimos SQLite para persistencia'), 'ADR');
+  assert.equal(deterministicClassification('Decisión técnica: usar X'), 'ADR');
+  assert.equal(deterministicClassification('Optamos por el enfoque B'), 'ADR');
+  assert.equal(deterministicClassification('Decidimos cambiar el ORM'), 'ADR');
 });
 
-test('classifyWithLLM returns empty when host unreachable', async () => {
-  const result = await classifyWithLLM('some plan', { host: 'http://localhost:1', model: 'test', enabled: true });
-  assert.equal(result.size, 0);
+test('deterministicClassification identifies post-mortem entries', () => {
+  assert.equal(deterministicClassification('El bug se debía a una condición de carrera'), 'post-mortem');
+  assert.equal(deterministicClassification('Error en el parser de fechas'), 'post-mortem');
+  assert.equal(deterministicClassification('La causa raíz del fallo fue el caché'), 'post-mortem');
 });
 
-test('hybridExtract discards ambiguous when LLM disabled', async () => {
+test('deterministicClassification identifies log entries', () => {
+  assert.equal(deterministicClassification('Cambio en el módulo core'), 'log');
+  assert.equal(deterministicClassification('La historia de este archivo'), 'log');
+  assert.equal(deterministicClassification('Lección aprendida: documentar'), 'log');
+});
+
+test('deterministicClassification returns null for ambiguous entries', () => {
+  assert.equal(deterministicClassification('Texto genérico sin señales de clase'), null);
+  assert.equal(deterministicClassification('', {}), null);
+});
+
+test('hybridExtract reclassifies ambiguous entries deterministically', async () => {
+  const files: SourceFile[] = [
+    { path: 'briefing.md', content: '## Decisiones\nWe decided X', frontmatter: {} },
+    { path: 'unknown.md', content: 'Elegimos Y como enfoque final', frontmatter: {} },
+  ];
+  const result = await hybridExtract(files);
+  assert.equal(result.ambiguous.length, 0);
+  assert.equal(result.classified.length, 2);
+  assert.equal(result.classified[0].classification, 'ADR');
+  assert.equal(result.classified[1].classification, 'ADR');
+});
+
+test('hybridExtract discards ambiguous entries without clear patterns', async () => {
   const files: SourceFile[] = [
     { path: 'a.md', content: 'some random content', frontmatter: {} }
   ];
-  const result = await hybridExtract(files, { host: 'http://localhost:1', model: '', enabled: false });
+  const result = await hybridExtract(files);
   assert.equal(result.classified.length, 0);
   assert.equal(result.ambiguous.length, 0);
 });

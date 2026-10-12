@@ -42,4 +42,4 @@ notes/
 |------|-------------|
 | [Architecture](architecture/manual.md) | Arquitectura del arnés SDD: capas del CLI, inventario de comandos, flujo install/update, doctor, segundo cerebro y convenciones |
 | [spectralis CLI](spectralis-cli/manual.md) | Uso estándar del CLI instalador SDD: comandos, opciones, matriz de agentes, versionado y garantías anti-corrupción |
-| [Local AI](local-ai/manual.md) | Guía de IA local (Ollama) para tareas de baja demanda |
+| [Local AI](local-ai/manual.md) | Guía de IA local para tareas de baja demanda |

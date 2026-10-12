@@ -714,13 +714,13 @@ $ spectralis skills --dry-run
 
 ### `spectralis distill <project>`
 
-Extracts knowledge from completed specifications in `01_Proyectos/<project>/` and writes distilled, optimized notes to `05_wiki/<project>/`. Uses a hybrid deterministic + semantic approach to minimize LLM token usage. The command is idempotent and supports `--dry-run`.
+Extracts knowledge from completed specifications in `01_Proyectos/<project>/` and writes distilled, optimized notes to `05_wiki/<project>/`. Uses deterministic heuristic classification (no LLM). The command is idempotent and supports `--dry-run`.
 
 **Organization entries ignored:** `distill` reads only `<spec-id>/` folders. Entries whose name starts with `_` — `_Notas/`, `_INDEX.md`, `_README.md` — are treated as vault organization and never distilled into `05_wiki/`.
 
 **Stack detection:** scans the real project code (via `--project-root` or `projects_base` convention) to populate the `stack` field in `_INDEX.json`.
 
-**LLM classification:** when Ollama is configured (`llm.enabled: true`), ambiguous entries are classified via LLM. Without LLM, ambiguous entries are discarded.
+**Classification:** deterministic heuristics classify entries; ambiguous entries (no matching pattern) are discarded. No LLM is invoked — the former Ollama integration was removed.
 
 **Output files:**
 
@@ -744,20 +744,6 @@ Legacy per-spec subfolders (`decisiones/`, `errores/`, `log/`) and `restriccione
 | `--demo`, `--dd` | Alias for `--dry-run` | — | no |
 | `-p, --project-root <path>` | Path to the real project code for stack detection | `projects_base` convention | no |
 | `-v, --vault-root <path>` | Vault root override | from config | no |
-
-**LLM configuration** (in `~/.config/spectralis/config.json`):
-
-```json
-{
-  "llm": {
-    "host": "http://localhost:11434",
-    "model": "llama3.1:8b",
-    "enabled": true
-  }
-}
-```
-
-Auto-detected on `spectralis init` and `spectralis update` via `OLLAMA_HOST`.
 
 **Examples:**
 
