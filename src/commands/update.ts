@@ -1,6 +1,6 @@
-import { existsSync, readFileSync, mkdirSync, copyFileSync } from 'node:fs';
+import { existsSync, readFileSync, mkdirSync, copyFileSync, rmSync } from 'node:fs';
 import { resolve, join } from 'node:path';
-import { readManifest, writeManifest, type ManifestData } from '../core/manifest';
+import { readManifest, writeManifest, sha256File, type ManifestData } from '../core/manifest';
 import { classifyFiles, countByStatus, hasChanges, type ClassifiedFile } from '../core/classify-update';
 import { manageAgentsMd, detectAgentsMdDrift } from '../core/agents-md';
 import { COMPOSED_STANDARDS } from '../core/copy-payload';
@@ -15,10 +15,26 @@ export interface UpdateOptions {
   check?: boolean;
   yes?: boolean;
   auto?: boolean;
+  prune?: boolean;
   repairAgents?: boolean;
   obsidian?: boolean;
   noObsidian?: boolean;
 }
+
+/** Outcome of the hash check performed on a retired file before pruning it. */
+export type PruneDecision = 'prune' | 'modified' | 'missing' | 'unreadable';
+
+export interface PruneCandidate {
+  rel: string;
+  decision: PruneDecision;
+}
+
+const PRUNE_REASON: Record<PruneDecision, string> = {
+  prune: 'hash matches the manifest',
+  modified: 'hash differs (edited after installation)',
+  missing: 'not present on disk',
+  unreadable: 'not readable'
+};
 
 /** Special entries that must survive a manifest rewrite even when they are not
  * part of `classifyFiles` (AGENTS.md, openspec config and composed standards). */
@@ -50,6 +66,95 @@ function backupFile(target: string, rel: string, backupRoot: string): string {
   mkdirSync(join(target, backupRoot, rel.substring(0, rel.lastIndexOf('/'))), { recursive: true });
   copyFileSync(join(target, rel), dest);
   return join(backupRoot, rel);
+}
+
+/**
+ * Decides, per retired file, whether it can be pruned.
+ *
+ * Only files whose current hash matches the hash recorded in the manifest are
+ * prunable: a file edited after the installation has a different hash and is
+ * preserved (never deleted, never backed up).
+ */
+function planPrune(
+  target: string,
+  manifest: ManifestData,
+  retired: ClassifiedFile[]
+): PruneCandidate[] {
+  const referenceHashes = new Map(manifest.files.map((f) => [f.path, f.hash]));
+  return retired.map((f) => {
+    const destFile = join(target, f.rel);
+    if (!existsSync(destFile)) return { rel: f.rel, decision: 'missing' as PruneDecision };
+    const reference = referenceHashes.get(f.rel);
+    let current: string;
+    try {
+      current = sha256File(destFile);
+    } catch {
+      return { rel: f.rel, decision: 'unreadable' as PruneDecision };
+    }
+    return {
+      rel: f.rel,
+      decision: reference && current === reference ? ('prune' as PruneDecision) : ('modified' as PruneDecision)
+    };
+  });
+}
+
+/** Prints the prune plan (report only: it never writes anything). */
+function reportPrunePlan(plan: PruneCandidate[]): void {
+  console.log('\n== prune plan (--prune) ==');
+  if (plan.length === 0) {
+    console.log('  No retired files to prune.');
+    return;
+  }
+  for (const candidate of plan) {
+    const icon = candidate.decision === 'prune' ? '-' : '~';
+    console.log(`  [${icon}] ${candidate.rel} (${PRUNE_REASON[candidate.decision]})`);
+  }
+  const prunable = plan.filter((c) => c.decision === 'prune').length;
+  console.log(`  ${prunable} file(s) would be deleted (backup first); ${plan.length - prunable} preserved.`);
+}
+
+export interface PruneOutcome {
+  pruned: string[];
+  failed: { rel: string; error: string }[];
+}
+
+/**
+ * Backs up and deletes retired files (filesystem only, never git).
+ *
+ * A file is deleted only after its backup succeeded: when the backup fails the
+ * file is reported and left untouched, so it stays in the manifest and can be
+ * pruned in a later run.
+ */
+export function executePrune(
+  target: string,
+  candidates: PruneCandidate[],
+  backupRoot: string
+): PruneOutcome {
+  const pruned: string[] = [];
+  const failed: { rel: string; error: string }[] = [];
+
+  for (const candidate of candidates) {
+    const destFile = join(target, candidate.rel);
+    try {
+      backupFile(target, candidate.rel, backupRoot);
+    } catch (err) {
+      const error = err instanceof Error ? err.message : String(err);
+      failed.push({ rel: candidate.rel, error });
+      console.error(`[ERROR] Failed to backup retired file (not deleted): ${candidate.rel}: ${error}`);
+      continue;
+    }
+    try {
+      rmSync(destFile, { force: true });
+      pruned.push(candidate.rel);
+      console.log(`  [OK] pruned: ${candidate.rel}`);
+    } catch (err) {
+      const error = err instanceof Error ? err.message : String(err);
+      failed.push({ rel: candidate.rel, error });
+      console.error(`[ERROR] Failed to delete retired file: ${candidate.rel}: ${error}`);
+    }
+  }
+
+  return { pruned, failed };
 }
 
 function copyFromPlantilla(rel: string, target: string, templateRoot: string): void {
@@ -118,6 +223,12 @@ export async function runUpdate(opts: UpdateOptions = {}): Promise<number> {
   const counts = countByStatus(files);
   const changes = hasChanges(files);
 
+  // Retired files (in the manifest, no longer in the template) and the prune
+  // plan: only files whose hash matches the manifest can be deleted.
+  const retiredFiles = files.filter((f) => f.status === 'retired');
+  const prunePlan = opts.prune ? planPrune(target, manifest, retiredFiles) : [];
+  const prunableFiles = prunePlan.filter((c) => c.decision === 'prune');
+
   // AGENTS.md managed-block drift is independent of the classified file tree.
   let agentsDrift = false;
   try {
@@ -135,6 +246,8 @@ export async function runUpdate(opts: UpdateOptions = {}): Promise<number> {
     console.log('\n== spectralis update --check ==');
     console.log(`  tools: ${(manifest.tools || []).join(', ') || 'none registered'}`);
     console.log('');
+
+    if (opts.prune) reportPrunePlan(prunePlan);
 
     if (!changes && !agentsDrift) {
       console.log('✓ Destination is up to date with the template.');
@@ -156,6 +269,7 @@ export async function runUpdate(opts: UpdateOptions = {}): Promise<number> {
   // still honor the "update ALWAYS manages AGENTS.md" contract (a no-op when
   // synced) before reporting success.
   if (!changes && !agentsDrift && !opts.repairAgents) {
+    if (opts.prune) reportPrunePlan(prunePlan);
     const agentsStep = manageAgentsStep(root, target, confirmFn, false);
     console.log('Destination is up to date with the template. Nothing to do.');
     return agentsStep.ok ? 0 : 1;
@@ -172,7 +286,9 @@ export async function runUpdate(opts: UpdateOptions = {}): Promise<number> {
     console.log('');
     for (const line of formatPlan(files)) console.log(line);
 
-    if (counts.retired > 0) {
+    if (opts.prune) {
+      reportPrunePlan(prunePlan);
+    } else if (counts.retired > 0) {
       console.log('\nRetired files will be reported but NOT deleted automatically.');
     }
   }
@@ -180,6 +296,20 @@ export async function runUpdate(opts: UpdateOptions = {}): Promise<number> {
   if (opts.dryRun) {
     console.log('\nDry-run complete. Nothing written.');
     return 0;
+  }
+
+  // Prune is destructive: it asks for an explicit confirmation unless the
+  // caller opted in with --yes/--auto. The confirmation is asked before the
+  // generic "apply this update?" prompt so the deletion list is fresh.
+  let pruneApproved = false;
+  if (opts.prune && prunableFiles.length > 0) {
+    const pruneConfirm = makeConfirm(opts.yes === true || opts.auto === true);
+    pruneApproved = pruneConfirm(
+      promptMark(`Delete ${prunableFiles.length} retired file(s) (backup first)?`)
+    );
+    if (!pruneApproved) {
+      console.log('Prune declined: the retired files are preserved.');
+    }
   }
 
   // Confirm applying the classified changes (nothing to confirm otherwise).
@@ -200,7 +330,7 @@ export async function runUpdate(opts: UpdateOptions = {}): Promise<number> {
     if (f.status === 'unchanged') continue;
 
     if (f.status === 'retired') {
-      continue; // Report only, never delete.
+      continue; // Retired files are never copied; only --prune can delete them.
     }
 
     if (f.status === 'new') {
@@ -240,6 +370,13 @@ export async function runUpdate(opts: UpdateOptions = {}): Promise<number> {
     }
   }
 
+  // Execute prune: backup first, then delete (fs only, never git).
+  const prunedPaths: string[] = [];
+  if (pruneApproved) {
+    const outcome = executePrune(target, prunableFiles, backupRoot);
+    prunedPaths.push(...outcome.pruned);
+  }
+
   // Manage AGENTS.md ALWAYS: independent of `partial` and of the copy result.
   const agentsStep = manageAgentsStep(root, target, confirmFn, opts.repairAgents === true);
   const agentsOk = agentsStep.ok;
@@ -247,14 +384,36 @@ export async function runUpdate(opts: UpdateOptions = {}): Promise<number> {
   // Rewrite manifest only when nothing failed; preserve special entries.
   if (!partial && agentsOk) {
     const classified = files.filter((f) => f.status !== 'retired').map((f) => f.rel);
+    // With --prune, retired files that were not pruned (hash differs, backup
+    // failed or the user declined) stay in the manifest, keeping their
+    // reference hash so they are detected again — and never pruned — later.
+    const retainedRetired = opts.prune
+      ? retiredFiles.filter((f) => !prunedPaths.includes(f.rel)).map((f) => f.rel)
+      : [];
+    const hashOverrides: Record<string, string> = {};
+    for (const rel of retainedRetired) {
+      const reference = manifest.files.find((f) => f.path === rel)?.hash;
+      if (reference) hashOverrides[rel] = reference;
+    }
     const allManaged = Array.from(
-      new Set([...classified, ...preservedManifestPaths(target, manifest)])
+      new Set([...classified, ...retainedRetired, ...preservedManifestPaths(target, manifest)])
     );
     const projectFields: Record<string, unknown> = {};
     if (manifest.obsidianSync !== undefined) projectFields.obsidianSync = manifest.obsidianSync;
     if (manifest.philosophy !== undefined) projectFields.philosophy = manifest.philosophy;
-    writeManifest(target, allManaged, manifest.projectVersion ?? '1.0.0', version, manifest.tools, projectFields);
+    writeManifest(
+      target,
+      allManaged,
+      manifest.projectVersion ?? '1.0.0',
+      version,
+      manifest.tools,
+      projectFields,
+      hashOverrides
+    );
     console.log(`\n[OK] Update complete. ${updatedPaths.length} file(s) updated.`);
+    if (prunedPaths.length > 0) {
+      console.log(`[OK] Pruned ${prunedPaths.length} retired file(s). Backups in ${backupRoot}.`);
+    }
   } else if (partial) {
     console.error(`\n[WARN] Partial update. Backups preserved in ${backupRoot}.`);
     if (!agentsOk) console.error('[ERROR] AGENTS.md management also failed.');

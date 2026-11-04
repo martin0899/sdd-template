@@ -13,14 +13,20 @@ export function writeManifest(
   projectVersion: string,
   spectralisVersion: string,
   tools?: string[],
-  projectFields?: Record<string, unknown>
+  projectFields?: Record<string, unknown>,
+  /**
+   * Pre-computed hashes that win over the current on-disk hash. Used by
+   * `update --prune` to keep the reference hash of retired files that were
+   * preserved (e.g. edited by the user), so they are never pruned later.
+   */
+  hashOverrides?: Record<string, string>
 ): string {
   const files = managedPaths
     .filter((rel) => {
       const dest = join(target, rel);
       return existsSync(dest) && statSync(dest).isFile();
     })
-    .map((rel) => ({ path: rel, hash: sha256File(join(target, rel)) }));
+    .map((rel) => ({ path: rel, hash: hashOverrides?.[rel] ?? sha256File(join(target, rel)) }));
   const manifest: Record<string, unknown> = {
     schemaVersion: 3,
     spectralisVersion,

@@ -1,9 +1,11 @@
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, writeFileSync, readFileSync, rmSync, mkdirSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+import { mkdtempSync, writeFileSync, readFileSync, rmSync, mkdirSync, readdirSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { join, dirname } from 'node:path';
+import { executePrune } from '../../src/commands/update';
 
 const REPO = join(__dirname, '..', '..', '..');
 const CLI = join(REPO, 'dist', 'bin', 'spectralis.js');
@@ -287,3 +289,305 @@ test('update preserves AGENTS.md, openspec/config.yaml and compound standard man
     rmSync(dst, { recursive: true, force: true });
   }
 });
+
+// --- update --prune ---
+
+/** A path that exists in the manifest but not in the template payload. */
+const RETIRED_REL = 'docs/legacy-manual.md';
+const RETIRED_EDITED_REL = 'docs/legacy-edited.md';
+
+function sha256Of(file: string): string {
+  return createHash('sha256').update(readFileSync(file)).digest('hex');
+}
+
+function backupDirs(dst: string): string[] {
+  return readdirSync(dst).filter((d) => d.startsWith('.sdd-backup-'));
+}
+
+/**
+ * Registers a file as `retired`: it exists on disk and in the manifest, but it
+ * is not part of the current template payload.
+ */
+function seedRetiredFile(dst: string, rel: string, content: string, manifestHash?: string): void {
+  const abs = join(dst, rel);
+  mkdirSync(dirname(abs), { recursive: true });
+  writeFileSync(abs, content);
+  const manifestPath = join(dst, '.sdd-manifest.json');
+  const manifest = readManifestJson(dst) as { files: { path: string; hash: string }[] };
+  manifest.files.push({ path: rel, hash: manifestHash ?? sha256Of(abs) });
+  writeFileSync(manifestPath, JSON.stringify(manifest, null, 2) + '\n');
+}
+
+function escaped(rel: string): string {
+  return rel.replace(/[/.]/g, '\\$&');
+}
+
+test('update --prune --yes deletes retired files whose hash matches the manifest, after a backup', () => {
+  const dst = mkdtempSync(join(tmpdir(), 'spectralis-upd-prune-'));
+  try {
+    const init = runCli(['init', dst, '--yes'], 's\n');
+    assert.equal(init.status, 0, init.stderr + init.stdout);
+
+    seedRetiredFile(dst, RETIRED_REL, 'legacy manual\n');
+
+    const r = runCli(['update', dst, '--prune', '--yes', '--no-obsidian']);
+    assert.equal(r.status, 0, r.stderr + r.stdout);
+
+    assert.ok(!existsSync(join(dst, RETIRED_REL)), 'the retired file is deleted from disk');
+    const backups = backupDirs(dst);
+    assert.equal(backups.length, 1, 'one backup directory is created');
+    assert.ok(
+      existsSync(join(dst, backups[0], RETIRED_REL)),
+      'the backup preserves the relative path of the deleted file'
+    );
+    assert.equal(
+      readFileSync(join(dst, backups[0], RETIRED_REL), 'utf8'),
+      'legacy manual\n',
+      'the backup holds the original content'
+    );
+  } finally {
+    rmSync(dst, { recursive: true, force: true });
+  }
+});
+
+test('update --prune preserves retired files whose hash differs from the manifest', () => {
+  const dst = mkdtempSync(join(tmpdir(), 'spectralis-upd-prune-edited-'));
+  try {
+    const init = runCli(['init', dst, '--yes'], 's\n');
+    assert.equal(init.status, 0, init.stderr + init.stdout);
+
+    // The user edited the file after installation: the hash no longer matches.
+    seedRetiredFile(dst, RETIRED_REL, 'edited by the user\n', 'a'.repeat(64));
+
+    const r = runCli(['update', dst, '--prune', '--yes', '--no-obsidian']);
+    assert.equal(r.status, 0, r.stderr + r.stdout);
+
+    assert.ok(existsSync(join(dst, RETIRED_REL)), 'the edited retired file survives the prune');
+    assert.equal(
+      readFileSync(join(dst, RETIRED_REL), 'utf8'),
+      'edited by the user\n',
+      'the edited content is untouched'
+    );
+    assert.equal(backupDirs(dst).length, 0, 'no backup is created for a preserved file');
+    assert.match(r.stdout, /prune/i, 'the prune outcome is reported');
+  } finally {
+    rmSync(dst, { recursive: true, force: true });
+  }
+});
+
+test('update --prune --dry-run reports the prunable files without writing anything', () => {
+  const dst = mkdtempSync(join(tmpdir(), 'spectralis-upd-prune-dry-'));
+  try {
+    const init = runCli(['init', dst, '--yes'], 's\n');
+    assert.equal(init.status, 0, init.stderr + init.stdout);
+
+    seedRetiredFile(dst, RETIRED_REL, 'legacy manual\n');
+
+    const r = runCli(['update', dst, '--prune', '--dry-run', '--no-obsidian']);
+    assert.equal(r.status, 0, r.stderr + r.stdout);
+
+    assert.match(r.stdout, new RegExp(escaped(RETIRED_REL)), 'the prunable file is reported');
+    assert.match(r.stdout, /prune/i, 'the prune plan is reported');
+    assert.ok(existsSync(join(dst, RETIRED_REL)), 'dry-run deletes nothing');
+    assert.equal(backupDirs(dst).length, 0, 'dry-run creates no backup');
+  } finally {
+    rmSync(dst, { recursive: true, force: true });
+  }
+});
+
+test('update --prune --check reports the retired files without writing anything', () => {
+  const dst = mkdtempSync(join(tmpdir(), 'spectralis-upd-prune-check-'));
+  try {
+    const init = runCli(['init', dst, '--yes'], 's\n');
+    assert.equal(init.status, 0, init.stderr + init.stdout);
+
+    seedRetiredFile(dst, RETIRED_REL, 'legacy manual\n');
+
+    const r = runCli(['update', dst, '--prune', '--check']);
+    assert.equal(r.status, 1, r.stderr + r.stdout);
+
+    assert.match(r.stdout, /retired/i, 'the retired count is reported');
+    assert.match(r.stdout, new RegExp(escaped(RETIRED_REL)), 'the file to prune is reported');
+    assert.ok(existsSync(join(dst, RETIRED_REL)), '--check deletes nothing');
+    assert.equal(backupDirs(dst).length, 0, '--check creates no backup');
+  } finally {
+    rmSync(dst, { recursive: true, force: true });
+  }
+});
+
+test('update --prune without --yes asks for confirmation and deletes nothing when declined', () => {
+  const dst = mkdtempSync(join(tmpdir(), 'spectralis-upd-prune-confirm-'));
+  try {
+    const init = runCli(['init', dst, '--yes'], 's\n');
+    assert.equal(init.status, 0, init.stderr + init.stdout);
+
+    seedRetiredFile(dst, RETIRED_REL, 'legacy manual\n');
+
+    // First answer declines the prune, second one accepts the update itself.
+    const r = runCli(['update', dst, '--prune', '--no-obsidian'], 'n\ns\n');
+    assert.equal(r.status, 0, r.stderr + r.stdout);
+
+    assert.match(
+      r.stdout,
+      new RegExp(escaped(RETIRED_REL)),
+      'the list of files to delete is shown before the confirmation'
+    );
+    assert.ok(existsSync(join(dst, RETIRED_REL)), 'a declined prune deletes nothing');
+    assert.equal(backupDirs(dst).length, 0, 'a declined prune creates no backup');
+  } finally {
+    rmSync(dst, { recursive: true, force: true });
+  }
+});
+
+test('update without --prune reports retired files but never deletes them', () => {
+  const dst = mkdtempSync(join(tmpdir(), 'spectralis-upd-noprune-'));
+  try {
+    const init = runCli(['init', dst, '--yes'], 's\n');
+    assert.equal(init.status, 0, init.stderr + init.stdout);
+
+    seedRetiredFile(dst, RETIRED_REL, 'legacy manual\n');
+
+    const r = runCli(['update', dst, '--yes', '--no-obsidian']);
+    assert.equal(r.status, 0, r.stderr + r.stdout);
+
+    assert.match(r.stdout, new RegExp(escaped(RETIRED_REL)), 'the retired file is reported');
+    assert.match(r.stdout, /NOT deleted/, 'the report states that nothing is deleted');
+    assert.ok(existsSync(join(dst, RETIRED_REL)), 'without --prune the retired file survives');
+    assert.equal(backupDirs(dst).length, 0, 'without --prune no backup is created');
+  } finally {
+    rmSync(dst, { recursive: true, force: true });
+  }
+});
+
+test('update --prune rewrites the manifest excluding pruned files and keeping preserved ones', () => {
+  const dst = mkdtempSync(join(tmpdir(), 'spectralis-upd-prune-manifest-'));
+  try {
+    const init = runCli(['init', dst, '--yes'], 's\n');
+    assert.equal(init.status, 0, init.stderr + init.stdout);
+
+    seedRetiredFile(dst, RETIRED_REL, 'legacy manual\n');
+    seedRetiredFile(dst, RETIRED_EDITED_REL, 'edited by the user\n', 'b'.repeat(64));
+
+    const r = runCli(['update', dst, '--prune', '--yes', '--no-obsidian']);
+    assert.equal(r.status, 0, r.stderr + r.stdout);
+
+    const rewritten = readManifestJson(dst) as { files: { path: string; hash: string }[] };
+    const paths = rewritten.files.map((f) => f.path);
+    assert.ok(!paths.includes(RETIRED_REL), 'the pruned file is excluded from the manifest');
+    assert.ok(paths.includes(RETIRED_EDITED_REL), 'the preserved file stays in the manifest');
+    const kept = rewritten.files.find((f) => f.path === RETIRED_EDITED_REL);
+    assert.equal(
+      kept?.hash,
+      'b'.repeat(64),
+      'the preserved file keeps its reference hash so it is never pruned later'
+    );
+  } finally {
+    rmSync(dst, { recursive: true, force: true });
+  }
+});
+
+test('update --prune without retired files reports nothing to prune and creates no backup', () => {
+  const dst = mkdtempSync(join(tmpdir(), 'spectralis-upd-prune-empty-'));
+  try {
+    const init = runCli(['init', dst, '--yes'], 's\n');
+    assert.equal(init.status, 0, init.stderr + init.stdout);
+
+    const r = runCli(['update', dst, '--prune', '--yes', '--no-obsidian']);
+    assert.equal(r.status, 0, r.stderr + r.stdout);
+
+    assert.match(r.stdout, /no retired files to prune/i, 'the report states there is nothing to prune');
+    assert.equal(backupDirs(dst).length, 0, 'no backup is created');
+  } finally {
+    rmSync(dst, { recursive: true, force: true });
+  }
+});
+
+test('prune keeps a file whose backup failed and deletes the ones backed up successfully', () => {
+  const dst = mkdtempSync(join(tmpdir(), 'spectralis-upd-prune-partial-'));
+  try {
+    mkdirSync(join(dst, 'docs'), { recursive: true });
+    writeFileSync(join(dst, 'docs', 'ok.md'), 'ok\n');
+    writeFileSync(join(dst, 'docs', 'ko.md'), 'ko\n');
+
+    // The backup root is a regular file: every backup into it fails.
+    const backupRoot = '.sdd-backup-blocked';
+    writeFileSync(join(dst, backupRoot), 'not a directory\n');
+
+    const outcome = executePrune(
+      dst,
+      [
+        { rel: 'docs/ok.md', decision: 'prune' },
+        { rel: 'docs/ko.md', decision: 'prune' }
+      ],
+      backupRoot
+    );
+
+    assert.deepEqual(outcome.pruned, [], 'no file is deleted when its backup failed');
+    assert.equal(outcome.failed.length, 2, 'both failures are reported');
+    assert.ok(outcome.failed[0].error.length > 0, 'the failure is reported with detail');
+    assert.ok(existsSync(join(dst, 'docs', 'ok.md')), 'the file with the failed backup survives');
+    assert.ok(existsSync(join(dst, 'docs', 'ko.md')), 'the file with the failed backup survives');
+  } finally {
+    rmSync(dst, { recursive: true, force: true });
+  }
+});
+
+test('prune deletes a file only after its backup succeeded', () => {
+  const dst = mkdtempSync(join(tmpdir(), 'spectralis-upd-prune-ok-'));
+  try {
+    mkdirSync(join(dst, 'docs'), { recursive: true });
+    writeFileSync(join(dst, 'docs', 'ok.md'), 'ok\n');
+
+    const outcome = executePrune(dst, [{ rel: 'docs/ok.md', decision: 'prune' }], '.sdd-backup-x');
+
+    assert.deepEqual(outcome.pruned, ['docs/ok.md'], 'the file is pruned');
+    assert.deepEqual(outcome.failed, [], 'no failure is reported');
+    assert.ok(!existsSync(join(dst, 'docs', 'ok.md')), 'the file is deleted from disk');
+    assert.ok(
+      existsSync(join(dst, '.sdd-backup-x', 'docs', 'ok.md')),
+      'the backup keeps the relative path'
+    );
+  } finally {
+    rmSync(dst, { recursive: true, force: true });
+  }
+});
+
+const gitAvailable = spawnSync('git', ['--version']).status === 0;
+test(
+  'update --prune deletes with fs only: the deletion is never staged in git',
+  { skip: gitAvailable ? false : 'git is not available in this environment' },
+  () => {
+    const dst = mkdtempSync(join(tmpdir(), 'spectralis-upd-prune-git-'));
+    try {
+      const init = runCli(['init', dst, '--yes'], 's\n');
+      assert.equal(init.status, 0, init.stderr + init.stdout);
+
+      seedRetiredFile(dst, RETIRED_REL, 'legacy manual\n');
+
+      const gitInit = spawnSync('git', ['init'], { cwd: dst, encoding: 'utf8' });
+      assert.equal(gitInit.status, 0, gitInit.stderr);
+      const gitAdd = spawnSync('git', ['add', '--', RETIRED_REL], { cwd: dst, encoding: 'utf8' });
+      assert.equal(gitAdd.status, 0, gitAdd.stderr);
+
+      const r = runCli(['update', dst, '--prune', '--yes', '--no-obsidian']);
+      assert.equal(r.status, 0, r.stderr + r.stdout);
+      assert.ok(!existsSync(join(dst, RETIRED_REL)), 'the retired file is deleted from disk');
+
+      const status = spawnSync('git', ['status', '--porcelain'], { cwd: dst, encoding: 'utf8' });
+      assert.equal(status.status, 0, status.stderr);
+      const entry = status.stdout
+        .split('\n')
+        .filter((l) => l.includes(RETIRED_REL))
+        .map((l) => l.trim());
+      assert.equal(entry.length, 1, 'the deleted file is reported by git');
+      assert.equal(
+        entry[0][0],
+        'A',
+        'the file is still staged as added: git never removed it from the index (no `git rm`)'
+      );
+      assert.equal(entry[0][1], 'D', 'the worktree reports the file as deleted');
+    } finally {
+      rmSync(dst, { recursive: true, force: true });
+    }
+  }
+);

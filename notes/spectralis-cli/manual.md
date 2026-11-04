@@ -144,7 +144,7 @@ Re-syncs an installed destination with the current template. Reads the manifest,
 | updatable | User hasn't modified it; safe to update |
 | conflict | User has modified it locally — backup + ask before replacing |
 | new | In plantilla but not in destination — copied after confirmation |
-| retired | In manifest/destination but removed from plantilla — reported, never deleted |
+| retired | In manifest/destination but removed from plantilla — reported, never deleted (unless `--prune`) |
 
 **Options:**
 
@@ -154,6 +154,7 @@ Re-syncs an installed destination with the current template. Reads the manifest,
 | `--demo`, `--dd` | Alias for `--dry-run` |
 | `--check` | Check for updates without applying (read-only) |
 | `--yes` | Non-interactive mode; conflicts are kept (conservative) |
+| `--prune` | Delete retired files whose hash matches the manifest (backup first, fs only) |
 | `--agent <agente>` | Target agent profile (same as init) |
 
 **Exit codes:**
@@ -173,6 +174,7 @@ Re-syncs an installed destination with the current template. Reads the manifest,
 | `--demo`, `--dd` | Alias for `--dry-run` | — | no |
 | `--check` | Read-only check: exit 0=up-to-date, 1=updates, 2=error | off | no |
 | `--yes` | Non-interactive; conflicts kept (conservative) | off | no |
+| `--prune` | Delete retired files whose hash matches the manifest | off | no |
 | `--agent <agente>` | Target agent profile (same as init) | inherited manifest | no |
 
 **Examples:**
@@ -202,9 +204,31 @@ $ spectralis update
   backups preserved in .sdd-backup-20260929...   # only when conflicts existed
 ```
 
+```text
+$ spectralis update --prune --yes
+== prune plan (--prune) ==
+  [-] docs/legacy-manual.md (hash matches the manifest)
+  ~ docs/edited-by-me.md (hash differs (edited after installation))
+  1 file(s) would be deleted (backup first); 1 preserved.
+  [OK] pruned: docs/legacy-manual.md
+  [OK] Pruned 1 retired file(s). Backups in .sdd-backup-20261104...-1234.
+```
+
+**Prune semantics (`--prune`):**
+
+| Guarantee | Behaviour |
+|-----------|-----------|
+| Hash-match only | Only retired files whose current hash equals the manifest hash are deleted. A file edited after the installation has a different hash: it is reported and preserved. |
+| Backup first | Each file is copied to `.sdd-backup-<timestamp>-<pid>/` keeping its relative path. If the backup fails, the file is **not** deleted. |
+| fs only | Deletion is a filesystem operation; no git command is ever invoked. |
+| `--dry-run` / `--check` | Report-only: no backup is created and nothing is deleted. |
+| Confirmation | Without `--yes`/`--auto` the list of files to delete is shown and an explicit confirmation is required. Declining preserves every file. |
+| Manifest | After a successful prune the rewritten manifest drops the deleted entries; preserved files stay with their reference hash so they are never pruned later. |
+
 **Notes:**
 - `update` is the only supported update mechanism; manual edits to managed files are detected as `conflict` and preserved (backup + ask).
 - `--yes` never overwrites a conflict silently — conflicts are kept and reported.
+- Without `--prune` retired files are reported but never deleted (unchanged behaviour).
 - Exit code `2` when the destination has no manifest (run `spectralis init` first).
 
 ### `spectralis doctor`
@@ -931,6 +955,7 @@ The orchestration logic lives in the `obsidian-orchestration` skill (`.agents/sk
 | `spectralis init` | Install SDD template into a project |
 | `spectralis update` | Sync installed destination with template |
 | `spectralis update --check` | Check for updates without applying |
+| `spectralis update --prune` | Delete retired files whose hash matches the manifest (backup first) |
 | `spectralis status` | Show installed harness status |
 | `spectralis config` | Show/modify harness configuration |
 | `spectralis doctor` | Verify host prerequisites |
@@ -951,5 +976,6 @@ The orchestration logic lives in the `obsidian-orchestration` skill (`.agents/sk
 | `--dry-run` | `--demo`, `--dd` | Show plan without writing |
 | `--version` | `--v` | Show CLI version |
 | `--check` | — | Read-only update check |
+| `--prune` | — | Delete retired files whose hash matches the manifest |
 | `--yes` | — | Non-interactive mode |
 | `--agent <name>` | — | Target agent profile |

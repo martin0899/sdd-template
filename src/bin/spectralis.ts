@@ -101,6 +101,7 @@ program
   .option('-c, --check', 'check for updates without writing (exit 0=up-to-date, 1=updates, 2=error)')
   .option('--yes', 'non-interactive mode (always with backup)')
   .option('-a, --auto', 'apply all updates without asking (alias for --yes + autoUpdate config)')
+  .option('--prune', 'delete retired files whose hash matches the manifest (backup first, fs only)')
   .option('--repair-agents', 'rebuild the managed AGENTS.md block (repairs skipped-* states with backup + confirmation)')
   .option('--agent <agente>', 'target agent profile (opencode | antigravity | claude | all)')
   .option('--obsidian', 'force obsidian orchestration (notes sync) even if obsidianSync=0')
@@ -108,10 +109,10 @@ program
   .action(
     async (
       destino: string | undefined,
-      opts: { dryRun?: boolean; demo?: boolean; dd?: boolean; check?: boolean; yes?: boolean; auto?: boolean; repairAgents?: boolean; agent?: string; obsidian?: boolean; noObsidian?: boolean }
+      opts: { dryRun?: boolean; demo?: boolean; dd?: boolean; check?: boolean; yes?: boolean; auto?: boolean; prune?: boolean; repairAgents?: boolean; agent?: string; obsidian?: boolean; noObsidian?: boolean }
     ) => {
       if (opts.agent) resolveAgent(opts.agent);
-      const code = await runUpdate({ destino, dryRun: opts.dryRun || opts.demo || opts.dd, check: opts.check, yes: opts.yes, auto: opts.auto, repairAgents: opts.repairAgents, obsidian: opts.obsidian, noObsidian: opts.noObsidian });
+      const code = await runUpdate({ destino, dryRun: opts.dryRun || opts.demo || opts.dd, check: opts.check, yes: opts.yes, auto: opts.auto, prune: opts.prune, repairAgents: opts.repairAgents, obsidian: opts.obsidian, noObsidian: opts.noObsidian });
       process.exitCode = code;
     }
   );

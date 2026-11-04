@@ -125,6 +125,10 @@ PASOS (en este orden, sin saltarte ninguno)
    - Ejecuta `graphify update .` para construir el grafo del proyecto.
    - Invoca la skill `sdd-onboard-project` y refina los placeholders pendientes
      en docs/backend-standards.md y docs/frontend-standards.md con la evidencia real.
+   - `docs/` viaja al destino con **stubs neutros** (`api-spec.yml`, `data-model.md`,
+     `development_guide.md`): plantillas vacías con placeholders (`{{entities}}`,
+     `{{stack}}`, `{{commands}}`) que `sdd-onboard-project` rellena con el stack real
+     del proyecto. Ningún proyecto hereda documentación de otro producto.
 
 REGLAS
 - No escribas nada en el proyecto sin mi confirmación explícita.
@@ -369,7 +373,26 @@ spectralis update             # aplica los cambios
 | `1` | Hay actualizaciones disponibles |
 | `2` | Error (destino no instalado) |
 
-La actualización compara hashes, clasifica archivos (nuevos, actualizables, conflictos, retirados), respalda antes de reemplazar y conserva los cambios del proyecto en `.sdd-backup-<fecha>/`. Los archivos retirados se reportan, pero no se eliminan automáticamente.
+La actualización compara hashes, clasifica archivos (nuevos, actualizables, conflictos, retirados), respalda antes de reemplazar y conserva los cambios del proyecto en `.sdd-backup-<fecha>/`. Los archivos retirados se reportan, pero no se eliminan automáticamente (salvo que uses `--prune`).
+
+### Podar archivos retirados (`--prune`)
+
+```bash
+spectralis update --prune --check     # solo informa: qué se borraría y qué se preservaría
+spectralis update --prune --dry-run   # plan completo sin escribir nada
+spectralis update --prune             # pide confirmación y borra (con backup previo)
+spectralis update --prune --yes       # borra sin preguntar (con backup previo igualmente)
+```
+
+| Garantía | Comportamiento |
+|----------|----------------|
+| **Hash-match only** | Solo se borran los archivos retirados cuyo hash en disco coincide con el del manifiesto. Si los editaste, se preservan y se reportan. |
+| **Backup previo** | Cada archivo se copia a `.sdd-backup-<timestamp>-<pid>/` conservando su ruta relativa. Si el backup falla, el archivo **no** se borra. |
+| **Solo fs** | El borrado es una operación de filesystem. Nunca se invoca `git rm` ni ningún otro comando git. |
+| **`--dry-run` / `--check`** | Modo informe: no se crea ningún backup ni se borra ningún archivo. |
+| **Confirmación** | Sin `--yes`/`--auto` se pide confirmación explícita con la lista de archivos a borrar. Si la rechazas, no se borra nada y los archivos se preservan. |
+
+Tras un `--prune` correcto, el manifiesto reescrito excluye los archivos borrados; los que se preservaron siguen en el manifiesto (con su hash de referencia) para volver a detectarlos — y a no podarlos nunca — en el próximo `update`.
 
 Para restaurar un archivo, copia su versión desde el backup fechado conservando su ruta relativa. Si una actualización queda parcial, corrige el problema indicado y vuelve a ejecutar `--update`; los backups anteriores no se eliminan.
 

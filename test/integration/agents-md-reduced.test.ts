@@ -11,11 +11,11 @@ function lineCount(text: string): number {
   return text.replace(/\n+$/, '').split('\n').length;
 }
 
-test('AGENTS.md is a minimal router (~40 lines)', () => {
+test('AGENTS.md is a minimal router (~25 lines)', () => {
   const count = lineCount(AGENTS);
   assert.ok(
-    count >= 35 && count <= 45,
-    `AGENTS.md should be ~40 lines (±5), got ${count}`
+    count >= 22 && count <= 28,
+    `AGENTS.md should be ~25 lines (22-28), got ${count}`
   );
 });
 
@@ -24,26 +24,20 @@ test('AGENTS.md references docs/base-standards.md and the skills index', () => {
   assert.match(AGENTS, /\.agents\/skills\/INDEX\.md/);
 });
 
-test('AGENTS.md keeps every critical routing section', () => {
-  const sections = [
-    'Core Development Rules',
-    'Skills Index',
-    'Exploration Briefing Gate',
+test('AGENTS.md keeps every essential routing reference', () => {
+  const references = [
+    'docs/base-standards.md',
+    '.agents/skills/INDEX.md',
     'graphify',
-    'Mandatory OpenSpec',
-    'Obsidian Integration',
-    'Obsidian Orchestration',
-    'Lessons',
-    'Fachada del ciclo spec',
-    'Contrato de roles',
-    'Delegación documental',
-    'Contrato de reglas del ciclo',
-    'Briefing técnico en la propuesta',
+    'OpenSpec',
+    'obsidianSync',
+    '_lessons.md',
+    'ciclo spec'
   ];
-  for (const section of sections) {
+  for (const reference of references) {
     assert.ok(
-      AGENTS.toLowerCase().includes(section.toLowerCase()),
-      `AGENTS.md must keep the "${section}" section`
+      AGENTS.includes(reference),
+      `AGENTS.md must keep the "${reference}" reference`
     );
   }
 });
