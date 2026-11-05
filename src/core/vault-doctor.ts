@@ -2,6 +2,7 @@ import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, basename } from 'node:path';
 import { decisionesPath, extractSpecIds } from './wiki-structure';
 import { hasSpecArtifact } from './spec-artifact';
+import { resolveChangesDir } from './resolve-changes-dir';
 
 export type Severity = 'error' | 'warning';
 
@@ -72,7 +73,7 @@ export function readRegistry(projectRoot: string): RegistryRow[] {
 }
 
 export function listActiveChanges(projectRoot: string): string[] {
-  const changesDir = join(projectRoot, 'openspec', 'changes');
+  const changesDir = resolveChangesDir({ projectRoot });
   if (!existsSync(changesDir)) return [];
   return readdirSync(changesDir, { withFileTypes: true })
     .filter((d) => d.isDirectory() && d.name !== 'archive')
@@ -89,7 +90,7 @@ export function listActiveChanges(projectRoot: string): string[] {
  */
 function listKnownChanges(projectRoot: string): Set<string> {
   const known = new Set<string>(listActiveChanges(projectRoot));
-  const archiveDir = join(projectRoot, 'openspec', 'changes', 'archive');
+  const archiveDir = join(resolveChangesDir({ projectRoot }), 'archive');
   if (existsSync(archiveDir)) {
     for (const d of readdirSync(archiveDir, { withFileTypes: true })) {
       if (!d.isDirectory()) continue;
@@ -300,7 +301,7 @@ export function checkIndexMisaligned(
   }
   if (brainProject) {
     const updatedMs = Date.parse(entry.updated ?? '');
-    const changesDir = join(projectRoot, 'openspec', 'changes');
+    const changesDir = resolveChangesDir({ projectRoot });
     let newest = 0;
     if (existsSync(changesDir)) {
       for (const d of readdirSync(changesDir, { withFileTypes: true })) {

@@ -168,6 +168,19 @@ spectralis check --tdd      # Solo validación del orden TDD (Step K) en tasks.m
 - `--ids` usa caché por mtime (`.spectralis/ids-cache.json`) para re-validar solo notas cambiadas.
 - `--tdd` es explícito (no se ejecuta con `spectralis check` sin flags); exige que cada sección de implementación de un `tasks.md` tenga una tarea de tests con marcador TDD (`(TDD)`/`tests first`/`pruebas antes`) antes del primer task de código (Step K en `docs/openspec-tasks-mandatory-steps.md`).
 
+### Estado de los changes (spec-native)
+
+```bash
+spectralis view                      # Lista los changes activos con % y estado (solo lectura)
+spectralis view spec-native-f1       # Detalle de un change: estado y tareas
+spectralis task spec-native-f1 1.1 --done   # Marca la tarea 1.1 como completada
+```
+
+- `spectralis view` **no escribe nada**: ni el registro, ni `tasks.md`, ni la carpeta `spec/`.
+- `spectralis task` actualiza el registro `spec/progress.json` (fuente de verdad, con escritura atómica) y refresca el checkbox de `tasks.md` (espejo): `done` → `[x]`, el resto → `[ ]`.
+- Códigos de salida de `task`: `0` ok, `2` change o task inexistente, `3` prefijo de task-id ambiguo.
+- El directorio de changes se resuelve con `resolveChangesDir`: valor explícito > `spec_dir` del manifiesto > `spec_dir` de la config global > `openspec/changes` (el default no cambia en esta fase). Se puede fijar con `spectralis config --set spec_dir=<ruta>`.
+
 ### Manuales en el cerebro (segundo cerebro)
 
 Los manuales del arnés viven en el **cerebro** (el segundo cerebro, `03_Recursos/02_Sistemas_info/`) en subcarpetas por tema. La ruta se resuelve automáticamente (config → manifiesto → vault detectado → `info/` en el proyecto como fallback):

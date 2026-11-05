@@ -22,6 +22,11 @@ export interface SpectralisConfig extends RouteConfig {
   obsidianSync: 0 | 1;
   philosophy: Philosophy;
   current_project_root: string;
+  /**
+   * Directory that holds the SDD changes. Empty means "not configured": the
+   * resolver falls back to `<projectRoot>/openspec/changes`.
+   */
+  spec_dir?: string;
 }
 
 const DEFAULT_CONFIG: SpectralisConfig = {
@@ -34,7 +39,8 @@ const DEFAULT_CONFIG: SpectralisConfig = {
   autoUpdate: false,
   obsidianSync: 0,
   philosophy: 'sdd',
-  current_project_root: ''
+  current_project_root: '',
+  spec_dir: ''
 };
 
 function globalConfigDir(): string {
@@ -60,7 +66,10 @@ export function readGlobalConfig(): SpectralisConfig {
       autoUpdate: raw.autoUpdate ?? false,
       obsidianSync: raw.obsidianSync === 1 ? 1 : 0,
       philosophy: 'sdd',
-      current_project_root: raw.current_project_root ?? ''
+      current_project_root: raw.current_project_root ?? '',
+      // Tolerant read: the hyphenated spelling is accepted as an alias so a
+      // config written by hand with `spec-dir` still resolves.
+      spec_dir: raw.spec_dir ?? raw['spec-dir'] ?? ''
     };
   } catch {
     return { ...DEFAULT_CONFIG };
@@ -96,6 +105,26 @@ export function setRoute(key: keyof RouteConfig, value: string, global: boolean,
     const manifestPath = join(projectRoot, '.sdd-manifest.json');
     const manifest = existsSync(manifestPath) ? JSON.parse(readFileSync(manifestPath, 'utf8')) : {};
     manifest[key] = value;
+    writeFileSync(manifestPath, JSON.stringify(manifest, null, 2) + '\n', 'utf8');
+  }
+}
+
+/**
+ * Stores the directory that holds the SDD changes.
+ *
+ * The value is stored verbatim (a relative path stays relative): the resolver
+ * resolves it against the project root, so the same value keeps working when
+ * the project moves.
+ */
+export function setSpecDir(value: string, global: boolean, projectRoot?: string): void {
+  if (global) {
+    const config = readGlobalConfig();
+    config.spec_dir = value;
+    writeGlobalConfig(config);
+  } else if (projectRoot) {
+    const manifestPath = join(projectRoot, '.sdd-manifest.json');
+    const manifest = existsSync(manifestPath) ? JSON.parse(readFileSync(manifestPath, 'utf8')) : {};
+    manifest.spec_dir = value;
     writeFileSync(manifestPath, JSON.stringify(manifest, null, 2) + '\n', 'utf8');
   }
 }
@@ -316,4 +345,21 @@ export function setCurrentProjectRoot(root: string): void {
   const config = readGlobalConfig();
   config.current_project_root = root;
   writeGlobalConfig(config);
+}
+
+/**
+ * Resolves the project a command must operate on.
+ *
+ * Order: explicit path -> the project of the current directory -> the project
+ * remembered in the global configuration -> the current directory.
+ */
+export function resolveTargetProjectRoot(explicit?: string): string {
+  if (explicit) return resolve(process.cwd(), explicit);
+  const detected = detectProjectFromCwd(process.cwd());
+  if (detected) return detected.root;
+  const config = readGlobalConfig();
+  if (config.current_project_root && existsSync(config.current_project_root)) {
+    return config.current_project_root;
+  }
+  return process.cwd();
 }

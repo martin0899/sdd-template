@@ -1,7 +1,8 @@
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve, join } from 'node:path';
 import { readManifest } from '../core/manifest';
-import { readGlobalConfig, writeGlobalConfig, setRoute, resolveRoute, detectVaultRoot, resolveObsidianSync, setObsidianSync, resolvePhilosophy, setPhilosophy, RouteConfig, SpectralisConfig } from '../core/config';
+import { readGlobalConfig, writeGlobalConfig, setRoute, resolveRoute, detectVaultRoot, resolveObsidianSync, setObsidianSync, resolvePhilosophy, setPhilosophy, setSpecDir, RouteConfig, SpectralisConfig } from '../core/config';
+import { resolveSpecDir } from '../core/resolve-changes-dir';
 import { currentPalette, printBanner, green, dim } from '../util/ui';
 
 export interface ConfigOptions {
@@ -82,6 +83,13 @@ export async function runConfig(opts: ConfigOptions = {}): Promise<number> {
       console.log(`[OK] philosophy set to ${value} (${global ? 'global' : 'project'})`);
       return 0;
     }
+    if (key === 'spec_dir' || key === 'spec-dir') {
+      // Stored verbatim: a relative value is resolved against the project root
+      // later, so the project keeps working when it moves.
+      setSpecDir(value, global, projectRoot);
+      console.log(`[OK] spec_dir set to ${value} (${global ? 'global' : 'project'})`);
+      return 0;
+    }
     setRoute(key as keyof RouteConfig, resolve(value), global, projectRoot);
     console.log(`[OK] ${key} set to ${value} (${global ? 'global' : 'project'})`);
     return 0;
@@ -100,6 +108,12 @@ export async function runConfig(opts: ConfigOptions = {}): Promise<number> {
       if (res.warning) console.error(`[WARN] ${res.warning}`);
       const origin = res.origin === 'manifest' ? 'manifiesto' : res.origin;
       console.log(`${res.value} [${origin}]`);
+      return 0;
+    }
+    if (opts.get === 'spec_dir' || opts.get === 'spec-dir') {
+      const res = resolveSpecDir({ projectRoot });
+      const origin = res.origin === 'manifest' ? 'manifiesto' : res.origin;
+      console.log(`${res.value || '(not set)'} [${origin}]`);
       return 0;
     }
     const value = resolveRoute(opts.get as keyof RouteConfig, projectRoot);
@@ -128,6 +142,9 @@ export async function runConfig(opts: ConfigOptions = {}): Promise<number> {
     const philosophy = resolvePhilosophy(target);
     const philosophyOrigin = philosophy.origin === 'manifest' ? 'manifiesto' : philosophy.origin;
     console.log(`  philosophy: ${philosophy.value}  [${philosophyOrigin}]`);
+    const specDir = resolveSpecDir({ projectRoot: target });
+    const specDirOrigin = specDir.origin === 'manifest' ? 'manifiesto' : specDir.origin;
+    console.log(`  spec_dir: ${specDir.value || '(not set)'}  [${specDirOrigin}]`);
     for (const [key, value, origin] of routes) {
       console.log(`  ${key}: ${value || '(not set)'}  [${origin}]`);
     }

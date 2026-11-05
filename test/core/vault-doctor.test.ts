@@ -1,7 +1,6 @@
 import { test, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, rmSync, mkdirSync, writeFileSync, readdirSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { mkdirSync, writeFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import {
   parseRegistry,
@@ -15,77 +14,26 @@ import {
   listBrainSpecs,
   hasErrors
 } from '../../src/core/vault-doctor';
-
-const created: string[] = [];
+import {
+  cleanupFixtures,
+  scratch as scratchFixture,
+  scratchVault as scratchVaultFixture,
+  writeArchivedChange,
+  writeDecisiones,
+  writeRegistry,
+  writeRepo,
+  writeVault
+} from '../helpers/fixtures';
 
 afterEach(() => {
-  for (const dir of created) rmSync(dir, { recursive: true, force: true });
-  created.length = 0;
+  cleanupFixtures();
 });
 
-function scratch(): string {
-  const dir = mkdtempSync(join(tmpdir(), 'sp-doctor-'));
-  created.push(dir);
-  return dir;
-}
+/** Temporary directory of the fixture (historical prefix kept). */
+const scratch = (): string => scratchFixture('sp-doctor-');
 
-function writeRepo(root: string, changes: string[]): void {
-  mkdirSync(join(root, 'openspec', 'changes', 'archive'), { recursive: true });
-  mkdirSync(join(root, '.sdd-registry', 'briefings'), { recursive: true });
-  for (const c of changes) mkdirSync(join(root, 'openspec', 'changes', c), { recursive: true });
-}
-
-/** Creates a `YYYY-MM-DD-<name>` folder under `openspec/changes/archive/`. */
-function writeArchivedChange(root: string, specId: string, date = '2026-09-29'): void {
-  mkdirSync(join(root, 'openspec', 'changes', 'archive', `${date}-${specId}`), { recursive: true });
-}
-
-/** Writes a REGISTRY.md into the repo fixture and parses it. */
-function writeRegistry(root: string, table: string) {
-  const content = `# Requirements Registry
-
-| nota (ruta) | requerimiento | briefing | changes generados | estado |
-|-------------|---------------|----------|-------------------|--------|
-${table}`;
-  mkdirSync(join(root, '.sdd-registry'), { recursive: true });
-  writeFileSync(join(root, '.sdd-registry', 'REGISTRY.md'), content, 'utf8');
-  return parseRegistry(content);
-}
-
-/** A vault with the project folder but no `01_Proyectos/<P>/<spec-id>/` entries. */
-function scratchVault(): string {
-  const dir = scratch();
-  mkdirSync(join(dir, '01_Proyectos'), { recursive: true });
-  return dir;
-}
-
-/**
- * Writes the vault fixture in the current 4-aggregate scheme: decisions live as
- * `### <spec-id>` blocks inside a single `decisiones.md`, not as per-spec files
- * under a `decisiones/` folder.
- */
-function writeVault(root: string, project: string, specs: string[]): void {
-  mkdirSync(join(root, '01_Proyectos', project), { recursive: true });
-  mkdirSync(join(root, '05_wiki', project), { recursive: true });
-  for (const s of specs) {
-    mkdirSync(join(root, '01_Proyectos', project, s), { recursive: true });
-    writeFileSync(join(root, '01_Proyectos', project, s, 'briefing.md'), '# Briefing\n', 'utf8');
-  }
-  writeDecisiones(root, project, specs);
-}
-
-/** Writes `05_wiki/<project>/decisiones.md` with one `### <spec-id>` block per spec. */
-function writeDecisiones(root: string, project: string, specs: string[]): void {
-  mkdirSync(join(root, '05_wiki', project), { recursive: true });
-  const body = specs
-    .map((s) => `### ${s}\n\nFuente: \`${s}\`\nEstado: completado\n\n## Contexto\nFixture.\n\n---\n`)
-    .join('\n');
-  writeFileSync(
-    join(root, '05_wiki', project, 'decisiones.md'),
-    `---\nid: decisiones\n---\n# Decisiones — ${project}\n\n${body}`,
-    'utf8'
-  );
-}
+/** Vault fixture without spec folders (historical prefix kept). */
+const scratchVault = (): string => scratchVaultFixture('sp-doctor-');
 
 const REGISTRY = `# Requirements Registry
 

@@ -6,6 +6,7 @@ import {
   type EffectivePhilosophyResolution,
   type Philosophy
 } from './config';
+import { resolveChangesDir } from './resolve-changes-dir';
 
 /**
  * Spec facade: a single, mode-aware interface to initiate, query, validate,
@@ -111,7 +112,7 @@ function sddArgs(operation: FacadeOperation, changeId?: string): string[] {
 /** Essential SDD artifacts that apply must find before delegating. */
 function missingSddEssentials(projectRoot: string, changeId?: string): string[] {
   if (!changeId) return ['changeId'];
-  const base = join(projectRoot, 'openspec', 'changes', changeId);
+  const base = join(resolveChangesDir({ projectRoot }), changeId);
   const missing: string[] = [];
   for (const name of ['proposal.md', 'design.md', 'tasks.md']) {
     if (!existsSync(join(base, name))) missing.push(name);

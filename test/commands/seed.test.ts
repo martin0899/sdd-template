@@ -1,14 +1,16 @@
 import { test, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, rmSync, mkdirSync, writeFileSync, existsSync, readdirSync, readFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { mkdirSync, writeFileSync, existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { discoverProjects, seedProject, seedIndex } from '../../src/commands/seed';
+import { cleanupFixtures, scratch as scratchFixture } from '../helpers/fixtures';
 
-const created: string[] = [];
-afterEach(() => { for (const d of created) rmSync(d, { recursive: true, force: true }); created.length = 0; });
+afterEach(() => {
+  cleanupFixtures();
+});
 
-function scratch(): string { const d = mkdtempSync(join(tmpdir(), 'sp-seed-')); created.push(d); return d; }
+/** Temporary directory of the fixture (historical prefix kept). */
+const scratch = (): string => scratchFixture('sp-seed-');
 
 test('discoverProjects finds dirs with openspec/', () => {
   const base = scratch();

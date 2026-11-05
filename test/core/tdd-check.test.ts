@@ -1,34 +1,21 @@
 import { test, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, rmSync, mkdirSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { checkTddOrdering } from '../../src/core/tdd-check';
-
-const created: string[] = [];
+import {
+  archivedChangeTasks,
+  changeTasks,
+  cleanupFixtures,
+  scratch as scratchFixture
+} from '../helpers/fixtures';
 
 afterEach(() => {
-  for (const dir of created) rmSync(dir, { recursive: true, force: true });
-  created.length = 0;
+  cleanupFixtures();
 });
 
-function scratch(): string {
-  const dir = mkdtempSync(join(tmpdir(), 'sp-tdd-'));
-  created.push(dir);
-  return dir;
-}
-
-function changeTasks(root: string, name: string, tasks: string): void {
-  const dir = join(root, 'openspec', 'changes', name);
-  mkdirSync(dir, { recursive: true });
-  writeFileSync(join(dir, 'tasks.md'), tasks, 'utf8');
-}
-
-function archivedChangeTasks(root: string, name: string, tasks: string): void {
-  const dir = join(root, 'openspec', 'changes', 'archive', name);
-  mkdirSync(dir, { recursive: true });
-  writeFileSync(join(dir, 'tasks.md'), tasks, 'utf8');
-}
+/** Temporary directory of the fixture (historical prefix kept). */
+const scratch = (): string => scratchFixture('sp-tdd-');
 
 const IMPL_WITHOUT_TDD = `# Tasks: add-foo
 

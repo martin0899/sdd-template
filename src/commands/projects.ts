@@ -1,6 +1,7 @@
 import { existsSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { readGlobalConfig } from '../core/config';
+import { resolveChangesDir } from '../core/resolve-changes-dir';
 
 export interface ProjectStatus {
   name: string;
@@ -19,7 +20,7 @@ export function detectProjects(projectsBase: string): string[] {
 
 export function getProjectStatus(projectPath: string): ProjectStatus {
   const name = projectPath.split('/').pop() ?? '';
-  const changesDir = join(projectPath, 'openspec', 'changes');
+  const changesDir = resolveChangesDir({ projectRoot: projectPath });
   let changes = 0, complete = 0, pending = 0;
 
   if (existsSync(changesDir)) {

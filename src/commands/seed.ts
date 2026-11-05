@@ -2,6 +2,7 @@ import { existsSync, readdirSync, readFileSync, mkdirSync, writeFileSync, rename
 import { join } from 'node:path';
 import { readGlobalConfig, detectProjectFromCwd, setCurrentProjectRoot } from '../core/config';
 import { indexContent } from '../core/wiki-structure';
+import { resolveChangesDir } from '../core/resolve-changes-dir';
 
 export interface SeedProjectInfo {
   name: string;
@@ -44,7 +45,7 @@ export function discoverProjects(projectsBase: string): SeedProjectInfo[] {
       const projPath = join(dir, entry.name);
       const openspecDir = join(projPath, 'openspec');
       if (existsSync(openspecDir)) {
-        const changesDir = join(openspecDir, 'changes');
+        const changesDir = resolveChangesDir({ projectRoot: projPath });
         let changes = 0;
         if (existsSync(changesDir)) {
           changes = readdirSync(changesDir, { withFileTypes: true })

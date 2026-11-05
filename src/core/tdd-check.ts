@@ -2,6 +2,7 @@ import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { basename } from 'node:path';
 import { VaultDoctorFinding } from './vault-doctor';
+import { resolveChangesDir } from './resolve-changes-dir';
 
 const TDD_MARKERS = /(\(tdd\)|tests? first|pruebas antes)/i;
 const IMPL_VERBS = /(implement|crear|create|add|build|wire|restyle|refactor|migrate|setup)/i;
@@ -69,7 +70,7 @@ function checkTasksFile(tasksPath: string, changeName: string, project: string):
 export function checkTddOrdering(projectRoot: string): VaultDoctorFinding[] {
   const findings: VaultDoctorFinding[] = [];
   const project = basename(projectRoot);
-  const changesDir = join(projectRoot, 'openspec', 'changes');
+  const changesDir = resolveChangesDir({ projectRoot });
   if (!existsSync(changesDir)) return findings;
 
   for (const entry of readdirSync(changesDir, { withFileTypes: true })) {
