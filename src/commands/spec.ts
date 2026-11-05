@@ -5,6 +5,8 @@ import { readGlobalConfig, resolveProjectRoot, resolveEffectivePhilosophy } from
 import { runSpecCreate, type SpecCreateOptions } from './spec-create';
 import { runSpecMigrate, type SpecMigrateOptions } from './spec-migrate';
 import { runSpecArchive, type SpecArchiveOptions } from './spec-archive';
+import { runSpecStatus, type SpecStatusOptions } from './spec-status';
+import { runSpecValidate, type SpecValidateOptions } from './spec-validate';
 
 export interface SpecInitOptions {
   project: string;
@@ -71,7 +73,7 @@ export async function runSpecComplete(opts: SpecCompleteOptions): Promise<number
 }
 
 /** Actions accepted by `spectralis spec <action>`. */
-export const SPEC_ACTIONS = ['init', 'complete', 'create', 'migrate', 'archive'] as const;
+export const SPEC_ACTIONS = ['init', 'complete', 'create', 'migrate', 'archive', 'status', 'validate'] as const;
 
 export type SpecAction = (typeof SPEC_ACTIONS)[number];
 
@@ -96,6 +98,8 @@ export interface SpecCommandHandlers {
   create: (opts: SpecCreateOptions) => Promise<number>;
   migrate: (opts: SpecMigrateOptions) => Promise<number>;
   archive: (opts: SpecArchiveOptions) => Promise<number>;
+  status: (opts: SpecStatusOptions) => Promise<number>;
+  validate: (opts: SpecValidateOptions) => Promise<number>;
 }
 
 const defaultHandlers: SpecCommandHandlers = {
@@ -103,7 +107,9 @@ const defaultHandlers: SpecCommandHandlers = {
   complete: runSpecComplete,
   create: runSpecCreate,
   migrate: runSpecMigrate,
-  archive: runSpecArchive
+  archive: runSpecArchive,
+  status: runSpecStatus,
+  validate: runSpecValidate
 };
 
 function usageError(action: string, expected: string): number {
@@ -115,9 +121,10 @@ function usageError(action: string, expected: string): number {
  * Dispatch of `spectralis spec <action> [project] [specId]`.
  *
  * The action decides which arguments are required: `init` and `complete` need
- * a project and a spec id, `create` and `archive` need a change id and
- * `migrate` needs none. A missing argument is a usage error (exit code 1) and
- * an unknown action lists the valid ones.
+ * a project and a spec id, `create`, `archive` and `validate` need a change id,
+ * `migrate` needs none and `status` accepts an optional change id. A missing
+ * argument is a usage error (exit code 1) and an unknown action lists the
+ * valid ones.
  */
 export async function runSpecCommand(
   action: string,
@@ -167,6 +174,20 @@ export async function runSpecCommand(
         vaultRoot: opts.vaultRoot,
         force: opts.force,
         wikiProject: opts.wikiProject
+      });
+    }
+    case 'status': {
+      // The change id is optional: without it every active change is listed.
+      return handlers.status({
+        changeId: first,
+        projectRoot: opts.projectRoot
+      });
+    }
+    case 'validate': {
+      if (!first) return usageError('validate', '<change-id>');
+      return handlers.validate({
+        changeId: first,
+        projectRoot: opts.projectRoot
       });
     }
     default: {

@@ -17,7 +17,9 @@ function recordingHandlers(calls: RecordedCall[]): SpecCommandHandlers {
     complete: record('complete'),
     create: record('create'),
     migrate: record('migrate'),
-    archive: record('archive')
+    archive: record('archive'),
+    status: record('status'),
+    validate: record('validate')
   } as unknown as SpecCommandHandlers;
 }
 
@@ -131,4 +133,59 @@ test('spec migrate forwards the dry-run flag', async () => {
   const code = await runSpecCommand('migrate', [], { dryRun: true }, recordingHandlers(calls));
   assert.equal(code, 0);
   assert.equal(calls[0].opts.dryRun, true);
+});
+
+test('spec status without a change id delegates to the status handler', async () => {
+  const calls: RecordedCall[] = [];
+  const code = await runSpecCommand('status', [], { projectRoot: '/tmp/project-root' }, recordingHandlers(calls));
+  assert.equal(code, 0);
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].handler, 'status');
+  assert.equal(calls[0].opts.changeId, undefined);
+  assert.equal(calls[0].opts.projectRoot, '/tmp/project-root');
+});
+
+test('spec status with a change id delegates to the status handler', async () => {
+  const calls: RecordedCall[] = [];
+  const code = await runSpecCommand('status', ['my-change'], {}, recordingHandlers(calls));
+  assert.equal(code, 0);
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].handler, 'status');
+  assert.equal(calls[0].opts.changeId, 'my-change');
+});
+
+test('spec validate with a change id delegates to the validate handler', async () => {
+  const calls: RecordedCall[] = [];
+  const code = await runSpecCommand('validate', ['my-change'], { projectRoot: '/tmp/project-root' }, recordingHandlers(calls));
+  assert.equal(code, 0);
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].handler, 'validate');
+  assert.equal(calls[0].opts.changeId, 'my-change');
+  assert.equal(calls[0].opts.projectRoot, '/tmp/project-root');
+});
+
+test('spec validate without a change id fails with exit code 1 and a usage message', async () => {
+  const calls: RecordedCall[] = [];
+  const code = await runSpecCommand('validate', [], {}, recordingHandlers(calls));
+  assert.equal(code, 1);
+  assert.equal(calls.length, 0, 'the handler must not be called');
+});
+
+test('an unknown action lists the status and validate actions', async () => {
+  const calls: RecordedCall[] = [];
+  const originalError = console.error;
+  const errors: string[] = [];
+  console.error = (...args: unknown[]) => {
+    errors.push(args.map((a) => String(a)).join(' '));
+  };
+  let code = 1;
+  try {
+    code = await runSpecCommand('destroy', ['whatever'], {}, recordingHandlers(calls));
+  } finally {
+    console.error = originalError;
+  }
+  assert.equal(code, 1);
+  assert.equal(calls.length, 0, 'no handler must be called');
+  assert.match(errors.join('\n'), /status/);
+  assert.match(errors.join('\n'), /validate/);
 });

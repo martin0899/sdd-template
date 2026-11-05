@@ -51,10 +51,10 @@ Los manuales técnicos del arnés viven en `notes/` (se sincronizan al cerebro c
 |-------------|--------------|-------|
 | git | `git --version` | Para clonar la plantilla |
 | node | `node --version` | **>= 22** — la única dependencia de plataforma |
-| openspec CLI | `openspec --help` | Node-based, multiplataforma |
+| openspec CLI | `openspec --help` | Node-based, multiplataforma. **Solo es obligatorio con `engine: openspec`** (por defecto el arnés usa el motor nativo `spec/`) |
 | graphify | `graphify --help` | Se usa tras la instalación, en el onboarding |
 
-Si falta alguno, el instalador **aborta sin escribir nada** y te indica qué instalar.
+Si falta alguno, el instalador **aborta sin escribir nada** y te indica qué instalar. El binario `openspec` es la única excepción: con el motor nativo no se comprueba y su ausencia no bloquea (el doctor lo etiqueta como `optional`).
 
 ---
 
@@ -95,8 +95,8 @@ PASOS (en este orden, sin saltarte ninguno)
 
 1. Prerrequisitos
    - `node --version` debe ser >= 22. Si no lo es, detente y dime cómo actualizarlo.
-   - Verifica `git`, `openspec --help` y `graphify --help`.
-   - Si falta openspec o graphify, informa y ofrece el comando de instalación; no continúes.
+   - Verifica `git`, `openspec --help` y `graphify --help` (`openspec` solo con `engine: openspec`).
+   - Si falta openspec (con `engine: openspec`) o graphify, informa y ofrece el comando de instalación; no continúes.
 
 2. Instalar el CLI (una vez por máquina)
    - Si `spectralis --v` ya responde en el PATH, usa el que ya está: NO reinstales.
@@ -178,6 +178,9 @@ spectralis spec create mi-cambio --nombre "Mi cambio"   # Crea spec/mi-cambio/ c
 spectralis spec migrate              # Migra los changes de openspec/changes/ al layout nativo spec/
 spectralis spec migrate --dry-run    # Muestra el plan de migración sin escribir nada
 spectralis spec archive mi-cambio    # Archiva el change en spec/_archived/ y publica el resumen en la wiki
+spectralis spec status               # Estado de los changes nativos (solo lectura, sin el binario openspec)
+spectralis spec status mi-cambio     # Detalle de un change: estado, tareas y artefactos
+spectralis spec validate mi-cambio   # Comprueba que existen proposal.md, design.md y tasks.md
 ```
 
 - `spectralis view` **no escribe nada**: ni el registro, ni `tasks.md`, ni la carpeta `spec/`.
@@ -187,6 +190,8 @@ spectralis spec archive mi-cambio    # Archiva el change en spec/_archived/ y pu
 - `spectralis spec create` crea el change con los seeds mínimos (`proposal.md`, `tasks.md`, `design.md`), su `change.json` (`{ id, nombre, fecha, estado, resumen: { abstracto }, enlaces: [] }`) y su entrada en `spec/progress.json`. No sobrescribe un change existente (`2`) y rechaza los ids que no sean kebab-case (`1`).
 - `spectralis spec migrate` es idempotente y atómico por change: si un change falla, los anteriores quedan migrados y el error lo nombra. Los changes ya archivados en `openspec/changes/archive/` se reportan como *ya cerrados* y no se mueven.
 - `spectralis spec archive` exige que las tareas estén completadas (`2` listando las pendientes; `--force` las fuerza con aviso), valida el change-id (`2` si no es kebab-case o intenta escapar de su carpeta), escribe el REGISTRY **antes** de mover (un fallo del REGISTRY aborta sin mover nada), mueve el change a `spec/_archived/`, elimina su entrada de `spec/progress.json` y escribe el resumen del change en la wiki del vault (`05_wiki/Spectralis/<id>.md`). Un resumen que ya existe no se sobrescribe: avisa, muestra su ruta y el archive local continúa (`--force` lo sobrescribe). Si el vault no está disponible, avisa y archiva igualmente.
+- `spectralis spec status` es **nativo y de solo lectura**: deriva el estado de `spec/progress.json`, etiqueta `sin registro` los changes legacy (y deriva su estado de `tasks.md`), y hace cross-check con `REGISTRY.md` solo si existe. `spectralis spec validate` comprueba la **existencia** de `proposal.md`, `design.md` y `tasks.md` (sin validar schema ni contenido): `0` si están, `1` listando los que faltan.
+- El **motor** del arnés se elige con la clave `engine` (`native` | `openspec`, por defecto `native`): `spectralis config --set engine=<valor>` y `spectralis config --get engine`. Se resuelve con la cascada manifiesto > config global > default. El motor solo decide cómo se etiqueta y si se comprueba el binario `openspec`: con `native` no se comprueba (queda como `optional`) y con `openspec` es obligatorio (`required`, exit `1` y aviso explícito si falta).
 - Detalle completo: [`docs/spec-native.md`](docs/spec-native.md).
 
 ### Manuales en el cerebro (segundo cerebro)
@@ -254,7 +259,7 @@ La orquestación es idempotente (no regenera documentos ya correctos) y no modif
 
 El proceso respeta tu proyecto en todo momento: **primero lee, luego pregunta, y solo entonces escribe.**
 
-1. **Prerrequisitos (gate)** — verifica `git`, `node >= 22`, `openspec` y `graphify`; si falta algo, aborta sin escribir nada y te dice cómo instalarlo.
+1. **Prerrequisitos (gate)** — verifica `git`, `node >= 22`, `openspec` (solo con `engine: openspec`) y `graphify`; si falta algo, aborta sin escribir nada y te dice cómo instalarlo.
 2. **Reconocimiento (lectura)** — escanea tu proyecto (`pom.xml`, `package.json`, `requirements.txt`, `go.mod`, ...) **sin escribir**: detecta backend y frontend.
 3. **`--dry-run` (opcional)** — muestra el plan completo y deja tu proyecto bit a bit idéntico.
 4. **Confirmación** — pregunta antes de escribir nada.
@@ -287,7 +292,7 @@ npm i -g .
 
 ```bash
 spectralis --v          # Debe mostrar la versión (ej. 1.2.0)
-spectralis doctor       # Verifica prerrequisitos (git, node, openspec, graphify)
+spectralis doctor       # Verifica prerrequisitos (git, node, graphify y openspec solo con engine: openspec)
 ```
 
 ### 3. Instalar en un proyecto existente
@@ -321,7 +326,7 @@ spectralis update --check
 | Comando | Qué verifica |
 |---------|--------------|
 | `spectralis --v` | Versión instalada |
-| `spectralis doctor` | Prerrequisitos (git, node, openspec, graphify) |
+| `spectralis doctor` | Prerrequisitos (git, node, graphify y openspec solo con `engine: openspec`) |
 | `spectralis status` | Estado del arnés en el proyecto |
 | `spectralis config` | Configuración y tools |
 | `spectralis check` | Consistencia del flujo SDD y IDs del vault |

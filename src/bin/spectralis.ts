@@ -213,7 +213,7 @@ program
 
 program
   .command('spec <action> [project] [specId]')
-  .description('Spec workflow: init/complete for vault specs, create/migrate/archive for repo changes')
+  .description('Spec workflow: init/complete for vault specs, create/migrate/archive/status/validate for repo changes')
   .option('-v, --vault-root <path>', 'vault root path (default: from config)')
   .option('-p, --project-root <path>', 'project root for REGISTRY.md (default: from config)')
   .option('-n, --nombre <text>', 'human readable name of the change (spec create)')

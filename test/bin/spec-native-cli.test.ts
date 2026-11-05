@@ -44,6 +44,22 @@ function makeProject(changes: Array<{ id: string; tasks?: string }>): string {
   return root;
 }
 
+/** A project with the native layout (`spec/<id>/`), the default since F2. */
+function makeNativeProject(changes: Array<{ id: string; tasks?: string }>): string {
+  const root = mkdtempSync(join(tmpdir(), 'spectralis-specnative-native-'));
+  writeFileSync(
+    join(root, '.sdd-manifest.json'),
+    JSON.stringify({ schemaVersion: 3 }, null, 2) + '\n',
+    'utf8'
+  );
+  for (const change of changes) {
+    const dir = join(root, 'spec', change.id);
+    mkdirSync(dir, { recursive: true });
+    if (change.tasks !== undefined) writeFileSync(join(dir, 'tasks.md'), change.tasks, 'utf8');
+  }
+  return root;
+}
+
 function runCli(args: string[], cwd: string) {
   return spawnSync(process.execPath, [CLI, ...args], { env: baseEnv, cwd, encoding: 'utf8' });
 }
@@ -110,4 +126,58 @@ test('spectralis view shows the registered progress after a task update', () => 
   assert.equal(r.status, 0, r.stderr + r.stdout);
   assert.match(r.stdout, /50%/);
   assert.match(r.stdout, /\[x\] 1\.1 Write the tests/);
+});
+
+test('spectralis spec status lists the native changes of the project', () => {
+  const root = makeNativeProject([{ id: 'change-a', tasks: TASKS_MD }]);
+  const r = runCli(['spec', 'status'], root);
+  assert.equal(r.status, 0, r.stderr + r.stdout);
+  assert.match(r.stdout, /change-a/);
+  assert.match(r.stdout, /sin registro/);
+});
+
+test('spectralis spec status <change> shows the detail of the change', () => {
+  const root = makeNativeProject([{ id: 'change-a', tasks: TASKS_MD }]);
+  const r = runCli(['spec', 'status', 'change-a'], root);
+  assert.equal(r.status, 0, r.stderr + r.stdout);
+  assert.match(r.stdout, /change-a/);
+  assert.match(r.stdout, /Tareas:/);
+});
+
+test('spectralis spec status <change> fails when the change does not exist', () => {
+  const root = makeNativeProject([{ id: 'change-a', tasks: TASKS_MD }]);
+  const r = runCli(['spec', 'status', 'ghost'], root);
+  assert.equal(r.status, 1, r.stderr + r.stdout);
+  assert.match(r.stderr, /ghost/);
+});
+
+test('spectralis spec validate <change> passes when every artifact is present', () => {
+  const root = makeNativeProject([{ id: 'change-a', tasks: TASKS_MD }]);
+  for (const artifact of ['proposal.md', 'design.md']) {
+    writeFileSync(join(root, 'spec', 'change-a', artifact), `# ${artifact}\n`, 'utf8');
+  }
+  const r = runCli(['spec', 'validate', 'change-a'], root);
+  assert.equal(r.status, 0, r.stderr + r.stdout);
+  assert.match(r.stdout, /change change-a is valid/);
+});
+
+test('spectralis spec validate <change> fails when an artifact is missing', () => {
+  const root = makeNativeProject([{ id: 'change-a', tasks: TASKS_MD }]);
+  const r = runCli(['spec', 'validate', 'change-a'], root);
+  assert.equal(r.status, 1, r.stderr + r.stdout);
+  assert.match(r.stderr, /change change-a is missing: proposal\.md, design\.md/);
+});
+
+test('spectralis spec validate without a change id fails with a usage message', () => {
+  const root = makeNativeProject([{ id: 'change-a', tasks: TASKS_MD }]);
+  const r = runCli(['spec', 'validate'], root);
+  assert.equal(r.status, 1, r.stderr + r.stdout);
+  assert.match(r.stderr, /Usage: spectralis spec validate/);
+});
+
+test('spectralis spec --help mentions the status and validate actions', () => {
+  const r = runCli(['spec', '--help'], process.cwd());
+  assert.equal(r.status, 0, r.stderr + r.stdout);
+  assert.match(r.stdout, /status/);
+  assert.match(r.stdout, /validate/);
 });

@@ -5,7 +5,9 @@ external OpenSpec CLI: it creates, migrates and archives them, keeps their
 progress in a single registry and publishes a portable summary in the vault.
 
 This document describes the capability as it stands after F1 (progress
-registry, `view` and `task`) and F2 (the full lifecycle).
+registry, `view` and `task`), F2 (the full lifecycle) and F3 (the engine
+config, the demotion of `openspec` and the native `status` and `validate`
+commands).
 
 ## Layout
 
@@ -42,6 +44,8 @@ The action decides which arguments are required:
 | `create` | `<change-id>` [--nombre <text>] | Creates a change in the native layout |
 | `migrate` | — [--dry-run] | Moves the legacy changes into the native layout |
 | `archive` | `<change-id>` [--force] | Archives a finished change and publishes it |
+| `status` | `[change-id]` | Reports the state of the native changes (read-only) |
+| `validate` | `<change-id>` | Checks that the artifacts of a change exist |
 
 A missing argument is a usage error (exit code `1`); an unknown action exits
 with `1` and lists the valid ones.
@@ -157,6 +161,84 @@ and the state of a change are always derived from its tasks. `tasks.md` is the
 detailed worklist and the mirror of the checkboxes (`spectralis task` keeps
 both in sync).
 
+## `spec status`
+
+```bash
+spectralis spec status
+spectralis spec status mi-cambio
+```
+
+The status is **native**: it never invokes the `openspec` binary and it is
+**read-only** (it never writes `progress.json`, never writes `REGISTRY.md` and
+never rewrites `tasks.md`).
+
+Without a change id it lists every active change of the resolved changes
+directory (`_archived/` and `archive/` are excluded):
+
+```
+  Change              | Percent | Estado      | Tasks   | Artifacts
+  --------------------|---------|-------------|---------|----------------
+  mi-cambio           |    50%  | in-progress | 1/2     | proposal.md, design.md, tasks.md
+```
+
+With a change id it reports the detail of that change: its state, its
+completed and pending tasks and the artifacts present in its folder.
+
+The state comes from the progress registry (`spec/progress.json`), reusing the
+derivation of `progress-registry` (the percentage and the state of a change are
+always derived from its tasks). A change that has **no entry** in the registry
+is a legacy one: its state is derived from the checkboxes of its `tasks.md` and
+it is labelled `sin registro`.
+
+The REGISTRY of the project (`.sdd-registry/REGISTRY.md`) is only cross-checked
+**when it exists**: a change it references is labelled `archivado`. A project
+without a REGISTRY is not blocked by the check.
+
+## `spec validate`
+
+```bash
+spectralis spec validate mi-cambio
+```
+
+The validation is **native** and **existence-only**: it reuses
+`missingSddEssentials` (the same contract the facade applies before delegating
+an apply) with the resolved directory of the change, and it never validates the
+schema nor the content of the artifacts.
+
+| Result | Output | Exit code |
+| :--- | :--- | :--- |
+| Every artifact is present | `change <id> is valid` | `0` |
+| An artifact is missing | `change <id> is missing: <artifacts>` | `1` |
+
+The artifacts it looks for are `proposal.md`, `design.md` and `tasks.md`.
+
+## The engine
+
+The key `engine` decides how the harness treats the external OpenSpec CLI. It
+is resolved with a deterministic cascade (the mirror of `resolveChangesDir`):
+
+1. `engine` in the manifest of the project (`.sdd-manifest.json`)
+2. `engine` in the global configuration
+3. Default: `native`
+
+```bash
+spectralis config --set engine=openspec   # project (or --global)
+spectralis config --get engine            # prints the value and its origin
+```
+
+An unknown value is rejected with a descriptive error (nothing is written).
+
+The engine only decides two things: how `openspec` is **labelled** and whether
+it is **probed** at all. The native paths of the harness never spawn it.
+
+| Engine | `openspec` in the prerequisites | Doctor label | Missing binary |
+| :--- | :--- | :--- | :--- |
+| `native` (default) | Not probed | `optional` | Warning, exit `0` |
+| `openspec` | Probed | `required` | Error, exit `1` and explicit warning |
+
+`REQUIRED_TOOLS` keeps `openspec` in the list: the list documents the full
+toolchain of the harness, the *probe* is what became conditional.
+
 ## Migration window
 
 The native layout is the default, but the readers that validate the history of
@@ -174,4 +256,5 @@ in both places.
 
 F1 must be archived before F2: F2's delta adds requirements to the
 `spec-native` capability created by F1, and the merge fails when the target
-spec does not exist yet.
+spec does not exist yet. F3 follows the same rule: its delta adds requirements
+to the same capability, so the order is **F1 → F2 → F3**.

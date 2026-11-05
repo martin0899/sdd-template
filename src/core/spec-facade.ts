@@ -116,14 +116,20 @@ function sddArgs(operation: FacadeOperation, changeId?: string): string[] {
  * and the legacy `openspec/changes/`, where the OpenSpec CLI writes): the
  * facade must never stop an apply because the change lives in the layout it
  * has not migrated yet.
+ *
+ * The native validation (`spectralis spec validate`) passes the directory it
+ * resolved so it only reports the artifacts of that layout.
  */
-function missingSddEssentials(projectRoot: string, changeId?: string): string[] {
+export function missingSddEssentials(
+  projectRoot: string,
+  changeId?: string,
+  changesDir?: string
+): string[] {
   if (!changeId) return ['changeId'];
+  const dirs = changesDir ? [changesDir] : resolveChangesDirs({ projectRoot });
   const missing: string[] = [];
   for (const name of ['proposal.md', 'design.md', 'tasks.md']) {
-    const found = resolveChangesDirs({ projectRoot }).some((changesDir) =>
-      existsSync(join(changesDir, changeId, name))
-    );
+    const found = dirs.some((dir) => existsSync(join(dir, changeId, name)));
     if (!found) missing.push(name);
   }
   return missing;

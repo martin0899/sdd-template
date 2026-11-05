@@ -8,16 +8,26 @@ const probeAll = (tool: string) =>
 const probeNoOpenspec = (tool: string) =>
   tool === 'openspec' ? { found: false } : probeAll(tool);
 
-test('checkPrereqs: openspec ausente siempre se reporta como faltante', () => {
-  const report = checkPrereqs(probeNoOpenspec, 'linux');
+test('checkPrereqs: openspec ausente se reporta como faltante con engine openspec', () => {
+  const report = checkPrereqs(probeNoOpenspec, 'linux', 'openspec');
   assert.equal(report.ok, false);
   const openspec = report.results.find((r) => r.tool === 'openspec');
-  assert.ok(openspec, 'openspec se comprueba siempre');
+  assert.ok(openspec, 'openspec se comprueba con engine: openspec');
   assert.equal(openspec?.ok, false);
 });
 
+test('checkPrereqs: openspec ausente no se comprueba con engine native', () => {
+  const report = checkPrereqs(probeNoOpenspec, 'linux', 'native');
+  assert.equal(report.ok, true);
+  assert.equal(
+    report.results.find((r) => r.tool === 'openspec'),
+    undefined,
+    'openspec no aparece en el informe con engine: native'
+  );
+});
+
 test('checkPrereqs: git, node y graphify son incondicionales', () => {
-  const report = checkPrereqs(probeNoOpenspec, 'linux');
+  const report = checkPrereqs(probeNoOpenspec, 'linux', 'openspec');
   for (const tool of ['git', 'node', 'graphify']) {
     const result = report.results.find((r) => r.tool === tool);
     assert.ok(result, `${tool} presente en el informe`);

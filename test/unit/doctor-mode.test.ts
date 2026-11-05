@@ -1,72 +1,83 @@
-import { test, before, after } from 'node:test';
+import { test, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
-import { spawnSync } from 'node:child_process';
-import { mkdtempSync, writeFileSync, chmodSync, rmSync } from 'node:fs';
+import { chmodSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { printDoctorReport } from '../../src/commands/doctor';
 
-const REPO = join(__dirname, '..', '..', '..');
-const CLI = join(REPO, 'dist', 'bin', 'spectralis.js');
-let home: string;
-let fakeBin: string;
-let baseEnv: NodeJS.ProcessEnv;
+const created: string[] = [];
+const originalCwd = process.cwd();
+const originalPath = process.env.PATH;
+const originalHome = process.env.HOME;
 
-function writeStub(name: string, content: string): void {
-  const path = join(fakeBin, name);
+afterEach(() => {
+  process.chdir(originalCwd);
+  process.env.PATH = originalPath;
+  process.env.HOME = originalHome;
+  for (const dir of created) rmSync(dir, { recursive: true, force: true });
+  created.length = 0;
+});
+
+function scratch(prefix: string): string {
+  const dir = mkdtempSync(join(tmpdir(), prefix));
+  created.push(dir);
+  return dir;
+}
+
+function writeStub(dir: string, name: string, content: string): void {
+  const path = join(dir, name);
   writeFileSync(path, content, { mode: 0o755 });
   chmodSync(path, 0o755);
 }
 
-before(() => {
-  home = mkdtempSync(join(tmpdir(), 'spectralis-doctor-mode-home-'));
-  fakeBin = mkdtempSync(join(tmpdir(), 'spectralis-doctor-mode-bin-'));
-  // No openspec stub on purpose: this PATH simulates a host without OpenSpec.
-  writeStub('git', '#!/bin/sh\necho "git version 2.40.0"\nexit 0\n');
-  writeStub('node', '#!/bin/sh\necho "v22.11.0"\nexit 0\n');
-  writeStub('graphify', '#!/bin/sh\necho "graphify 1.0.0"\nexit 0\n');
-  baseEnv = {
-    ...process.env,
-    HOME: home,
-    // Fake bin only: the real PATH may contain openspec, which would make the
-    // "missing" scenario moot. /bin/sh is still used by spawnSync on POSIX.
-    PATH: fakeBin
-  };
-});
-
-after(() => {
-  rmSync(home, { recursive: true, force: true });
-  rmSync(fakeBin, { recursive: true, force: true });
-});
-
-function runDoctor(cwd: string) {
-  return spawnSync(process.execPath, [CLI, 'doctor'], { env: baseEnv, encoding: 'utf8', cwd });
+/** A PATH without the openspec binary: it simulates a host without OpenSpec. */
+function fakeBinWithoutOpenspec(): string {
+  const bin = scratch('spectralis-doctor-mode-bin-');
+  writeStub(bin, 'git', '#!/bin/sh\necho "git version 2.40.0"\nexit 0\n');
+  writeStub(bin, 'node', '#!/bin/sh\necho "v22.11.0"\nexit 0\n');
+  writeStub(bin, 'graphify', '#!/bin/sh\necho "graphify 1.0.0"\nexit 0\n');
+  return bin;
 }
 
 function makeProject(manifest: Record<string, unknown>): string {
-  const dst = mkdtempSync(join(tmpdir(), 'spectralis-doctor-mode-proj-'));
+  const dst = scratch('spectralis-doctor-mode-proj-');
   writeFileSync(join(dst, '.sdd-manifest.json'), JSON.stringify(manifest, null, 2) + '\n');
   return dst;
 }
 
-test('doctor sin openspec falla con ayuda de instalacion (openspec es incondicional)', () => {
-  const proj = makeProject({});
+function runDoctor(cwd: string): { ok: boolean; output: string } {
+  const originalLog = console.log;
+  const originalError = console.error;
+  const lines: string[] = [];
+  console.log = (...args: unknown[]) => {
+    lines.push(args.map((a) => String(a)).join(' '));
+  };
+  console.error = (...args: unknown[]) => {
+    lines.push(args.map((a) => String(a)).join(' '));
+  };
+  process.env.PATH = fakeBinWithoutOpenspec();
+  process.env.HOME = scratch('spectralis-doctor-mode-home-');
+  process.chdir(cwd);
   try {
-    const r = runDoctor(proj);
-    assert.notEqual(r.status, 0, 'sin openspec el host no esta listo');
-    assert.match(r.stdout, /openspec/i);
-    assert.match(r.stdout, /npm i -g openspec/i);
+    const ok = printDoctorReport();
+    return { ok, output: lines.join('\n') };
   } finally {
-    rmSync(proj, { recursive: true, force: true });
+    console.log = originalLog;
+    console.error = originalError;
   }
+}
+
+test('doctor sin openspec no bloquea con el engine nativo (openspec es opcional)', () => {
+  const proj = makeProject({});
+  const { ok, output } = runDoctor(proj);
+  assert.equal(ok, true, 'sin openspec el host nativo esta listo');
+  assert.match(output, /openspec \(optional\)/);
+  assert.match(output, /si usas engine: openspec, instala openspec/i);
 });
 
-test('doctor con un manifiesto legado no marca openspec como opcional', () => {
+test('doctor con un manifiesto legado tampoco marca openspec como requerido', () => {
   const proj = makeProject({ philosophy: 'odd' });
-  try {
-    const r = runDoctor(proj);
-    assert.notEqual(r.status, 0, 'sin openspec el host no esta listo');
-    assert.doesNotMatch(r.stdout, /opcional/i, 'openspec ya no es opcional en ningun caso');
-  } finally {
-    rmSync(proj, { recursive: true, force: true });
-  }
+  const { ok, output } = runDoctor(proj);
+  assert.equal(ok, true);
+  assert.doesNotMatch(output, /openspec \(required\)/);
 });

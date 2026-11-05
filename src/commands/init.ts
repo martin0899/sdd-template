@@ -17,6 +17,7 @@ import { writeManifest } from '../core/manifest';
 import { runPostChecks } from '../core/post-checks';
 import { installGitHooks } from '../core/git-hooks';
 import { detectVaultRoot, readGlobalConfig, writeGlobalConfig, resolveEffectivePhilosophy } from '../core/config';
+import { resolveEngine, type EngineResolution } from '../core/resolve-engine';
 import { resolveAgent } from '../agents/profiles';
 import { selectTools } from '../core/tool-selector';
 import { buildInitPlan } from './plan';
@@ -122,10 +123,20 @@ export async function runInit(opts: InitOptions = {}): Promise<number> {
   if (philosophy.warning) console.error(`[WARN] ${philosophy.warning}`);
 
   // 1. Prerequisites gate: nothing is written when something is missing.
+  // The external openspec CLI is only a prerequisite of the projects that
+  // declare the openspec engine (F3).
   let steps = 0;
   const step = (label: string, result: string) =>
     console.log(phaseLine(++steps, 12, label, result, pal));
-  const prereqs = checkPrereqs(realProbe, process.platform);
+  let engine: EngineResolution;
+  try {
+    engine = resolveEngine({ projectRoot: target });
+  } catch (err: unknown) {
+    console.log(pal.bold(`[ERROR] ${err instanceof Error ? err.message : String(err)}`));
+    console.log('Aborting: nothing has been written to the destination.');
+    return 1;
+  }
+  const prereqs = checkPrereqs(realProbe, process.platform, engine.value);
   if (!prereqs.ok) {
     console.log(pal.bold('Missing prerequisites:'));
     for (const r of prereqs.results.filter((r) => !r.ok)) {

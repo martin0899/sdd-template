@@ -1,8 +1,9 @@
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve, join } from 'node:path';
 import { readManifest } from '../core/manifest';
-import { readGlobalConfig, writeGlobalConfig, setRoute, resolveRoute, detectVaultRoot, resolveObsidianSync, setObsidianSync, resolvePhilosophy, setPhilosophy, setSpecDir, RouteConfig, SpectralisConfig } from '../core/config';
+import { readGlobalConfig, writeGlobalConfig, setRoute, resolveRoute, detectVaultRoot, resolveObsidianSync, setObsidianSync, resolvePhilosophy, setPhilosophy, setSpecDir, setEngine, type RouteConfig, type SpectralisConfig, type SpecEngine } from '../core/config';
 import { resolveSpecDir } from '../core/resolve-changes-dir';
+import { resolveEngine, SPEC_ENGINES } from '../core/resolve-engine';
 import { currentPalette, printBanner, green, dim } from '../util/ui';
 
 export interface ConfigOptions {
@@ -19,11 +20,24 @@ function templateRoot(): string {
   return join(__dirname, '..', '..');
 }
 
+/**
+ * Version of the harness.
+ *
+ * The manifest of the package is looked up in the root of the template and in
+ * its parent: the compiled output lives in `dist/` (or in `dist-test/`, whose
+ * layout nests the sources one level deeper).
+ */
 function pkgVersion(): string {
-  const pkg = JSON.parse(
-    require('node:fs').readFileSync(join(templateRoot(), 'package.json'), 'utf8')
-  ) as { version: string };
-  return pkg.version;
+  const candidates = [
+    join(templateRoot(), 'package.json'),
+    join(templateRoot(), '..', 'package.json')
+  ];
+  for (const candidate of candidates) {
+    if (!existsSync(candidate)) continue;
+    const pkg = JSON.parse(readFileSync(candidate, 'utf8')) as { version: string };
+    return pkg.version;
+  }
+  return '0.0.0';
 }
 
 const TOOL_PATHS: Record<string, string[]> = {
@@ -35,6 +49,11 @@ const TOOL_PATHS: Record<string, string[]> = {
 
 function getToolPaths(tool: string): string[] {
   return TOOL_PATHS[tool] || [];
+}
+
+/** The engines the harness understands. */
+function isSpecEngineValue(value: string): value is SpecEngine {
+  return (SPEC_ENGINES as readonly string[]).includes(value);
 }
 
 export async function runConfig(opts: ConfigOptions = {}): Promise<number> {
@@ -90,6 +109,17 @@ export async function runConfig(opts: ConfigOptions = {}): Promise<number> {
       console.log(`[OK] spec_dir set to ${value} (${global ? 'global' : 'project'})`);
       return 0;
     }
+    if (key === 'engine') {
+      if (!isSpecEngineValue(value)) {
+        console.error(
+          `[ERROR] Valor inválido para engine: "${value}". Valores admitidos: ${SPEC_ENGINES.join(', ')}.`
+        );
+        return 1;
+      }
+      setEngine(value, global, projectRoot);
+      console.log(`[OK] engine set to ${value} (${global ? 'global' : 'project'})`);
+      return 0;
+    }
     setRoute(key as keyof RouteConfig, resolve(value), global, projectRoot);
     console.log(`[OK] ${key} set to ${value} (${global ? 'global' : 'project'})`);
     return 0;
@@ -114,6 +144,17 @@ export async function runConfig(opts: ConfigOptions = {}): Promise<number> {
       const res = resolveSpecDir({ projectRoot });
       const origin = res.origin === 'manifest' ? 'manifiesto' : res.origin;
       console.log(`${res.value || '(not set)'} [${origin}]`);
+      return 0;
+    }
+    if (opts.get === 'engine') {
+      try {
+        const res = resolveEngine({ projectRoot });
+        const origin = res.origin === 'manifest' ? 'manifiesto' : res.origin;
+        console.log(`${res.value} [${origin}]`);
+      } catch (err: unknown) {
+        console.error(`[ERROR] ${err instanceof Error ? err.message : String(err)}`);
+        return 1;
+      }
       return 0;
     }
     const value = resolveRoute(opts.get as keyof RouteConfig, projectRoot);
@@ -145,6 +186,13 @@ export async function runConfig(opts: ConfigOptions = {}): Promise<number> {
     const specDir = resolveSpecDir({ projectRoot: target });
     const specDirOrigin = specDir.origin === 'manifest' ? 'manifiesto' : specDir.origin;
     console.log(`  spec_dir: ${specDir.value || '(not set)'}  [${specDirOrigin}]`);
+    try {
+      const engine = resolveEngine({ projectRoot: target });
+      const engineOrigin = engine.origin === 'manifest' ? 'manifiesto' : engine.origin;
+      console.log(`  engine: ${engine.value}  [${engineOrigin}]`);
+    } catch (err: unknown) {
+      console.log(`  engine: ${dim('(invalid)', pal)}  [${err instanceof Error ? err.message : String(err)}]`);
+    }
     for (const [key, value, origin] of routes) {
       console.log(`  ${key}: ${value || '(not set)'}  [${origin}]`);
     }

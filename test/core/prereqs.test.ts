@@ -10,12 +10,22 @@ const probeAll = (tool: string) =>
   tool === 'node' ? { found: true, version: 'v22.0.0' } : { found: true, version: '1.0.0' };
 
 test('all tools present reports ok', () => {
-  const report = checkPrereqs(probeAll, 'linux');
+  const report = checkPrereqs(probeAll, 'linux', 'openspec');
   assert.equal(report.ok, true);
   assert.equal(report.results.length, 4);
   for (const r of report.results) {
     assert.equal(r.ok, true, r.tool);
   }
+});
+
+test('a native project does not probe the openspec binary', () => {
+  const report = checkPrereqs(probeAll, 'linux', 'native');
+  assert.equal(report.ok, true);
+  assert.equal(report.results.length, 3);
+  assert.equal(
+    report.results.find((r) => r.tool === 'openspec'),
+    undefined
+  );
 });
 
 test('missing tool fails the report without throwing', () => {
