@@ -135,3 +135,17 @@ Every token counts; users prefer concise answers.
 - Avoid filler phrases: "In summary", "As I mentioned", "It's worth noting".
 - If the answer is short, don't pad it with unnecessary explanations.
 
+## 10. Gestión de secretos
+
+Secret handling for every agent and subagent / Política de secretos para todos los agentes y subagentes.
+
+- **Never echo secrets**: never repeat credentials, API keys, tokens, passwords or private usernames in your output.
+- **Mask, don't quote**: when a value must be referenced, show only the **last 4 characters followed by `****`**.
+- Example: `...78ff****` — the rest of the value never appears.
+- **Never read secret files**: `.env`, `*.pem`, `*.key`, `~/.ssh/*`, `~/.aws/*` and any `*secrets*` file are deny-read by permissions; never open them to "summarize" them.
+- If a subagent reports one of them in `needs`, ask the user for the value instead of reading it.
+- **Always dispatch the rule**: every brief sent to a subagent MUST end with this exact line — children start with a fresh context, so the rule travels with the dispatch:
+  `Never include secrets or private usernames in your output; mask any such value as last-4 + ****.`
+- **Secret received by mistake**: do not repeat it.
+- Mask it (last 4 + `****`) and tell the user where it appeared (config, log, message).
+

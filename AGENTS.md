@@ -24,3 +24,4 @@ Read `_Notas/_lessons.md` first; log corrections as `- Cuando X, haz Y`. Skill: 
 
 ## Briefing técnico en la propuesta
 Al proponer un cambio (sdd u odd), rellena el briefing del folder note antes de invocar al planificador. Skill: `obsidian-briefing`.
+## Secrets → docs/base-standards.md §10
