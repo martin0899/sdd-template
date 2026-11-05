@@ -5,8 +5,8 @@ import { resolveEffectivePhilosophy, detectProjectFromCwd } from '../core/config
 export function printDoctorReport(): boolean {
   const pal = currentPalette();
   const projectRoot = detectProjectFromCwd(process.cwd())?.root;
-  const philosophy = resolveEffectivePhilosophy({}, projectRoot);
-  const report = checkPrereqs(realProbe, process.platform, philosophy.value);
+  const philosophy = resolveEffectivePhilosophy(projectRoot);
+  const report = checkPrereqs(realProbe, process.platform);
   console.log(`  ${pal.bold('spectralis doctor')} · host prerequisites (mode: ${philosophy.value})`);
   for (const r of report.results) {
     if (r.tool === 'openspec') {
@@ -24,9 +24,6 @@ export function printDoctorReport(): boolean {
       console.log(`  ${pal.cross} ${red(`${r.tool}: ${r.problem}`, pal)}`);
       console.log(dim(`         -> ${installHint(r.tool, process.platform)}`, pal));
     }
-  }
-  if (philosophy.value === 'odd') {
-    console.log(`  ${pal.check} ${dim('openspec: opcional (ODD) — OpenSpec no es requisito en modo odd', pal)}`);
   }
   console.log(
     report.ok

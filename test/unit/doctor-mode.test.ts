@@ -48,25 +48,24 @@ function makeProject(manifest: Record<string, unknown>): string {
   return dst;
 }
 
-test('doctor en modo odd sin openspec no falla y lo marca opcional', () => {
-  const proj = makeProject({ philosophy: 'odd' });
+test('doctor sin openspec falla con ayuda de instalacion (openspec es incondicional)', () => {
+  const proj = makeProject({});
   try {
     const r = runDoctor(proj);
-    assert.equal(r.status, 0, r.stderr + r.stdout);
-    assert.match(r.stdout, /opcional/i);
-    assert.match(r.stdout, /odd/i);
+    assert.notEqual(r.status, 0, 'sin openspec el host no esta listo');
+    assert.match(r.stdout, /openspec/i);
+    assert.match(r.stdout, /npm i -g openspec/i);
   } finally {
     rmSync(proj, { recursive: true, force: true });
   }
 });
 
-test('doctor en modo sdd sin openspec falla con ayuda de instalación', () => {
-  const proj = makeProject({});
+test('doctor con un manifiesto legado no marca openspec como opcional', () => {
+  const proj = makeProject({ philosophy: 'odd' });
   try {
     const r = runDoctor(proj);
-    assert.notEqual(r.status, 0, 'sdd + openspec ausente debe fallar');
-    assert.match(r.stdout, /openspec/i);
-    assert.match(r.stdout, /npm i -g openspec/i);
+    assert.notEqual(r.status, 0, 'sin openspec el host no esta listo');
+    assert.doesNotMatch(r.stdout, /opcional/i, 'openspec ya no es opcional en ningun caso');
   } finally {
     rmSync(proj, { recursive: true, force: true });
   }

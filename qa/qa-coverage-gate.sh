@@ -19,6 +19,10 @@
 #
 # Uso:   timeout 300 ./qa/qa-coverage-gate.sh
 # Env:   DIFF_FILES                  ficheros src cuyo diff se mide
+#                                      (por defecto: los ficheros src/ cambiados
+#                                       por `git diff --name-only HEAD -- src/`;
+#                                       si el diff esta vacio, la lista completa
+#                                       de src/)
 #        DIFF_COVERAGE_THRESHOLD     umbral de diff coverage (por defecto 80)
 #        GLOBAL_COVERAGE_THRESHOLD   umbral de cobertura global (por defecto 85)
 #        WORK_DIR                    directorio temporal de trabajo
@@ -31,7 +35,33 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 cd "$REPO_ROOT" || { echo "[FATAL] no se puede entrar en $REPO_ROOT"; exit 2; }
 
-DIFF_FILES="${DIFF_FILES:-src/commands/update.ts src/core/manifest.ts src/bin/spectralis.ts}"
+# Ficheros src/ cuyo diff se mide por defecto: los que el cambio en curso ha
+# tocado (`git diff --name-only HEAD -- src/`). Si no hay diff (p. ej. el
+# trabajo ya esta confirmado) se cae a la lista completa de src/. La variable
+# de entorno DIFF_FILES sigue mandando sobre este valor por defecto.
+derive_diff_files() {
+  local out="" f
+  while IFS= read -r f; do
+    [ -n "$f" ] || continue
+    [ -f "$f" ] || continue
+    out="$out $f"
+  done < <(git diff --name-only HEAD -- src/ 2>/dev/null)
+  if [ -n "$(printf '%s' "$out" | tr -d '[:space:]')" ]; then
+    printf '%s' "${out# }"
+    return 0
+  fi
+  out=""
+  while IFS= read -r f; do
+    [ -n "$f" ] || continue
+    [ -f "$f" ] || continue
+    out="$out $f"
+  done < <(find src -type f -name '*.ts' 2>/dev/null | sort)
+  printf '%s' "${out# }"
+}
+
+if [ -z "${DIFF_FILES:-}" ]; then
+  DIFF_FILES="$(derive_diff_files)"
+fi
 DIFF_COVERAGE_THRESHOLD="${DIFF_COVERAGE_THRESHOLD:-80}"
 GLOBAL_COVERAGE_THRESHOLD="${GLOBAL_COVERAGE_THRESHOLD:-85}"
 WORK_DIR="${WORK_DIR:-$REPO_ROOT/.test-tmp/qa-coverage-gate}"

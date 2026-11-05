@@ -1,6 +1,6 @@
 import { test, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, rmSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
+import { mkdtempSync, rmSync, writeFileSync, mkdirSync, existsSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { runFacadeOperation, type FacadeDeps } from '../../src/core/spec-facade';
@@ -54,17 +54,29 @@ test('fachada: status en modo sdd delega en openspec status', () => {
   assert.match(res.details ?? '', /stub-ok/);
 });
 
-test('fachada: el flag --sdd gana al manifest odd', () => {
-  const root = scratch('sp-facade-flag-');
-  writeFileSync(
-    join(root, '.sdd-manifest.json'),
-    JSON.stringify({ philosophy: 'odd' }, null, 2) + '\n'
-  );
+test('fachada: manifiesto legado resuelve sdd, delega en openspec y no reescribe el manifiesto', () => {
+  const root = scratch('sp-facade-legacy-');
+  const manifestPath = join(root, '.sdd-manifest.json');
+  const raw = JSON.stringify({ philosophy: 'odd' }, null, 2) + '\n';
+  writeFileSync(manifestPath, raw, 'utf8');
   const s = stub();
-  const res = runFacadeOperation('validate', { projectRoot: root, changeId: 'add-x', flags: { sdd: true } }, s.deps);
+  const res = runFacadeOperation('validate', { projectRoot: root, changeId: 'add-x' }, s.deps);
+  assert.equal(res.ok, true, res.problem);
   assert.equal(res.mode, 'sdd');
   assert.equal(res.route, 'sdd');
   assert.deepEqual(s.calls[0], ['validate', 'add-x']);
+  assert.equal(readFileSync(manifestPath, 'utf8'), raw, 'el manifiesto no se reescribe');
+});
+
+test('fachada: la ruta es siempre sdd y no existe una ruta legacy', () => {
+  const root = scratch('sp-facade-sdd-only-');
+  const s = stub();
+  const res = runFacadeOperation('init', { projectRoot: root, changeId: 'add-x' }, s.deps);
+  // El tipo de `route` es el literal 'sdd': no admite ningun otro modo.
+  const route: 'sdd' = res.route;
+  assert.equal(route, 'sdd');
+  assert.ok(!existsSync(join(root, 'odd')), 'la fachada no crea artefactos legacy');
+  assert.equal(s.calls.length, 1);
 });
 
 test('fachada: openspec ausente en modo sdd informa y se detiene sin validación propia', () => {
@@ -84,41 +96,6 @@ test('fachada: openspec ausente en modo sdd informa y se detiene sin validación
   assert.equal(res.ok, false);
   assert.match(res.problem ?? '', /openspec/i);
   assert.equal(called, 0, 'no se invoca openspec ni una validación alternativa');
-});
-
-test('fachada: modo odd (manifest), init opera sobre odd/changes/<id>/feature.md sin openspec', () => {
-  const root = scratch('sp-facade-odd-init-');
-  writeFileSync(join(root, '.sdd-manifest.json'), JSON.stringify({ philosophy: 'odd' }) + '\n');
-  const s = stub();
-  const res = runFacadeOperation('init', { projectRoot: root, changeId: 'add-o' }, s.deps);
-  assert.equal(res.ok, true, res.problem);
-  assert.equal(res.mode, 'odd');
-  assert.equal(res.route, 'odd');
-  assert.ok(existsSync(join(root, 'odd', 'changes', 'add-o', 'feature.md')));
-  assert.ok(!existsSync(join(root, 'openspec')), 'ODD no crea openspec/');
-  assert.equal(s.calls.length, 0, 'no invoca ningún comando de OpenSpec');
-});
-
-test('fachada: validación ODD valida feature.md (secciones) sin openspec', () => {
-  const root = scratch('sp-facade-odd-val-');
-  writeFileSync(join(root, '.sdd-manifest.json'), JSON.stringify({ philosophy: 'odd' }) + '\n');
-  const s = stub();
-  runFacadeOperation('init', { projectRoot: root, changeId: 'add-o' }, s.deps);
-  const res = runFacadeOperation('validate', { projectRoot: root, changeId: 'add-o' }, s.deps);
-  assert.equal(res.ok, true, res.problem);
-  assert.equal(s.calls.length, 0);
-});
-
-test('fachada: cierre ODD marca complete sobre feature.md sin llamar a openspec', () => {
-  const root = scratch('sp-facade-odd-close-');
-  writeFileSync(join(root, '.sdd-manifest.json'), JSON.stringify({ philosophy: 'odd' }) + '\n');
-  const s = stub();
-  runFacadeOperation('init', { projectRoot: root, changeId: 'add-o' }, s.deps);
-  const res = runFacadeOperation('complete', { projectRoot: root, changeId: 'add-o' }, s.deps);
-  assert.equal(res.ok, true, res.problem);
-  assert.equal(res.phase, 'complete');
-  assert.ok(existsSync(join(root, 'odd', 'changes', 'add-o', 'feature.md')));
-  assert.equal(s.calls.length, 0);
 });
 
 function sddChange(root: string, changeId: string): void {
@@ -161,23 +138,4 @@ test('fachada: apply SDD con artefactos esenciales incompletos se detiene sin ll
   assert.equal(res.ok, false);
   assert.match(res.problem ?? '', /tasks\.md/);
   assert.equal(calls, 0, 'no se llama al planificador ni a openspec');
-});
-
-test('fachada: apply ODD sustancial sin feature.md se detiene e informa', () => {
-  const root = scratch('sp-facade-odd-apply-');
-  writeFileSync(join(root, '.sdd-manifest.json'), JSON.stringify({ philosophy: 'odd' }) + '\n');
-  const s = stub();
-  const res = runFacadeOperation('apply', { projectRoot: root, changeId: 'add-nofeat', resumable: false }, s.deps);
-  assert.equal(res.ok, false);
-  assert.match(res.problem ?? '', /feature\.md/);
-  assert.equal(s.calls.length, 0, 'sin openspec en la ruta ODD');
-});
-
-test('fachada: apply ODD pequeño (retomable) sin feature.md procede', () => {
-  const root = scratch('sp-facade-odd-apply-small-');
-  writeFileSync(join(root, '.sdd-manifest.json'), JSON.stringify({ philosophy: 'odd' }) + '\n');
-  const s = stub();
-  const res = runFacadeOperation('apply', { projectRoot: root, changeId: 'add-small', resumable: true }, s.deps);
-  assert.equal(res.ok, true, res.problem);
-  assert.equal(s.calls.length, 0);
 });

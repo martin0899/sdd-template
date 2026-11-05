@@ -28,7 +28,7 @@ gertrudis **reporta y NO modifica** código ni artefactos — regla CYCLE-03 del
 
 ### Revisión por riesgo
 
-- **ODD de bajo riesgo**: basta el diff con checks mínimos, sin revisión pesada bloqueante.
+- **Riesgo bajo**: basta el diff con checks mínimos, sin revisión pesada bloqueante.
 - **Riesgo medio/alto**: invoca a **gertrudis** con su contrato de entrada y salida.
 - **SDD**: aplica las compuertas formales del modo, con independencia del tamaño percibido.
 
@@ -37,8 +37,7 @@ gertrudis **reporta y NO modifica** código ni artefactos — regla CYCLE-03 del
 El coordinador **anuncia el modo efectivo en la primera línea** antes de enrutar.
 
 - **SDD**: `pending → spec_ready → ⏸ aprobación humana → in_progress → [implementador → gertrudis] → done`. **NUNCA** lances al implementador en `pending`: los artefactos deben completarse y validarse (`spec_ready`) y ser aprobados antes de implementar.
-- **ODD**: ciclo orgánico **sin OpenSpec**. Cambio pequeño: ruta directa al implementador (diff + checks mínimos, sin documentación formal). Cambio sustancial: `odd/changes/<id>/feature.md` como fuente de verdad (se crea antes del primer write y se registra cada commit como evidencia). Cierre ODD: propón al humano la migración propuesta y, si se confirma, despáchala al `documentador`.
-- Reglas duras: **NUNCA** invocar OpenSpec en ODD; **NUNCA**: no publicar al brain ni a `05_wiki/` sin despacho del coordinador; **un solo ejecutor activo** por cambio (regla CYCLE-01 del contrato central: `.agents/skills/agent-rules-contract/SKILL.md`; no relances apply).
+- Reglas duras: **NUNCA** publicar al brain ni a `05_wiki/` sin despacho del coordinador; **un solo ejecutor activo** por cambio (regla CYCLE-01 del contrato central: `.agents/skills/agent-rules-contract/SKILL.md`; no relances apply).
 
 ### Identificación de estado
 
@@ -46,5 +45,5 @@ Antes de actuar, el coordinador identifica modo, ID del cambio, estado de artefa
 
 ## Referencias
 
-- Contrato central de reglas del ciclo (SDD/ODD): `.agents/skills/agent-rules-contract/SKILL.md` (define CYCLE-01 a CYCLE-04 una sola vez; esta skill remite a él).
+- Contrato central de reglas del ciclo (SDD): `.agents/skills/agent-rules-contract/SKILL.md` (define CYCLE-01 a CYCLE-04 una sola vez; esta skill remite a él).
 - Validador de duplicación y contradicción: `spectralis check --rules` (`src/core/rules-contract.ts`).

@@ -74,8 +74,8 @@ export async function runConfig(opts: ConfigOptions = {}): Promise<number> {
       return 0;
     }
     if (key === 'philosophy') {
-      if (value !== 'sdd' && value !== 'odd') {
-        console.error(`[ERROR] Valor inválido para philosophy: "${value}". Valores admitidos: sdd, odd.`);
+      if (value !== 'sdd') {
+        console.error(`[ERROR] Valor inválido para philosophy: "${value}". Valores admitidos: sdd.`);
         return 1;
       }
       setPhilosophy(value, global, projectRoot);

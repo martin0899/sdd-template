@@ -33,24 +33,48 @@ function readManifest(dst: string): Record<string, unknown> {
   return JSON.parse(readFileSync(join(dst, '.sdd-manifest.json'), 'utf8')) as Record<string, unknown>;
 }
 
-test('config --set philosophy=odd persiste el valor en el proyecto', () => {
+test('config --set philosophy=sdd persiste el valor en el proyecto', () => {
+  const dst = makeProject();
+  try {
+    const r = runCli(['config', dst, '--set', 'philosophy=sdd']);
+    assert.equal(r.status, 0, r.stderr + r.stdout);
+    assert.equal(readManifest(dst).philosophy, 'sdd');
+  } finally {
+    rmSync(dst, { recursive: true, force: true });
+  }
+});
+
+test('config --set philosophy=odd falla sin escribir (el modo legacy esta retirado)', () => {
   const dst = makeProject();
   try {
     const r = runCli(['config', dst, '--set', 'philosophy=odd']);
-    assert.equal(r.status, 0, r.stderr + r.stdout);
-    assert.equal(readManifest(dst).philosophy, 'odd');
+    assert.notEqual(r.status, 0, 'un valor no admitido debe fallar');
+    assert.match(r.stderr + r.stdout, /sdd/);
+    assert.equal(readManifest(dst).philosophy, undefined, 'the retired value must not be written');
   } finally {
     rmSync(dst, { recursive: true, force: true });
   }
 });
 
 test('config --get philosophy imprime valor y origen', () => {
+  const dst = makeProject({ philosophy: 'sdd' });
+  try {
+    const r = runCli(['config', dst, '--get', 'philosophy']);
+    assert.equal(r.status, 0, r.stderr + r.stdout);
+    assert.match(r.stdout, /sdd/);
+    assert.match(r.stdout, /manifiesto|manifest/);
+  } finally {
+    rmSync(dst, { recursive: true, force: true });
+  }
+});
+
+test('config --get philosophy de un manifiesto legado cae a sdd con advertencia', () => {
   const dst = makeProject({ philosophy: 'odd' });
   try {
     const r = runCli(['config', dst, '--get', 'philosophy']);
     assert.equal(r.status, 0, r.stderr + r.stdout);
-    assert.match(r.stdout, /odd/);
-    assert.match(r.stdout, /manifiesto|manifest/);
+    assert.match(r.stdout, /sdd/);
+    assert.match(r.stderr + r.stdout, /odd/, 'debe avisar del valor legacy leido');
   } finally {
     rmSync(dst, { recursive: true, force: true });
   }
@@ -62,7 +86,6 @@ test('config --set philosophy=rapido falla sin escribir', () => {
     const r = runCli(['config', dst, '--set', 'philosophy=rapido']);
     assert.notEqual(r.status, 0, 'must fail for an invalid value');
     assert.match(r.stderr + r.stdout, /sdd/);
-    assert.match(r.stderr + r.stdout, /odd/);
     assert.equal(readManifest(dst).philosophy, undefined, 'invalid value must not be written');
   } finally {
     rmSync(dst, { recursive: true, force: true });
@@ -70,12 +93,12 @@ test('config --set philosophy=rapido falla sin escribir', () => {
 });
 
 test('config --list incluye philosophy', () => {
-  const dst = makeProject({ philosophy: 'odd' });
+  const dst = makeProject({ philosophy: 'sdd' });
   try {
     const r = runCli(['config', dst, '--list']);
     assert.equal(r.status, 0, r.stderr + r.stdout);
     assert.match(r.stdout, /philosophy/);
-    assert.match(r.stdout, /odd/);
+    assert.match(r.stdout, /sdd/);
   } finally {
     rmSync(dst, { recursive: true, force: true });
   }

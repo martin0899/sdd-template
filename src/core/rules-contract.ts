@@ -3,7 +3,7 @@ import { join, basename, dirname } from 'node:path';
 import type { VaultDoctorFinding } from './vault-doctor';
 
 /**
- * Agent-rules contract: canonical, shared cycle rules (SDD/ODD).
+ * Agent-rules contract: canonical, shared cycle rules (SDD).
  *
  * The contract is the single source for cycle rules; governed files
  * (project skills under `.agents/skills`) must reference it instead of

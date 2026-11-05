@@ -8,7 +8,7 @@
  * are missing (pure, no LLM, no dependencies).
  */
 export interface DocumenterRequest {
-  mode: 'sdd' | 'odd';
+  mode: 'sdd';
   changeId: string;
   affectedPaths: string[];
   testEvidence: string;

@@ -9,7 +9,7 @@ Orquesta la documentación del **cerebro** (el segundo cerebro) durante el flujo
 
 ## Cuándo se dispara
 
-- Al **proponer** un change (`/opsx-propose`): `obsidian-briefing` rellena el briefing del folder note **antes** de crear los artefactos formales, en modo `sdd` y `odd`.
+- Al **proponer** un change (`/opsx-propose`): `obsidian-briefing` rellena el briefing del folder note **antes** de crear los artefactos formales, en modo `sdd`.
 - Al **completar** la implementación de un change (`/opsx-apply`) con la orquestación activa.
 - **Antes** de archivar un change (`/opsx-archive`) con la orquestación activa.
 - La regla persistente vive en el bloque gestionado de `AGENTS.md` y ordena consultar esta skill en esos momentos.

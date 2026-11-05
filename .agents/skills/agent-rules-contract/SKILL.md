@@ -1,13 +1,13 @@
 ---
 name: agent-rules-contract
-description: Contrato central de las reglas del ciclo SDD/ODD — define una sola vez, referencia en vez de redefinir; invoca la interfaz central de Spectralis, no dupliques el ciclo.
+description: Contrato central de las reglas del ciclo SDD — define una sola vez, referencia en vez de redefinir; invoca la interfaz central de Spectralis, no dupliques el ciclo.
 author: spectralis
 version: 1.0.0
 ---
 
 # agent-rules-contract
 
-Contrato único y compartido de las reglas del ciclo SDD/ODD. Dispara con: "reglas del ciclo", "contrato de agentes", "duplicación de reglas", "centralizar reglas".
+Contrato único y compartido de las reglas del ciclo SDD. Dispara con: "reglas del ciclo", "contrato de agentes", "duplicación de reglas", "centralizar reglas".
 
 ## Reglas canónicas (identificadores estables)
 
@@ -32,7 +32,7 @@ Contrato único y compartido de las reglas del ciclo SDD/ODD. Dispara con: "regl
 
 ## OpenSpec: backend SDD no reimplementado
 
-- OpenSpec permanece como backend SDD opcional detrás de la interfaz central de Spectralis.
+- OpenSpec permanece como backend SDD detrás de la interfaz central de Spectralis.
 - Este contrato describe **reglas del ciclo**, no un motor SDD paralelo: no se copia la lógica interna de OpenSpec.
 
 ## Detección

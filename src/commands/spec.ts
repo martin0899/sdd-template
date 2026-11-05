@@ -8,8 +8,6 @@ export interface SpecInitOptions {
   specId: string;
   vaultRoot?: string;
   projectRoot?: string;
-  odd?: boolean;
-  sdd?: boolean;
 }
 
 export interface SpecCompleteOptions {
@@ -28,14 +26,8 @@ function resolveVault(opts: { vaultRoot?: string }): string {
 export async function runSpecInit(opts: SpecInitOptions): Promise<number> {
   const vaultRoot = resolveVault(opts);
 
-  let philosophy;
-  try {
-    const projectRoot = resolveProjectRoot(opts.project, { projectRoot: opts.projectRoot }) ?? undefined;
-    philosophy = resolveEffectivePhilosophy({ odd: opts.odd, sdd: opts.sdd }, projectRoot);
-  } catch (err: unknown) {
-    console.error(`[ERROR] ${err instanceof Error ? err.message : String(err)}`);
-    return 1;
-  }
+  const projectRoot = resolveProjectRoot(opts.project, { projectRoot: opts.projectRoot }) ?? undefined;
+  const philosophy = resolveEffectivePhilosophy(projectRoot);
   if (philosophy.warning) console.error(`[WARN] ${philosophy.warning}`);
   console.log(`  philosophy: ${philosophy.value} [${philosophy.origin}]`);
 

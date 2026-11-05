@@ -10,7 +10,11 @@ export interface RouteConfig {
   resources_dir: string;
 }
 
-export type Philosophy = 'sdd' | 'odd';
+/**
+ * The only supported philosophy. SDD is the single mode of the harness; any
+ * other stored value is tolerated on read (never written, never rewritten).
+ */
+export type Philosophy = 'sdd';
 
 export interface SpectralisConfig extends RouteConfig {
   projects_base: string;
@@ -55,7 +59,7 @@ export function readGlobalConfig(): SpectralisConfig {
       resources_dir: raw.resources_dir ?? '',
       autoUpdate: raw.autoUpdate ?? false,
       obsidianSync: raw.obsidianSync === 1 ? 1 : 0,
-      philosophy: raw.philosophy === 'odd' ? 'odd' : 'sdd',
+      philosophy: 'sdd',
       current_project_root: raw.current_project_root ?? ''
     };
   } catch {
@@ -188,7 +192,18 @@ export interface PhilosophyResolution {
 }
 
 function isPhilosophy(value: unknown): value is Philosophy {
-  return value === 'sdd' || value === 'odd';
+  return value === 'sdd';
+}
+
+/** Raw content of the global config file, or undefined when it is absent/unreadable. */
+function readRawGlobalConfig(): Record<string, unknown> | undefined {
+  const rawPath = globalConfigPath();
+  if (!existsSync(rawPath)) return undefined;
+  try {
+    return JSON.parse(readFileSync(rawPath, 'utf8')) as Record<string, unknown>;
+  } catch {
+    return undefined;
+  }
 }
 
 /**
@@ -197,8 +212,9 @@ function isPhilosophy(value: unknown): value is Philosophy {
  * 2. philosophy in the global config
  * 3. default 'sdd' (backwards compatible)
  *
- * Invalid stored values are ignored (tolerant read), fall back to 'sdd'
- * and surface a readable warning.
+ * SDD is the only philosophy. Any other stored value (a legacy one included)
+ * is ignored (tolerant read): it falls back to 'sdd' with a readable warning
+ * and the file on disk is never rewritten.
  */
 export function resolvePhilosophy(projectRoot?: string): PhilosophyResolution {
   if (projectRoot) {
@@ -213,29 +229,23 @@ export function resolvePhilosophy(projectRoot?: string): PhilosophyResolution {
           return {
             value: 'sdd',
             origin: 'default',
-            warning: `Valor de philosophy inválido en el manifiesto: "${String(manifest.philosophy)}". Se usa el default "sdd".`
+            warning: `Valor de philosophy no soportado en el manifiesto: "${String(manifest.philosophy)}". Se usa el default "sdd".`
           };
         }
       } catch {}
     }
   }
-  const config = readGlobalConfig();
-  if (config.philosophy === 'odd') {
-    return { value: 'odd', origin: 'global' };
-  }
-  try {
-    const rawPath = globalConfigPath();
-    if (existsSync(rawPath)) {
-      const raw = JSON.parse(readFileSync(rawPath, 'utf8'));
-      if (raw.philosophy !== undefined && !isPhilosophy(raw.philosophy)) {
-        return {
-          value: 'sdd',
-          origin: 'default',
-          warning: `Valor de philosophy inválido en la configuración global: "${String(raw.philosophy)}". Se usa el default "sdd".`
-        };
-      }
+  const raw = readRawGlobalConfig();
+  if (raw && raw.philosophy !== undefined) {
+    if (isPhilosophy(raw.philosophy)) {
+      return { value: raw.philosophy, origin: 'global' };
     }
-  } catch {}
+    return {
+      value: 'sdd',
+      origin: 'default',
+      warning: `Valor de philosophy no soportado en la configuración global: "${String(raw.philosophy)}". Se usa el default "sdd".`
+    };
+  }
   return { value: 'sdd', origin: 'default' };
 }
 
@@ -254,25 +264,18 @@ export function setPhilosophy(value: Philosophy, global: boolean, projectRoot?: 
 
 export interface EffectivePhilosophyResolution {
   value: Philosophy;
-  origin: 'flag' | 'manifest' | 'global' | 'default';
+  origin: 'manifest' | 'global' | 'default';
   warning?: string;
 }
 
 /**
- * Resolve the effective philosophy for a command run, applying the
- * explicit `--odd`/`--sdd` flags before the project cascade.
- * Precedence: --odd > --sdd > manifest > global > sdd.
- * Passing both flags is a hard error (mutually exclusive).
+ * Resolve the effective philosophy for a command run.
+ *
+ * There are no mode flags anymore: SDD is the only mode, so the cascade is
+ * the same deterministic one of `resolvePhilosophy` (manifest > global >
+ * default 'sdd'). Kept as the entry point used by the commands and the facade.
  */
-export function resolveEffectivePhilosophy(
-  flags: { odd?: boolean; sdd?: boolean } = {},
-  projectRoot?: string
-): EffectivePhilosophyResolution {
-  if (flags.odd && flags.sdd) {
-    throw new Error('Los flags --odd y --sdd son mutuamente excluyentes. Usa solo uno.');
-  }
-  if (flags.odd) return { value: 'odd', origin: 'flag' };
-  if (flags.sdd) return { value: 'sdd', origin: 'flag' };
+export function resolveEffectivePhilosophy(projectRoot?: string): EffectivePhilosophyResolution {
   return resolvePhilosophy(projectRoot);
 }
 

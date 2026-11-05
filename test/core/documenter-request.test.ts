@@ -19,13 +19,29 @@ test('validateDocumenterRequest acepta una solicitud completa', () => {
 
 test('validateDocumenterRequest rechaza una solicitud incompleta y reporta exactamente los campos faltantes', () => {
   const res = validateDocumenterRequest({
-    mode: 'odd',
+    mode: 'sdd',
     changeId: 'add-y',
     affectedPaths: ['docs/y.md'],
     risk: 'high'
   } as Partial<DocumenterRequest>);
   assert.equal(res.ok, false);
   assert.deepEqual([...res.missing].sort(), ['pending', 'testEvidence']);
+});
+
+test('DocumenterRequest.mode solo admite sdd: el compilador rechaza cualquier otro modo', () => {
+  const valid: DocumenterRequest = {
+    mode: 'sdd',
+    changeId: 'add-x',
+    affectedPaths: ['docs/x.md'],
+    testEvidence: 'npm test: 1 pass, 0 fail',
+    risk: 'low',
+    pending: []
+  };
+  assert.equal(validateDocumenterRequest(valid).ok, true);
+
+  // @ts-expect-error el modo legacy ya no es valido: el compilador debe rechazar la asignacion
+  const legacy: DocumenterRequest = { ...valid, mode: 'odd' };
+  assert.equal(legacy.mode, 'odd');
 });
 
 test('validateDocumenterRequest reporta todos los campos obligatorios ante una solicitud vacía', () => {

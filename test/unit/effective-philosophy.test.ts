@@ -41,45 +41,30 @@ afterEach(() => {
   created.length = 0;
 });
 
-test('resolveEffectivePhilosophy: --odd gana sobre el manifiesto sdd', () => {
+test('resolveEffectivePhilosophy: el manifiesto gana sobre la config global', () => {
+  writeGlobalConfig({ ...readGlobalConfig(), philosophy: 'sdd' });
   const proj = projectWith('sdd');
-  const res = resolveEffectivePhilosophy({ odd: true }, proj);
-  assert.equal(res.value, 'odd');
-  assert.equal(res.origin, 'flag');
-});
-
-test('resolveEffectivePhilosophy: --sdd gana sobre el manifiesto odd', () => {
-  const proj = projectWith('odd');
-  const res = resolveEffectivePhilosophy({ sdd: true }, proj);
-  assert.equal(res.value, 'sdd');
-  assert.equal(res.origin, 'flag');
-});
-
-test('resolveEffectivePhilosophy: flags contradictorios lanzan error', () => {
-  assert.throws(
-    () => resolveEffectivePhilosophy({ odd: true, sdd: true }),
-    /mutuamente excluyentes/
-  );
-});
-
-test('resolveEffectivePhilosophy: sin flags gana el manifiesto', () => {
-  writeGlobalConfig({ ...readGlobalConfig(), philosophy: 'odd' });
-  const proj = projectWith('sdd');
-  const res = resolveEffectivePhilosophy({}, proj);
+  const res = resolveEffectivePhilosophy(proj);
   assert.equal(res.value, 'sdd');
   assert.equal(res.origin, 'manifest');
 });
 
-test('resolveEffectivePhilosophy: sin flags ni manifiesto usa la global', () => {
-  writeGlobalConfig({ ...readGlobalConfig(), philosophy: 'odd' });
-  const res = resolveEffectivePhilosophy({}, scratch('sp-eff-nomanifest-'));
-  assert.equal(res.value, 'odd');
+test('resolveEffectivePhilosophy: sin manifiesto usa la config global', () => {
+  writeGlobalConfig({ ...readGlobalConfig(), philosophy: 'sdd' });
+  const res = resolveEffectivePhilosophy(scratch('sp-eff-nomanifest-'));
+  assert.equal(res.value, 'sdd');
   assert.equal(res.origin, 'global');
 });
 
 test('resolveEffectivePhilosophy: sin nada usa el default sdd', () => {
-  writeGlobalConfig({ ...readGlobalConfig(), philosophy: 'sdd' });
-  const res = resolveEffectivePhilosophy({});
+  const res = resolveEffectivePhilosophy();
   assert.equal(res.value, 'sdd');
   assert.equal(res.origin, 'default');
+});
+
+test('resolveEffectivePhilosophy: un manifiesto legado cae a sdd con advertencia', () => {
+  const proj = projectWith('odd');
+  const res = resolveEffectivePhilosophy(proj);
+  assert.equal(res.value, 'sdd');
+  assert.ok(res.warning && res.warning.length > 0, 'debe emitir una advertencia legible');
 });

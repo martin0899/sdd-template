@@ -12,8 +12,8 @@ let vault: string;
 let baseEnv: NodeJS.ProcessEnv;
 
 before(() => {
-  home = mkdtempSync(join(tmpdir(), 'spectralis-specphil-home-'));
-  vault = mkdtempSync(join(tmpdir(), 'spectralis-specphil-vault-'));
+  home = mkdtempSync(join(tmpdir(), 'spectralis-specmodes-home-'));
+  vault = mkdtempSync(join(tmpdir(), 'spectralis-specmodes-vault-'));
   baseEnv = { ...process.env, HOME: home };
 });
 
@@ -30,23 +30,23 @@ function specFolder(project: string, specId: string): string {
   return join(vault, '01_Proyectos', project, specId);
 }
 
-test('spec init --odd resuelve modo odd', () => {
+test('spec init --odd falla como opcion desconocida', () => {
   const r = runCli(['spec', 'init', 'Proj', 'odd-change', '--odd', '--vault-root', vault]);
-  assert.equal(r.status, 0, r.stderr + r.stdout);
-  assert.match(r.stdout, /odd/);
-  assert.ok(existsSync(specFolder('Proj', 'odd-change')), 'spec folder must be created');
+  assert.notEqual(r.status, 0, 'el flag retirado debe abortar el comando');
+  assert.match(r.stderr + r.stdout, /unknown option/i);
+  assert.ok(!existsSync(specFolder('Proj', 'odd-change')), 'no folder must be created');
 });
 
-test('spec init --sdd resuelve modo sdd', () => {
+test('spec init --sdd falla como opcion desconocida', () => {
   const r = runCli(['spec', 'init', 'Proj', 'sdd-change', '--sdd', '--vault-root', vault]);
+  assert.notEqual(r.status, 0, 'el flag retirado debe abortar el comando');
+  assert.match(r.stderr + r.stdout, /unknown option/i);
+  assert.ok(!existsSync(specFolder('Proj', 'sdd-change')), 'no folder must be created');
+});
+
+test('spec init sin flags resuelve el modo sdd', () => {
+  const r = runCli(['spec', 'init', 'Proj', 'plain-change', '--vault-root', vault]);
   assert.equal(r.status, 0, r.stderr + r.stdout);
   assert.match(r.stdout, /sdd/);
-  assert.ok(existsSync(specFolder('Proj', 'sdd-change')), 'spec folder must be created');
-});
-
-test('spec init --odd --sdd falla sin iniciar la operación', () => {
-  const r = runCli(['spec', 'init', 'Proj', 'conflict-change', '--odd', '--sdd', '--vault-root', vault]);
-  assert.notEqual(r.status, 0, 'contradictory flags must fail');
-  assert.match(r.stderr + r.stdout, /excluyentes/i);
-  assert.ok(!existsSync(specFolder('Proj', 'conflict-change')), 'no folder must be created');
+  assert.ok(existsSync(specFolder('Proj', 'plain-change')), 'spec folder must be created');
 });

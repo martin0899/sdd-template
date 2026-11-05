@@ -39,18 +39,16 @@ test('compuerta de gertrudis: solo lectura, veredicto cerrado y hallazgos con ev
 });
 
 test('revisión condicional por riesgo', () => {
-  assert.match(CONTRACT, /ODD.*bajo riesgo.*diff.*checks mínimos/i);
+  assert.match(CONTRACT, /riesgo bajo.*diff.*checks mínimos/i);
   assert.match(CONTRACT, /riesgo medio\/alto.*gertrudis/i);
   assert.match(CONTRACT, /SDD.*compuertas formales/i);
 });
 
-test('flujos por modo: estados SDD, ODD sin OpenSpec y reglas NUNCA', () => {
+test('flujos por modo: estados SDD y reglas NUNCA', () => {
   assert.match(CONTRACT, /pending.*spec_ready.*in_progress.*done/i);
   assert.match(CONTRACT, /aprobación humana/);
   assert.match(CONTRACT, /nunca.*lances al implementador en.*pending/i);
-  assert.match(CONTRACT, /odd\/changes\/<id>\/feature\.md/);
-  assert.match(CONTRACT, /migración propuesta|migración/i);
-  assert.match(CONTRACT, /no publicar.*sin despacho|sin despacho.*publicar/i);
+  assert.match(CONTRACT, /publicar.*sin despacho/i);
   assert.match(CONTRACT, /anuncia el modo.*primera línea/i);
   assert.match(CONTRACT, /un solo ejecutor activo/i);
 });

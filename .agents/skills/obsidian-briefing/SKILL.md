@@ -9,7 +9,7 @@ description: Generate technical briefing in Obsidian for OpenSpec changes. Creat
 
 ## Cuándo se dispara
 
-- **Propuesta** (SDD y ODD): rellena el briefing del folder note **antes** de crear los artefactos formales. Aplica igual en `sdd` y `odd` (el folder note es independiente del motor de OpenSpec).
+- **Propuesta** (SDD): rellena el briefing del folder note **antes** de crear los artefactos formales (el folder note es independiente del motor de OpenSpec).
 - **Apply**: refresca las secciones sin duplicarlas.
 
 Genera un briefing técnico en Obsidian para cambios OpenSpec. Crea un resumen técnico portátil para referencia entre máquinas.

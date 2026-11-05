@@ -1,7 +1,6 @@
 import { readFileSync, writeFileSync, existsSync, statSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { join } from 'node:path';
-import type { Philosophy } from './config';
 
 export function sha256File(file: string): string {
   return createHash('sha256').update(readFileSync(file)).digest('hex');
@@ -53,7 +52,12 @@ export interface ManifestData {
   projectVersion: string;
   tools: string[];
   obsidianSync?: 0 | 1;
-  philosophy?: Philosophy;
+  /**
+   * Raw `philosophy` value stored in the manifest. Only 'sdd' is valid today;
+   * legacy values are preserved verbatim by `update` (never rewritten) and are
+   * interpreted by the effective resolution (resolvePhilosophy).
+   */
+  philosophy?: string;
   files: { path: string; hash: string }[];
 }
 
@@ -74,8 +78,11 @@ export function readManifest(target: string): ManifestData | undefined {
     const projectVersion = (raw.projectVersion as string) ?? (raw.templateVersion as string) ?? '1.0.0';
     const obsidianSync: 0 | 1 | undefined =
       raw.obsidianSync === 1 ? 1 : raw.obsidianSync === 0 ? 0 : undefined;
-    const philosophy: Philosophy | undefined =
-      raw.philosophy === 'sdd' || raw.philosophy === 'odd' ? raw.philosophy : undefined;
+    // The stored value is preserved verbatim (legacy values included): `update`
+    // must not rewrite the manifest and only the effective resolution decides
+    // which mode applies.
+    const philosophy: string | undefined =
+      typeof raw.philosophy === 'string' ? raw.philosophy : undefined;
     return {
       schemaVersion: (raw.schemaVersion as number) ?? 1,
       spectralisVersion: (raw.spectralisVersion as string) ?? '',

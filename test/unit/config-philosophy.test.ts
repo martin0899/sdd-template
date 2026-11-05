@@ -1,6 +1,6 @@
 import { test, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, rmSync, writeFileSync, mkdirSync } from 'node:fs';
+import { mkdtempSync, rmSync, writeFileSync, readFileSync, mkdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
@@ -33,24 +33,44 @@ afterEach(() => {
   created.length = 0;
 });
 
-test('resolvePhilosophy: el manifiesto odd gana con origen manifest', () => {
+test('resolvePhilosophy: el manifiesto declara sdd y gana con origen manifest', () => {
   const proj = scratch('sp-phil-manifest-');
-  writeFileSync(join(proj, '.sdd-manifest.json'), JSON.stringify({ philosophy: 'odd' }), 'utf8');
+  writeFileSync(join(proj, '.sdd-manifest.json'), JSON.stringify({ philosophy: 'sdd' }), 'utf8');
   const res = resolvePhilosophy(proj);
-  assert.equal(res.value, 'odd');
+  assert.equal(res.value, 'sdd');
   assert.equal(res.origin, 'manifest');
 });
 
-test('resolvePhilosophy: sin manifiesto usa la config global (odd)', () => {
-  writeGlobalConfig({ ...readGlobalConfig(), philosophy: 'odd' });
+test('resolvePhilosophy: sin manifiesto usa la config global (sdd)', () => {
+  writeGlobalConfig({ ...readGlobalConfig(), philosophy: 'sdd' });
   const proj = scratch('sp-phil-nomanifest-');
   const res = resolvePhilosophy(proj);
-  assert.equal(res.value, 'odd');
+  assert.equal(res.value, 'sdd');
   assert.equal(res.origin, 'global');
 });
 
+test('resolvePhilosophy: manifiesto legado con odd cae a sdd, advierte y no reescribe el fichero', () => {
+  const proj = scratch('sp-phil-legacy-');
+  const manifestPath = join(proj, '.sdd-manifest.json');
+  const raw = JSON.stringify({ philosophy: 'odd' }, null, 2) + '\n';
+  writeFileSync(manifestPath, raw, 'utf8');
+
+  const res = resolvePhilosophy(proj);
+  assert.equal(res.value, 'sdd');
+  assert.ok(res.warning && res.warning.length > 0, 'debe emitir una advertencia legible');
+  assert.equal(readFileSync(manifestPath, 'utf8'), raw, 'el manifiesto no se reescribe');
+});
+
+test('resolvePhilosophy: configuración global legado con odd cae a sdd y advierte', () => {
+  const dir = join(process.env.HOME as string, '.config', 'spectralis');
+  mkdirSync(dir, { recursive: true });
+  writeFileSync(join(dir, 'config.json'), JSON.stringify({ philosophy: 'odd' }), 'utf8');
+  const res = resolvePhilosophy();
+  assert.equal(res.value, 'sdd');
+  assert.ok(res.warning && res.warning.length > 0, 'debe emitir una advertencia legible');
+});
+
 test('resolvePhilosophy: sin manifiesto ni global usa el default sdd', () => {
-  writeGlobalConfig({ ...readGlobalConfig(), philosophy: 'sdd' });
   const res = resolvePhilosophy();
   assert.equal(res.value, 'sdd');
   assert.equal(res.origin, 'default');

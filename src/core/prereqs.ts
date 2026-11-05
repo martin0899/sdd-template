@@ -1,5 +1,4 @@
 import { spawnSync } from 'node:child_process';
-import type { Philosophy } from './config';
 
 export interface PrereqResult {
   tool: string;
@@ -41,15 +40,10 @@ export function parseNodeMajor(version: string | undefined): number | undefined 
 
 export function checkPrereqs(
   probe: ProbeFn,
-  platform: NodeJS.Platform,
-  philosophy: Philosophy = 'sdd'
+  platform: NodeJS.Platform
 ): PrereqReport {
-  // openspec is only a hard prerequisite in SDD mode; ODD works without it.
-  const checks =
-    philosophy === 'odd'
-      ? REQUIRED_TOOLS.filter((check) => check.tool !== 'openspec')
-      : REQUIRED_TOOLS;
-  const results: PrereqResult[] = checks.map((check) => {
+  // openspec is an unconditional prerequisite: SDD is the only mode.
+  const results: PrereqResult[] = REQUIRED_TOOLS.map((check) => {
     const probeResult = probe(check.tool);
     if (!probeResult.found) {
       return {

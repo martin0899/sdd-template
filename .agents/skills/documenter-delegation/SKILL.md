@@ -19,7 +19,7 @@ Contrato de solicitud, consolidación y despacho del trabajo documental entre lo
 
 | Campo | Tipo | Descripción |
 |---|---|---|
-| `mode` | `sdd` \| `odd` | Modo efectivo del cambio |
+| `mode` | `sdd` | Modo efectivo del cambio |
 | `changeId` | string | ID del cambio |
 | `affectedPaths` | string[] | Rutas/artefactos afectados |
 | `testEvidence` | string | Evidencia de pruebas (comando y resultado) |
