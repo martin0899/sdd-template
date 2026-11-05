@@ -37,7 +37,7 @@ Los manuales técnicos del arnés viven en `notes/` (se sincronizan al cerebro c
 |--------|-----------|
 | [Arquitectura](notes/architecture/manual.md) | Organización del CLI, inventario de comandos, flujos install/update, doctor, segundo cerebro y convenciones (EN) |
 | [CLI de spectralis](notes/spectralis-cli/manual.md) | Uso estándar completo del CLI: comandos, opciones, matriz de agentes, versionado y garantías |
-| [IA local](notes/local-ai/manual.md) | Guía de IA local para tareas de baja demanda |
+| [IA local](notes/local-ai/manual.md) | Stub que redirige a los manuales de graphify y del cerebro |
 
 **Qué viaja al destino**: `openspec/` (creada con `openspec init` + contexto español inyectado), `.agents/skills/`, `.opencode/` (sin `node_modules`), `docs/` — con `backend-standards.md` y `frontend-standards.md` **compuestos según el stack detectado** en tu proyecto.
 
@@ -403,7 +403,7 @@ Para restaurar un archivo, copia su versión desde el backup fechado conservando
 En el proyecto destino, con tu agente (opencode):
 
 1. `graphify update .` — construye el grafo del código
-2. Invoca la skill `sdd-onboard-project`: comenta la estructura, te ofrece persistirla como regla en `openspec/config.yaml` (opt-in), **refina los estándares compuestos por el instalador** (resuelve placeholders pendientes como ORM o testing con la evidencia real del grafo) y te guía para configurar IA local (ver [notes/local-ai/manual.md](notes/local-ai/manual.md))
+2. Invoca la skill `sdd-onboard-project`: comenta la estructura, te ofrece persistirla como regla en `openspec/config.yaml` (opt-in), **refina los estándares compuestos por el instalador** (resuelve placeholders pendientes como ORM o testing con la evidencia real del grafo) y te guía para configurar la IA local y la navegación del conocimiento
 
 Cada escritura del onboarding requiere tu confirmación explícita.
 

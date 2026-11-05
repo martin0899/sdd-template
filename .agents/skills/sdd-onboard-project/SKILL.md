@@ -1,6 +1,6 @@
 ---
 name: sdd-onboard-project
-description: Onboarding SDD post-instalación para proyectos nuevos o existentes. Indaga el código con graphify, comenta la estructura, ofrece persistirla como regla, adapta docs/ al stack detectado y guía la configuración de IA local Ollama. Use when the user wants to onboard a project into the SDD workflow, analyze project structure with graphify, or adapt template documentation to the project stack.
+description: Onboarding SDD post-instalación para proyectos nuevos o existentes. Indaga el código con graphify, comenta la estructura, ofrece persistirla como regla, adapta docs/ al stack detectado y guía la IA local y la navegación del conocimiento. Use when the user wants to onboard a project into the SDD workflow, analyze project structure with graphify, or adapt template documentation to the project stack.
 author: SDD-template
 version: 1.0.0
 ---
@@ -94,13 +94,13 @@ Reglas de escritura para docs/:
 - Contenido de documentación en inglés (convención de los estándares del repo).
 - Nunca toques configuración del proyecto ni archivos de agentes.
 
-## Fase 4 — Guía de IA local (Ollama)
+## Fase 4 — IA local y navegación del conocimiento
 
-1. Resuelve la ruta de manuales (cerebro): `spectralis config --get resources_dir` o la cascada de detección (config → manifiesto → vault → `info/` en el proyecto). Lee la guía `notes/local-ai/manual.md` del repo plantilla y preséntala al usuario.
-2. Explica la recomendación: **modelos locales solo para tareas de baja demanda** (RAM limitada); las tareas pesadas siguen en la nube o el modelo principal.
-3. Pregunta: *"¿Qué modelo local de Ollama quieres usar para tareas sencillas? (p. ej. qwen2.5:3b, llama3.2:3b — o ninguno)"*
-4. **Si el usuario elige un modelo**: propón añadir al `context` de `openspec/config.yaml` una línea del tipo `Local AI (Ollama): <modelo> for low-demand tasks; use cloud for complex tasks.` y escríbela solo con confirmación (APPEND, preservando lo previo).
-5. **Si no quiere IA local**: no escribas nada; la guía queda en el cerebro para el futuro.
+1. Resuelve la ruta de manuales (cerebro): `spectralis config --get resources_dir` o la cascada de detección (config → manifiesto → vault → `info/` en el proyecto). Lee el stub `notes/local-ai/manual.md` del repo plantilla: redirige a los manuales del grafo de código (`graphify-out/`) y a los manuales del cerebro (`03_Recursos/02_Sistemas_info/`).
+2. Explica la navegación: el grafo responde preguntas sobre el proyecto (`graphify query`, `graphify path`, `graphify explain`) y los manuales del cerebro documentan el sistema de información; ambos son la fuente de verdad para la IA local del proyecto.
+3. Pregunta: *"¿Quieres que el proyecto registre su ruta de manuales del cerebro como regla en `openspec/config.yaml`?"*
+4. **Si el usuario acepta**: propón añadir al `context` de `openspec/config.yaml` una línea breve con la ruta de manuales detectada y escríbela solo con confirmación (APPEND, preservando lo previo).
+5. **Si no quiere registrarla**: no escribas nada; el stub y los manuales quedan disponibles para consulta.
 
 ## Cierre
 

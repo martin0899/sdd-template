@@ -26,6 +26,17 @@ Cuando el usuario escribe `/graphify`, usa primero la skill de graphify.
 - Lee `graphify-out/GRAPH_REPORT.md` solo para revisión de arquitectura amplia o cuando query/path/explain no den suficiente contexto.
 - Archivos sucios en `graphify-out/` tras hooks o actualizaciones incrementales son esperados: no son razón para saltar graphify. Solo sáltalo si la tarea trata de salida del grafo obsoleta o incorrecta.
 
+## Navegación del vault Obsidian
+
+Una consulta de graphify devuelve nodos del **código**; el vault es donde vive el contexto de negocio. Usa el grafo para localizar y el vault para entender:
+
+- **Notas del proyecto activo** — `01_Proyectos/<proyecto-activo>/_Notas/`: es el único lugar donde se buscan notas pendientes o propuestas. `_Notas/_lessons.md` registra las lecciones aprendidas (skill `lessons`).
+- **Índice del grafo** — `graphify-out/wiki/index.md`: punto de entrada para recorrer el grafo sin releer el código fuente.
+- **Contratos y ciclos** — `openspec/specs/` (requisitos vigentes) y `openspec/changes/<id>/` (artefactos del cambio activo).
+- **Manuales del cerebro** — `03_Recursos/02_Sistemas_info/`: manuales canónicos del arnés, sincronizados con `spectralis notes sync`.
+
+Flujo recomendado: `graphify query "<pregunta>"` → nodo relevante → nota del proyecto en `01_Proyectos/` → spec en `openspec/specs/` si el comportamiento está especificado.
+
 ## Mantenimiento
 
 - Tras modificar código, ejecuta `graphify update .` para mantener el grafo al día (solo AST, sin coste de API).

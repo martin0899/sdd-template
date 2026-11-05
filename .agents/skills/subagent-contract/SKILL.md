@@ -7,6 +7,8 @@ description: Contrato central de subagentes: define entradas, salidas y reglas p
 
 Lee y respeta este contrato cuando actúes como (o delegues en) un rol del ciclo. Los subagentes no publican por su cuenta: entregan su resultado al coordinador.
 
+Las reglas del ciclo viven en el contrato central (`.agents/skills/agent-rules-contract/SKILL.md`): este documento **remite** a ellas, no las redefine.
+
 ## Contrato de roles y compuerta de revisión
 
 ### Entradas y salidas por rol
@@ -22,7 +24,7 @@ Reutiliza y mejora los agentes existentes; **no crees agentes nuevos**. El únic
 
 ### Compuerta de gertrudis (solo lectura)
 
-gertrudis **reporta y NO modifica** código ni artefactos. Emite un veredicto cerrado: `APROBADO` | `CAMBIOS NECESARIOS` | `BLOQUEO DE ENTORNO`. Los hallazgos usan el formato `archivo:línea`, nombran el criterio incumplido y adjuntan evidencia reproducible. Nunca emitas `APROBADO` sin evidencia reproducible: si no hay evidencia, reporta la carencia.
+gertrudis **reporta y NO modifica** código ni artefactos — regla CYCLE-03 del contrato central (`.agents/skills/agent-rules-contract/SKILL.md`). Emite un veredicto cerrado: `APROBADO` | `CAMBIOS NECESARIOS` | `BLOQUEO DE ENTORNO`. Los hallazgos usan el formato `archivo:línea`, nombran el criterio incumplido y adjuntan evidencia reproducible. Nunca emitas `APROBADO` sin evidencia reproducible: si no hay evidencia, reporta la carencia.
 
 ### Revisión por riesgo
 
@@ -36,8 +38,13 @@ El coordinador **anuncia el modo efectivo en la primera línea** antes de enruta
 
 - **SDD**: `pending → spec_ready → ⏸ aprobación humana → in_progress → [implementador → gertrudis] → done`. **NUNCA** lances al implementador en `pending`: los artefactos deben completarse y validarse (`spec_ready`) y ser aprobados antes de implementar.
 - **ODD**: ciclo orgánico **sin OpenSpec**. Cambio pequeño: ruta directa al implementador (diff + checks mínimos, sin documentación formal). Cambio sustancial: `odd/changes/<id>/feature.md` como fuente de verdad (se crea antes del primer write y se registra cada commit como evidencia). Cierre ODD: propón al humano la migración propuesta y, si se confirma, despáchala al `documentador`.
-- Reglas duras: **NUNCA** invocar OpenSpec en ODD; **NUNCA**: no publicar al brain ni a `05_wiki/` sin despacho del coordinador; **un solo ejecutor activo** por cambio (no relances apply).
+- Reglas duras: **NUNCA** invocar OpenSpec en ODD; **NUNCA**: no publicar al brain ni a `05_wiki/` sin despacho del coordinador; **un solo ejecutor activo** por cambio (regla CYCLE-01 del contrato central: `.agents/skills/agent-rules-contract/SKILL.md`; no relances apply).
 
 ### Identificación de estado
 
 Antes de actuar, el coordinador identifica modo, ID del cambio, estado de artefactos/tareas y fase consultando la fachada de Spectralis; no crea plan ni checklist paralelos y reanuda desde la primera tarea pendiente.
+
+## Referencias
+
+- Contrato central de reglas del ciclo (SDD/ODD): `.agents/skills/agent-rules-contract/SKILL.md` (define CYCLE-01 a CYCLE-04 una sola vez; esta skill remite a él).
+- Validador de duplicación y contradicción: `spectralis check --rules` (`src/core/rules-contract.ts`).

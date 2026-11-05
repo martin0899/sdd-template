@@ -744,7 +744,7 @@ Extracts knowledge from completed specifications in `01_Proyectos/<project>/` an
 
 **Stack detection:** scans the real project code (via `--project-root` or `projects_base` convention) to populate the `stack` field in `_INDEX.json`.
 
-**Classification:** deterministic heuristics classify entries; ambiguous entries (no matching pattern) are discarded. No LLM is invoked — the former Ollama integration was removed.
+**Classification:** deterministic heuristics classify entries; ambiguous entries (no matching pattern) are discarded. No LLM is invoked — the former local-model integration was removed.
 
 **Output files:**
 
