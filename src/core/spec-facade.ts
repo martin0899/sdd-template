@@ -6,7 +6,7 @@ import {
   type EffectivePhilosophyResolution,
   type Philosophy
 } from './config';
-import { resolveChangesDir } from './resolve-changes-dir';
+import { resolveChangesDirs } from './resolve-changes-dir';
 
 /**
  * Spec facade: a single, mode-aware interface to initiate, query, validate,
@@ -109,13 +109,22 @@ function sddArgs(operation: FacadeOperation, changeId?: string): string[] {
   }
 }
 
-/** Essential SDD artifacts that apply must find before delegating. */
+/**
+ * Essential SDD artifacts that apply must find before delegating.
+ *
+ * Both layouts are inspected during the migration window (the resolved one
+ * and the legacy `openspec/changes/`, where the OpenSpec CLI writes): the
+ * facade must never stop an apply because the change lives in the layout it
+ * has not migrated yet.
+ */
 function missingSddEssentials(projectRoot: string, changeId?: string): string[] {
   if (!changeId) return ['changeId'];
-  const base = join(resolveChangesDir({ projectRoot }), changeId);
   const missing: string[] = [];
   for (const name of ['proposal.md', 'design.md', 'tasks.md']) {
-    if (!existsSync(join(base, name))) missing.push(name);
+    const found = resolveChangesDirs({ projectRoot }).some((changesDir) =>
+      existsSync(join(changesDir, changeId, name))
+    );
+    if (!found) missing.push(name);
   }
   return missing;
 }

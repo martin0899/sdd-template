@@ -29,6 +29,13 @@ const TASKS_MD = `# Tasks: change-a
 
 function makeProject(changes: Array<{ id: string; tasks?: string }>): string {
   const root = mkdtempSync(join(tmpdir(), 'spectralis-specnative-'));
+  // The CLI suite exercises the command wiring, not the layout: the legacy
+  // layout is pinned explicitly so the fixture does not depend on the default.
+  writeFileSync(
+    join(root, '.sdd-manifest.json'),
+    JSON.stringify({ schemaVersion: 3, spec_dir: 'openspec/changes' }, null, 2) + '\n',
+    'utf8'
+  );
   for (const change of changes) {
     const dir = join(root, 'openspec', 'changes', change.id);
     mkdirSync(dir, { recursive: true });

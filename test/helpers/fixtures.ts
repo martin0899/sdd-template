@@ -1,4 +1,4 @@
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { parseRegistry, type RegistryRow } from '../../src/core/vault-doctor';
@@ -25,8 +25,26 @@ export function cleanupFixtures(): void {
   created.length = 0;
 }
 
+/**
+ * Pins the legacy changes layout (`openspec/changes`) in the fixture.
+ *
+ * The native default of the harness is `spec/` since F2: the fixtures that
+ * exercise the legacy layout declare it explicitly, so the resolver keeps
+ * pointing at `openspec/changes` and every assertion stays meaningful.
+ */
+export function pinLegacyChangesLayout(root: string): void {
+  const manifestPath = join(root, '.sdd-manifest.json');
+  if (existsSync(manifestPath)) return;
+  writeFileSync(
+    manifestPath,
+    JSON.stringify({ schemaVersion: 3, spec_dir: 'openspec/changes' }, null, 2) + '\n',
+    'utf8'
+  );
+}
+
 /** Creates the repo layout: `openspec/changes/` (with archive) + `.sdd-registry/`. */
 export function writeRepo(root: string, changes: string[] = []): void {
+  pinLegacyChangesLayout(root);
   mkdirSync(join(root, 'openspec', 'changes', 'archive'), { recursive: true });
   mkdirSync(join(root, '.sdd-registry', 'briefings'), { recursive: true });
   for (const change of changes) {
@@ -36,11 +54,13 @@ export function writeRepo(root: string, changes: string[] = []): void {
 
 /** Creates a `YYYY-MM-DD-<name>` folder under `openspec/changes/archive/`. */
 export function writeArchivedChange(root: string, specId: string, date = '2026-09-29'): void {
+  pinLegacyChangesLayout(root);
   mkdirSync(join(root, 'openspec', 'changes', 'archive', `${date}-${specId}`), { recursive: true });
 }
 
 /** Writes `tasks.md` inside a change folder. */
 export function changeTasks(root: string, name: string, tasks: string): void {
+  pinLegacyChangesLayout(root);
   const dir = join(root, 'openspec', 'changes', name);
   mkdirSync(dir, { recursive: true });
   writeFileSync(join(dir, 'tasks.md'), tasks, 'utf8');
@@ -48,6 +68,7 @@ export function changeTasks(root: string, name: string, tasks: string): void {
 
 /** Writes `tasks.md` inside an archived change folder. */
 export function archivedChangeTasks(root: string, name: string, tasks: string): void {
+  pinLegacyChangesLayout(root);
   const dir = join(root, 'openspec', 'changes', 'archive', name);
   mkdirSync(dir, { recursive: true });
   writeFileSync(join(dir, 'tasks.md'), tasks, 'utf8');

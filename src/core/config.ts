@@ -24,7 +24,7 @@ export interface SpectralisConfig extends RouteConfig {
   current_project_root: string;
   /**
    * Directory that holds the SDD changes. Empty means "not configured": the
-   * resolver falls back to `<projectRoot>/openspec/changes`.
+   * resolver falls back to `<projectRoot>/spec`.
    */
   spec_dir?: string;
 }
@@ -309,10 +309,26 @@ export function resolveEffectivePhilosophy(projectRoot?: string): EffectivePhilo
 }
 
 export function detectProjectFromCwd(cwd: string): { project: string; root: string } | null {
-  if (existsSync(join(cwd, '.sdd-manifest.json')) || existsSync(join(cwd, 'openspec'))) {
+  // The markers are additive: `spec/` marks a spec-native project (F2), while
+  // `.sdd-manifest.json` and `openspec/` keep marking the legacy ones.
+  if (
+    existsSync(join(cwd, '.sdd-manifest.json')) ||
+    existsSync(join(cwd, 'openspec')) ||
+    existsSync(join(cwd, 'spec'))
+  ) {
     return { project: cwd.split('/').pop() ?? '', root: cwd };
   }
   return null;
+}
+
+/**
+ * Whether a directory holds a project of the harness.
+ *
+ * `openspec/` marks a legacy project and `spec/` a spec-native one (F2): both
+ * are accepted while the migration window is open.
+ */
+export function isProjectDir(dir: string): boolean {
+  return existsSync(join(dir, 'openspec')) || existsSync(join(dir, 'spec'));
 }
 
 export function resolveProjectRoot(

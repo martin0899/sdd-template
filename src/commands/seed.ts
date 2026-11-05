@@ -1,8 +1,8 @@
 import { existsSync, readdirSync, readFileSync, mkdirSync, writeFileSync, renameSync } from 'node:fs';
 import { join } from 'node:path';
-import { readGlobalConfig, detectProjectFromCwd, setCurrentProjectRoot } from '../core/config';
+import { readGlobalConfig, detectProjectFromCwd, setCurrentProjectRoot, isProjectDir } from '../core/config';
 import { indexContent } from '../core/wiki-structure';
-import { resolveChangesDir } from '../core/resolve-changes-dir';
+import { resolveChangesDirs } from '../core/resolve-changes-dir';
 
 export interface SeedProjectInfo {
   name: string;
@@ -43,16 +43,20 @@ export function discoverProjects(projectsBase: string): SeedProjectInfo[] {
     for (const entry of readdirSync(dir, { withFileTypes: true })) {
       if (!entry.isDirectory() || entry.name.startsWith('.')) continue;
       const projPath = join(dir, entry.name);
-      const openspecDir = join(projPath, 'openspec');
-      if (existsSync(openspecDir)) {
-        const changesDir = resolveChangesDir({ projectRoot: projPath });
-        let changes = 0;
-        if (existsSync(changesDir)) {
-          changes = readdirSync(changesDir, { withFileTypes: true })
-            .filter(d => d.isDirectory() && d.name !== 'archive')
-            .length;
+      if (isProjectDir(projPath)) {
+        // Both layouts are counted during the migration window (the resolved
+        // one and the legacy `openspec/changes/`): a project that has not
+        // migrated yet keeps reporting its changes. A change that lives in
+        // both layouts is counted once.
+        const counted = new Set<string>();
+        for (const changesDir of resolveChangesDirs({ projectRoot: projPath })) {
+          if (!existsSync(changesDir)) continue;
+          for (const entry of readdirSync(changesDir, { withFileTypes: true })) {
+            if (!entry.isDirectory() || entry.name === 'archive' || entry.name === '_archived') continue;
+            counted.add(entry.name);
+          }
         }
-        projects.push({ name: entry.name, path: projPath, changes, stack: readProjectStack(projPath) });
+        projects.push({ name: entry.name, path: projPath, changes: counted.size, stack: readProjectStack(projPath) });
       } else {
         walk(projPath, depth + 1);
       }

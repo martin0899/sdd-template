@@ -1,8 +1,7 @@
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
-import { join } from 'node:path';
-import { basename } from 'node:path';
+import { join, basename, relative } from 'node:path';
 import { VaultDoctorFinding } from './vault-doctor';
-import { resolveChangesDir } from './resolve-changes-dir';
+import { resolveChangesDirs } from './resolve-changes-dir';
 
 const TDD_MARKERS = /(\(tdd\)|tests? first|pruebas antes)/i;
 const IMPL_VERBS = /(implement|crear|create|add|build|wire|restyle|refactor|migrate|setup)/i;
@@ -47,7 +46,12 @@ function firstTddTestIndex(tasks: string[]): number {
   return tasks.findIndex((t) => TDD_MARKERS.test(t));
 }
 
-function checkTasksFile(tasksPath: string, changeName: string, project: string): VaultDoctorFinding[] {
+function checkTasksFile(
+  tasksPath: string,
+  changeName: string,
+  project: string,
+  artifact: string
+): VaultDoctorFinding[] {
   const findings: VaultDoctorFinding[] = [];
   const content = readFileSync(tasksPath, 'utf8');
   for (const section of parseSections(content)) {
@@ -59,7 +63,7 @@ function checkTasksFile(tasksPath: string, changeName: string, project: string):
       findings.push({
         severity: 'error',
         project,
-        artifact: `openspec/changes/${changeName}/tasks.md`,
+        artifact,
         suggestion: `Añade una tarea de tests con marcador TDD antes del primer task de implementación en la sección "${section.title}" (Step K)`
       });
     }
@@ -67,17 +71,30 @@ function checkTasksFile(tasksPath: string, changeName: string, project: string):
   return findings;
 }
 
+/**
+ * TDD ordering of every active change of a project.
+ *
+ * Both layouts are inspected during the migration window (the resolved one and
+ * the legacy `openspec/changes/`), so a project that has not migrated yet
+ * keeps its Step K validation.
+ */
 export function checkTddOrdering(projectRoot: string): VaultDoctorFinding[] {
   const findings: VaultDoctorFinding[] = [];
   const project = basename(projectRoot);
-  const changesDir = resolveChangesDir({ projectRoot });
-  if (!existsSync(changesDir)) return findings;
+  const seen = new Set<string>();
 
-  for (const entry of readdirSync(changesDir, { withFileTypes: true })) {
-    if (!entry.isDirectory() || entry.name === 'archive') continue;
-    const tasksPath = join(changesDir, entry.name, 'tasks.md');
-    if (!existsSync(tasksPath)) continue;
-    findings.push(...checkTasksFile(tasksPath, entry.name, project));
+  for (const changesDir of resolveChangesDirs({ projectRoot })) {
+    if (!existsSync(changesDir)) continue;
+    for (const entry of readdirSync(changesDir, { withFileTypes: true })) {
+      if (!entry.isDirectory() || entry.name === 'archive' || entry.name === '_archived') continue;
+      if (seen.has(entry.name)) continue;
+      seen.add(entry.name);
+      const tasksPath = join(changesDir, entry.name, 'tasks.md');
+      if (!existsSync(tasksPath)) continue;
+      const rel = relative(projectRoot, tasksPath);
+      const artifact = rel.startsWith('..') ? `openspec/changes/${entry.name}/tasks.md` : rel;
+      findings.push(...checkTasksFile(tasksPath, entry.name, project, artifact));
+    }
   }
   return findings;
 }

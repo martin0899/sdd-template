@@ -30,7 +30,7 @@ const TASKS_MD = `# Tasks: spec-native-f1
 
 function makeProject(tasksMd = TASKS_MD, change = 'spec-native-f1'): { root: string; tasksPath: string } {
   const root = scratch();
-  const dir = join(root, 'openspec', 'changes', change);
+  const dir = join(root, 'spec', change);
   mkdirSync(dir, { recursive: true });
   const tasksPath = join(dir, 'tasks.md');
   writeFileSync(tasksPath, tasksMd, 'utf8');
@@ -192,7 +192,7 @@ test('task fails with exit code 1 when the status is not supported', async () =>
 
 test('task fails with exit code 2 when the task exists neither in the registry nor in tasks.md', async () => {
   const root = scratch();
-  mkdirSync(join(root, 'openspec', 'changes', 'empty-change'), { recursive: true });
+  mkdirSync(join(root, 'spec', 'empty-change'), { recursive: true });
   const { code } = await capture(() =>
     runTask({ change: 'empty-change', taskId: '1.1', done: true, projectRoot: root })
   );

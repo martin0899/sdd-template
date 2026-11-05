@@ -174,12 +174,20 @@ spectralis check --tdd      # Solo validación del orden TDD (Step K) en tasks.m
 spectralis view                      # Lista los changes activos con % y estado (solo lectura)
 spectralis view spec-native-f1       # Detalle de un change: estado y tareas
 spectralis task spec-native-f1 1.1 --done   # Marca la tarea 1.1 como completada
+spectralis spec create mi-cambio --nombre "Mi cambio"   # Crea spec/mi-cambio/ con los seeds y su change.json
+spectralis spec migrate              # Migra los changes de openspec/changes/ al layout nativo spec/
+spectralis spec migrate --dry-run    # Muestra el plan de migración sin escribir nada
+spectralis spec archive mi-cambio    # Archiva el change en spec/_archived/ y publica el resumen en la wiki
 ```
 
 - `spectralis view` **no escribe nada**: ni el registro, ni `tasks.md`, ni la carpeta `spec/`.
 - `spectralis task` actualiza el registro `spec/progress.json` (fuente de verdad, con escritura atómica) y refresca el checkbox de `tasks.md` (espejo): `done` → `[x]`, el resto → `[ ]`.
 - Códigos de salida de `task`: `0` ok, `2` change o task inexistente, `3` prefijo de task-id ambiguo.
-- El directorio de changes se resuelve con `resolveChangesDir`: valor explícito > `spec_dir` del manifiesto > `spec_dir` de la config global > `openspec/changes` (el default no cambia en esta fase). Se puede fijar con `spectralis config --set spec_dir=<ruta>`.
+- El directorio de changes se resuelve con `resolveChangesDir`: valor explícito > `spec_dir` del manifiesto > `spec_dir` de la config global > **`spec/`** (layout nativo). Se puede fijar con `spectralis config --set spec_dir=<ruta>`; los proyectos que conserven el layout antiguo fijan `spec_dir=openspec/changes` o migran con `spectralis spec migrate`.
+- `spectralis spec create` crea el change con los seeds mínimos (`proposal.md`, `tasks.md`, `design.md`), su `change.json` (`{ id, nombre, fecha, estado, resumen: { abstracto }, enlaces: [] }`) y su entrada en `spec/progress.json`. No sobrescribe un change existente (`2`) y rechaza los ids que no sean kebab-case (`1`).
+- `spectralis spec migrate` es idempotente y atómico por change: si un change falla, los anteriores quedan migrados y el error lo nombra. Los changes ya archivados en `openspec/changes/archive/` se reportan como *ya cerrados* y no se mueven.
+- `spectralis spec archive` exige que las tareas estén completadas (`2` listando las pendientes; `--force` las fuerza con aviso), valida el change-id (`2` si no es kebab-case o intenta escapar de su carpeta), escribe el REGISTRY **antes** de mover (un fallo del REGISTRY aborta sin mover nada), mueve el change a `spec/_archived/`, elimina su entrada de `spec/progress.json` y escribe el resumen del change en la wiki del vault (`05_wiki/Spectralis/<id>.md`). Un resumen que ya existe no se sobrescribe: avisa, muestra su ruta y el archive local continúa (`--force` lo sobrescribe). Si el vault no está disponible, avisa y archiva igualmente.
+- Detalle completo: [`docs/spec-native.md`](docs/spec-native.md).
 
 ### Manuales en el cerebro (segundo cerebro)
 

@@ -3,7 +3,7 @@ import { join, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { checkPrereqs, realProbe, installHint } from '../core/prereqs';
 import { detectStack, StackInfo } from '../core/detect-stack';
-import { injectSpanishContext } from '../core/spanish-context';
+import { injectSpanishContextInProject } from '../core/spanish-context';
 import { manageAgentsMd } from '../core/agents-md';
 import { manageGitignore } from '../core/gitignore';
 import {
@@ -184,13 +184,15 @@ export async function runInit(opts: InitOptions = {}): Promise<number> {
   }
 
   // 4. Spanish context injection (APPEND semantics).
-  const configFile = join(target, 'openspec/config.yaml');
-  if (existsSync(configFile)) {
-    writeFileSync(configFile, injectSpanishContext(readFileSync(configFile, 'utf8')));
-    console.log(`  ${pal.green('✔')} Spanish context ..... injected`);
-  } else {
-    console.error('[ERROR] openspec/config.yaml not found; cannot inject context.');
+  // Dual-read: a spec-native project (it has `spec/`) gets the block in its
+  // own config; a legacy one keeps it in `openspec/config.yaml`.
+  const contextFiles = injectSpanishContextInProject(target);
+  if (contextFiles.length === 0) {
+    console.error('[ERROR] no config.yaml found (spec/ or openspec/); cannot inject context.');
     return 1;
+  }
+  for (const file of contextFiles) {
+    console.log(`  ${pal.green('✔')} Spanish context ..... injected (${file})`);
   }
 
   // 5. Managed blocks: AGENTS.md and .gitignore (idempotent).

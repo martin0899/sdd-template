@@ -30,7 +30,7 @@ const TASKS_MD = `# Tasks: change-a
 function makeProject(changes: Array<{ id: string; tasks?: string }>): string {
   const root = scratch();
   for (const change of changes) {
-    const dir = join(root, 'openspec', 'changes', change.id);
+    const dir = join(root, 'spec', change.id);
     mkdirSync(dir, { recursive: true });
     if (change.tasks !== undefined) {
       writeFileSync(join(dir, 'tasks.md'), change.tasks, 'utf8');
@@ -131,13 +131,24 @@ test('view fails with exit code 2 when the change does not exist', async () => {
   assert.match(err, /ghost/);
 });
 
+test('view does not list the folder of the archived changes', async () => {
+  const root = makeProject([{ id: 'change-a', tasks: TASKS_MD }]);
+  mkdirSync(join(root, 'spec', '_archived'), { recursive: true });
+  mkdirSync(join(root, 'spec', '_archived', 'change-b'), { recursive: true });
+  const { code, out } = await capture(() => runView({ projectRoot: root }));
+  assert.equal(code, 0);
+  assert.match(out, /change-a/);
+  assert.doesNotMatch(out, /change-b/);
+  assert.doesNotMatch(out, /_archived/);
+});
+
 test('view never writes anything', async () => {
   const root = makeProject([{ id: 'change-a', tasks: TASKS_MD }]);
-  const tasksPath = join(root, 'openspec', 'changes', 'change-a', 'tasks.md');
+  const tasksPath = join(root, 'spec', 'change-a', 'tasks.md');
   const before = readFileSync(tasksPath, 'utf8');
   await capture(() => runView({ projectRoot: root }));
   await capture(() => runView({ change: 'change-a', projectRoot: root }));
   assert.equal(readFileSync(tasksPath, 'utf8'), before, 'tasks.md must stay untouched');
-  assert.equal(existsSync(join(root, 'spec')), false, 'the registry directory must not be created');
-  assert.deepEqual(readdirSync(root).sort(), ['openspec']);
+  assert.equal(existsSync(join(root, 'spec', 'progress.json')), false, 'the registry file must not be created');
+  assert.deepEqual(readdirSync(root).sort(), ['spec']);
 });

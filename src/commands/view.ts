@@ -20,7 +20,7 @@ export const NO_REGISTRY = 'sin registro';
 function listChanges(changesDir: string): string[] {
   if (!existsSync(changesDir)) return [];
   return readdirSync(changesDir, { withFileTypes: true })
-    .filter((entry) => entry.isDirectory() && entry.name !== 'archive')
+    .filter((entry) => entry.isDirectory() && entry.name !== 'archive' && entry.name !== '_archived')
     .map((entry) => entry.name)
     .sort();
 }

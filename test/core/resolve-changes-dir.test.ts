@@ -22,11 +22,43 @@ function writeManifest(root: string, data: Record<string, unknown>): void {
   writeFileSync(join(root, '.sdd-manifest.json'), JSON.stringify(data, null, 2) + '\n', 'utf8');
 }
 
-test('resolveChangesDir returns <projectRoot>/openspec/changes when nothing is configured', () => {
+test('resolveChangesDir returns <projectRoot>/spec when nothing is configured', () => {
   const root = scratch();
   assert.equal(
     resolveChangesDir({ projectRoot: root, config: {} }),
+    join(root, 'spec')
+  );
+});
+
+test('resolveChangesDir keeps the legacy layout when the config declares spec_dir', () => {
+  const root = scratch();
+  assert.equal(
+    resolveChangesDir({ projectRoot: root, config: { spec_dir: 'openspec/changes' } }),
     join(root, 'openspec', 'changes')
+  );
+});
+
+test('resolveChangesDir cascade: option wins over manifest, manifest over config, config over default', () => {
+  const root = scratch();
+  writeManifest(root, { schemaVersion: 3, spec_dir: 'manifest-changes' });
+  assert.equal(
+    resolveChangesDir({
+      projectRoot: root,
+      specDir: 'option-changes',
+      config: { spec_dir: 'config-changes' }
+    }),
+    join(root, 'option-changes'),
+    'the option must win over every configuration source'
+  );
+  assert.equal(
+    resolveChangesDir({ projectRoot: root, config: { spec_dir: 'config-changes' } }),
+    join(root, 'manifest-changes'),
+    'the manifest must win over the config'
+  );
+  assert.equal(
+    resolveChangesDir({ projectRoot: root, config: {} }),
+    join(root, 'manifest-changes'),
+    'the manifest must win over the default'
   );
 });
 
@@ -102,6 +134,6 @@ test('resolveChangesDir ignores an unreadable manifest and falls back to the def
   writeFileSync(join(root, '.sdd-manifest.json'), '{ not json', 'utf8');
   assert.equal(
     resolveChangesDir({ projectRoot: root, config: {} }),
-    join(root, 'openspec', 'changes')
+    join(root, 'spec')
   );
 });

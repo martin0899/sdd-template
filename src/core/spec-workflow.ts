@@ -128,3 +128,28 @@ export function registerSpec(projectRoot: string, specId: string, project: strin
     writeFileSync(registryPath, content, 'utf8');
   }
 }
+
+/**
+ * Marks the row of a change as completed in REGISTRY.md.
+ *
+ * `registerSpec` only appends the row when it is missing; this updates the
+ * state of a row that already exists (the state is the last cell).
+ */
+export function completeRegistryRow(projectRoot: string, specId: string): boolean {
+  const registryPath = join(projectRoot, '.sdd-registry', 'REGISTRY.md');
+  if (!existsSync(registryPath)) return false;
+  const content = readFileSync(registryPath, 'utf8');
+  let updated = false;
+  const lines = content.split('\n').map((line) => {
+    if (!line.trim().startsWith('|')) return line;
+    const cells = line.split('|').map((cell) => cell.trim());
+    if (cells.length < 6) return line;
+    const changes = cells[4].split(',').map((cell) => cell.trim());
+    if (!changes.includes(specId)) return line;
+    cells[cells.length - 2] = 'completada';
+    updated = true;
+    return `| ${cells.slice(1, cells.length - 1).join(' | ')} |`;
+  });
+  if (updated) writeFileSync(registryPath, lines.join('\n'), 'utf8');
+  return updated;
+}

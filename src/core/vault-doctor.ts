@@ -1,8 +1,8 @@
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
-import { join, basename } from 'node:path';
+import { join, basename, relative } from 'node:path';
 import { decisionesPath, extractSpecIds } from './wiki-structure';
 import { hasSpecArtifact } from './spec-artifact';
-import { resolveChangesDir } from './resolve-changes-dir';
+import { resolveChangesDirs } from './resolve-changes-dir';
 
 export type Severity = 'error' | 'warning';
 
@@ -72,12 +72,37 @@ export function readRegistry(projectRoot: string): RegistryRow[] {
   return parseRegistry(readFileSync(path, 'utf8'));
 }
 
+export interface ActiveChange {
+  id: string;
+  /** Absolute path of the folder that holds the change. */
+  dir: string;
+}
+
+/**
+ * Active changes of a project and the folder that holds each one.
+ *
+ * Both layouts are inspected during the migration window: the resolved one
+ * (`spec/` by default) and the legacy one (`openspec/changes/`), so a project
+ * that has not migrated yet keeps its registry checks.
+ */
+export function listActiveChangeEntries(projectRoot: string): ActiveChange[] {
+  const entries: ActiveChange[] = [];
+  const seen = new Set<string>();
+  for (const changesDir of resolveChangesDirs({ projectRoot })) {
+    if (!existsSync(changesDir)) continue;
+    for (const entry of readdirSync(changesDir, { withFileTypes: true })) {
+      if (!entry.isDirectory()) continue;
+      if (entry.name === 'archive' || entry.name === '_archived') continue;
+      if (seen.has(entry.name)) continue;
+      seen.add(entry.name);
+      entries.push({ id: entry.name, dir: join(changesDir, entry.name) });
+    }
+  }
+  return entries;
+}
+
 export function listActiveChanges(projectRoot: string): string[] {
-  const changesDir = resolveChangesDir({ projectRoot });
-  if (!existsSync(changesDir)) return [];
-  return readdirSync(changesDir, { withFileTypes: true })
-    .filter((d) => d.isDirectory() && d.name !== 'archive')
-    .map((d) => d.name);
+  return listActiveChangeEntries(projectRoot).map((entry) => entry.id);
 }
 
 /**
@@ -90,8 +115,9 @@ export function listActiveChanges(projectRoot: string): string[] {
  */
 function listKnownChanges(projectRoot: string): Set<string> {
   const known = new Set<string>(listActiveChanges(projectRoot));
-  const archiveDir = join(resolveChangesDir({ projectRoot }), 'archive');
-  if (existsSync(archiveDir)) {
+  for (const changesDir of resolveChangesDirs({ projectRoot })) {
+    const archiveDir = join(changesDir, 'archive');
+    if (!existsSync(archiveDir)) continue;
     for (const d of readdirSync(archiveDir, { withFileTypes: true })) {
       if (!d.isDirectory()) continue;
       known.add(d.name);
@@ -149,6 +175,12 @@ export function resolveBrainProject(projectRoot: string, vaultRoot: string, rows
   return null;
 }
 
+/** Path of a change relative to the project root (used to report artifacts). */
+function relativeToProject(projectRoot: string, target: string): string {
+  const rel = relative(projectRoot, target);
+  return rel.startsWith('..') ? target : rel;
+}
+
 export function checkChangesWithoutRegistry(
   projectRoot: string,
   vaultRoot: string,
@@ -158,13 +190,13 @@ export function checkChangesWithoutRegistry(
   const registered = collectChangeRefs(rows);
   const brainProject = resolveBrainProject(projectRoot, vaultRoot, rows);
   const brainSpecs = brainProject ? listBrainSpecs(vaultRoot, brainProject) : [];
-  for (const id of listActiveChanges(projectRoot)) {
-    if (!registered.has(id)) {
+  for (const change of listActiveChangeEntries(projectRoot)) {
+    if (!registered.has(change.id)) {
       findings.push({
         severity: 'error',
         project: basename(projectRoot),
-        artifact: `openspec/changes/${id}`,
-        suggestion: `Registra el change ${id} en .sdd-registry/REGISTRY.md`
+        artifact: relativeToProject(projectRoot, change.dir),
+        suggestion: `Registra el change ${change.id} en .sdd-registry/REGISTRY.md`
       });
     }
   }
@@ -301,11 +333,11 @@ export function checkIndexMisaligned(
   }
   if (brainProject) {
     const updatedMs = Date.parse(entry.updated ?? '');
-    const changesDir = resolveChangesDir({ projectRoot });
     let newest = 0;
-    if (existsSync(changesDir)) {
+    for (const changesDir of resolveChangesDirs({ projectRoot })) {
+      if (!existsSync(changesDir)) continue;
       for (const d of readdirSync(changesDir, { withFileTypes: true })) {
-        if (d.isDirectory() && d.name !== 'archive') {
+        if (d.isDirectory() && d.name !== 'archive' && d.name !== '_archived') {
           newest = Math.max(newest, statSync(join(changesDir, d.name)).mtimeMs);
         }
       }

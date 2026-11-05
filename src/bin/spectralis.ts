@@ -24,7 +24,7 @@ import { runStatus } from '../commands/status';
 import { runConfig } from '../commands/config';
 import { runDistill } from '../commands/distill';
 import { runSkills } from '../commands/skills';
-import { runSpecInit, runSpecComplete } from '../commands/spec';
+import { runSpecCommand } from '../commands/spec';
 import { runProjects } from '../commands/projects';
 import { runSeed } from '../commands/seed';
 import { runNotesInit, runNotesSync } from '../commands/notes';
@@ -212,27 +212,24 @@ program
   );
 
 program
-  .command('spec <action> <project> <specId>')
-  .description('Spec workflow: init creates folder structure, complete validates and distills')
+  .command('spec <action> [project] [specId]')
+  .description('Spec workflow: init/complete for vault specs, create/migrate/archive for repo changes')
   .option('-v, --vault-root <path>', 'vault root path (default: from config)')
   .option('-p, --project-root <path>', 'project root for REGISTRY.md (default: from config)')
+  .option('-n, --nombre <text>', 'human readable name of the change (spec create)')
+  .option('--force', 'archive even when tasks are pending and overwrite an existing brain summary (spec archive)')
+  .option('-d, --dry-run', 'show the migration plan without writing anything (spec migrate)')
+  .option('--wiki-project <name>', 'wiki folder of the brain summary (spec archive)')
   .action(
     async (
       action: string,
-      project: string,
-      specId: string,
-      opts: { vaultRoot?: string; projectRoot?: string }
+      project: string | undefined,
+      specId: string | undefined,
+      opts: { vaultRoot?: string; projectRoot?: string; nombre?: string; force?: boolean; dryRun?: boolean; wikiProject?: string }
     ) => {
-      if (action === 'init') {
-        const code = await runSpecInit({ project, specId, vaultRoot: opts.vaultRoot, projectRoot: opts.projectRoot });
-        process.exitCode = code;
-      } else if (action === 'complete') {
-        const code = await runSpecComplete({ project, specId, vaultRoot: opts.vaultRoot, projectRoot: opts.projectRoot });
-        process.exitCode = code;
-      } else {
-        console.error(`[ERROR] Unknown action: ${action}. Use "init" or "complete".`);
-        process.exitCode = 1;
-      }
+      const positionals = [project, specId].filter((value): value is string => typeof value === 'string');
+      const code = await runSpecCommand(action, positionals, opts);
+      process.exitCode = code;
     }
   );
 

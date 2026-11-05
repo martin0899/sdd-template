@@ -21,6 +21,24 @@ test('discoverProjects finds dirs with openspec/', () => {
   assert.equal(projects.length, 2);
 });
 
+test('discoverProjects counts the changes of both layouts during the migration window', () => {
+  const base = scratch();
+  mkdirSync(join(base, 'proj-a', 'spec', 'change-b'), { recursive: true });
+  mkdirSync(join(base, 'proj-a', 'openspec', 'changes', 'change-a'), { recursive: true });
+  const projects = discoverProjects(base);
+  assert.equal(projects.length, 1);
+  assert.equal(projects[0].changes, 2, 'the legacy and the native changes are both counted');
+});
+
+test('discoverProjects counts a change that lives in both layouts only once', () => {
+  const base = scratch();
+  mkdirSync(join(base, 'proj-a', 'spec', 'change-a'), { recursive: true });
+  mkdirSync(join(base, 'proj-a', 'openspec', 'changes', 'change-a'), { recursive: true });
+  const projects = discoverProjects(base);
+  assert.equal(projects.length, 1);
+  assert.equal(projects[0].changes, 1, 'a change present in both layouts counts once');
+});
+
 test('seedProject creates wiki structure (4 aggregates, no obsolete subfolders)', () => {
   const vault = scratch();
   const proj = { name: 'test-proj', path: '/tmp/test-proj', changes: 0, stack: [] };
