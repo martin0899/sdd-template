@@ -112,16 +112,18 @@ This requirement applies to:
 
 ## 8. Mandatory OpenSpec Artifact Updates for Post-Apply Changes
 
-When a new fix/change request appears after `opsx:apply` (or `/apply`) and before `opsx:archive` (or `/archive`), agents must treat it as a spec update first, not as an informal "fix this quickly". It's the core principle of openspec, documentation is the source of truth.
+When a new fix/change request appears after an apply and before an archive, agents must treat it as a spec update first, not as an informal "fix this quickly". It's the core principle of the SDD cycle: documentation is the source of truth.
+
+The change artifacts live under the **resolved changes directory** (`spec/` by default; overridable with `spec_dir` in the project manifest or in the global config). This section does not depend on which layout a project uses.
 
 Required order:
 
-1. Update the current OpenSpec change artifacts that are affected (for example: scenarios, requirements/specs, and `tasks.md`). Don't add tasks as "bugfixes" but as part of the initial design, thus in the proper section
-2. If artifact regeneration is needed, run the corresponding OpenSpec step (`opsx:continue`, `opsx:ff`, or equivalent) before coding.
+1. Update the change artifacts that are affected (for example: scenarios, requirements/specs, and `tasks.md`) under the resolved changes dir. Don't add tasks as "bugfixes" but as part of the initial design, thus in the proper section
+2. If artifact regeneration is needed, run the corresponding step of the active engine before coding (native: `spectralis spec validate <change-id>` and `spectralis spec status <change-id>`; with `engine: openspec`, its own continue/ff commands)
 3. Implement code only after artifacts reflect the new request.
 4. Re-run verification against the updated artifacts before archiving.
 
-Do not apply direct code-only fixes in this window without updating OpenSpec artifacts.
+Do not apply direct code-only fixes in this window without updating the change artifacts.
 
 ## 9. No Yapping
 

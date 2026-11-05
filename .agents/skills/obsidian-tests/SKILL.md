@@ -1,13 +1,13 @@
 ---
 name: obsidian-tests
-description: Generate test files and documentation in Obsidian after completing an OpenSpec specification. Creates regression test documentation for continuous validation. Use when tests are created during specification or when the user asks for test documentation.
+description: Review and complete the live folder-note details in Obsidian after a change is finished. In the native flow the regression documentation is written in the single folder note (no separate files). Use when tests are created during a change or when the user asks for test documentation.
 ---
 
 # Obsidian Tests
 
-> **Orquestada**: cuando `obsidianSync=1` (o `--obsidian`), esta skill se invoca automáticamente desde `obsidian-orchestration` al archivar un change (`/opsx-archive`). Con el switch en `0`, se usa solo por invocación explícita.
+> **Orquestada**: cuando `obsidianSync=1` (o `--obsidian`), esta skill se invoca automáticamente desde `obsidian-orchestration` al archivar un change. Con el switch en `0`, se usa solo por invocación explícita.
 
-Genera archivos de test y documentación en Obsidian después de completar una especificación OpenSpec. Crea documentación de pruebas de regresión para validación continua.
+Revisa y completa los detalles del **folder note vivo** en Obsidian después de cerrar un change: deja la documentación de pruebas de regresión **dentro** del folder note único (`## Tests de regresión`), sin generar archivos de prueba aparte. En el flujo **nativo** el resumen portátil del wiki lo escribe directamente el archive (`spectralis spec archive`); con `engine: openspec` su comportamiento es el legacy: documentar los tests a partir de los artefactos del change.
 
 ## Rutas y Configuración
 
@@ -30,20 +30,22 @@ Genera archivos de test y documentación en Obsidian después de completar una e
 
 ## When to Use
 
-- After creating tests during specification
+- After creating tests during a change
 - When the user asks for test documentation
 - When documenting regression tests for continuous validation
-- Before archiving an OpenSpec change with tests
+- Before archiving a change with tests
 
 ## Workflow
 
 ### Step 1: Gather Test Context
 
-Read the OpenSpec change artifacts to understand what was tested:
+Read the change artifacts to understand what was tested:
 
 ```bash
-openspec status --change "<change-name>" --json
+spectralis spec status <change-id>
 ```
+
+In the native flow the archive has already written the portable summary in the brain (`05_wiki/<wiki-project>/<change-id>.md`): read it as the source of truth and complete the folder note with what is missing. With `engine: openspec`, the context comes from the external CLI's own status command.
 
 Extract:
 - What functionality was implemented
@@ -97,11 +99,13 @@ Document how to run the tests:
 ### Step 6: Confirm Creation
 
 Show the user:
-- File created
+- Folder note updated (no separate file created)
 - Tests documented
 - Commands added
 
 ## Test Documentation Template
+
+> Plantilla de referencia (`{templates_dir}/Tests de Regresion.md`). En el flujo actual la información vive en la sección canónica `## Tests de regresión` del folder note único; este esquema documenta qué datos cubrir, no un fichero aparte.
 
 ```markdown
 ---
@@ -187,7 +191,7 @@ describe('<integration-name>', () => {
 
 - **Requerimiento**: <requirement-link>
 - **Resumen**: <summary-link>
-- **OpenSpec**: <openspec-link>
+- **Change**: <change-link> (`spec/<change-name>` en nativo)
 ```
 
 ## Integration with Other Skills
@@ -198,9 +202,9 @@ When `spec-from-note` creates tests, this skill documents them in Obsidian.
 
 ### With obsidian-summary
 
-Generate test documentation alongside the summary for complete documentation.
+Complete the test documentation alongside the summary for complete documentation.
 
-### Before openspec-archive
+### Before the archive
 
 Before archiving a change, document the tests for future reference.
 
@@ -214,7 +218,7 @@ Before archiving a change, document the tests for future reference.
 
 ## Common Scenarios
 
-### Scenario: Tests created during specification
+### Scenario: Tests created during a change
 
 1. User creates tests as part of implementation
 2. Skill documents tests in Obsidian
@@ -224,18 +228,18 @@ Before archiving a change, document the tests for future reference.
 
 1. User says "documenta los tests que hicimos"
 2. Skill finds test files in repository
-3. Generates test documentation in Obsidian
+3. Completes the `## Tests de regresión` section of the folder note
 4. Shows confirmation
 
 ### Scenario: Before archiving
 
 1. User says "vamos a archivar este cambio"
-2. Skill documents tests first
-3. Then proceeds with archive workflow
+2. Skill documents the tests first
+3. Then proceeds with the archive workflow
 
 ## Notes
 
-- This skill documents tests in Obsidian, not in the repository
-- Test files stay in the repository; the documentation is a reference
+- This skill updates documentation in Obsidian, not in the repository
+- Test files stay in the repository; the folder note is a reference
 - Use this skill to maintain test knowledge across machines
 - Tests documented here can be used for regression testing in future iterations

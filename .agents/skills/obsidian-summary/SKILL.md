@@ -1,13 +1,13 @@
 ---
 name: obsidian-summary
-description: Generate summary document in Obsidian after completing an OpenSpec specification. Creates a portable wiki-style summary for cross-machine reference. Use when a specification is completed, tasks are done, or when the user asks for a summary of completed work.
+description: Review and complete the live folder-note details in Obsidian after a change is finished. In the native flow the portable wiki summary is written by the native archive; this skill completes what is missing in the single folder note (no separate files). Use when a change is completed, tasks are done, or when the user asks for a summary of completed work.
 ---
 
 # Obsidian Summary
 
-> **Orquestada**: cuando `obsidianSync=1` (o `--obsidian`), esta skill se invoca automáticamente desde `obsidian-orchestration` al archivar un change (`/opsx-archive`). Con el switch en `0`, se usa solo por invocación explícita.
+> **Orquestada**: cuando `obsidianSync=1` (o `--obsidian`), esta skill se invoca automáticamente desde `obsidian-orchestration` al archivar un change. Con el switch en `0`, se usa solo por invocación explícita.
 
-Genera un documento resumen en Obsidian después de completar una especificación OpenSpec. Crea un wiki portátil para referencia entre máquinas.
+Revisa y completa los detalles del **folder note vivo** en Obsidian después de cerrar un change. En el flujo **nativo** el resumen portátil del wiki lo escribe directamente el archive (`spectralis spec archive`), así que esta skill ya **no genera documentos aparte**: consolida en el folder note único (`## Cambios realizados`, `## Lecciones aprendidas`) lo que el archive no puede dejar escrito allí. Con `engine: openspec` su comportamiento es el legacy: generar el resumen a partir de los artefactos del change.
 
 ## Rutas y Configuración
 
@@ -30,20 +30,22 @@ Genera un documento resumen en Obsidian después de completar una especificació
 
 ## When to Use
 
-- After completing an OpenSpec specification (all tasks done)
+- After completing a change (all tasks done)
 - When the user asks for a summary of completed work
-- Before archiving an OpenSpec change
+- Before archiving a change
 - When documenting what was accomplished for cross-machine reference
 
 ## Workflow
 
 ### Step 1: Gather Context
 
-Read the OpenSpec change artifacts to understand what was done:
+Read the change artifacts to understand what was done:
 
 ```bash
-openspec status --change "<change-name>" --json
+spectralis spec status <change-id>
 ```
+
+In the native flow the archive has already written the portable summary in the brain (`05_wiki/<wiki-project>/<change-id>.md`): read it as the source of truth and complete the folder note with what is missing. With `engine: openspec`, the context comes from the external CLI's own status command.
 
 Extract:
 - Change name and description
@@ -54,12 +56,13 @@ Extract:
 
 ### Step 2: Read Change Artifacts
 
-Read the following files from the change directory:
+Read the following files from the change directory (native: `spec/<change-id>/`, or `spec/_archived/<change-id>/` once archived; `engine: openspec`: `openspec/changes/<change-name>/`):
 
 1. `proposal.md` - What was proposed
 2. `design.md` - How it was designed
 3. `tasks.md` - What was implemented
 4. `specs/*/spec.md` - Specifications
+5. `change.json` (native only) - Metadata: `nombre` and `resumen.abstracto`
 
 ### Step 3: Generate Summary
 
@@ -97,11 +100,13 @@ Add wikilinks to related notes:
 ### Step 6: Confirm Creation
 
 Show the user:
-- File created
+- Folder note updated (no separate file created)
 - Key sections filled
 - Links added
 
 ## Summary Template Structure
+
+> Plantilla de referencia (`{templates_dir}/Resumen de Especificacion.md`). En el flujo actual la información vive en las secciones canónicas del folder note único; este esquema documenta qué datos cubrir, no un fichero aparte.
 
 ```markdown
 ---
@@ -146,7 +151,7 @@ tags:
 - <pending-item>
 
 ## 6. Enlaces
-- **OpenSpec**: `openspec/changes/<change-name>`
+- **Change**: `spec/<change-name>` (nativo) · `openspec/changes/<change-name>` (`engine: openspec`)
 - **Briefing**: `.sdd-registry/briefings/<req-id>.md`
 - **Requerimiento Original**: <requirement-link>
 ```
@@ -155,49 +160,49 @@ tags:
 
 ### After spec-from-note
 
-When `spec-from-note` completes and OpenSpec changes are created, this skill can generate the summary automatically.
+When `spec-from-note` completes and the changes are created, this skill can complete the summary automatically.
 
-### Before openspec-archive
+### Before the archive
 
-Before archiving a change, generate the summary to preserve the work in Obsidian.
+Before archiving a change, complete the summary to preserve the work in Obsidian.
 
 ### With obsidian-tests
 
-Generate tests alongside the summary for complete documentation.
+Complete the tests section alongside the summary for complete documentation.
 
 ## Enforcement Rules
 
 1. **Always use template** - Use the template from `09_Plantilla/Resumen de Especificacion.md`
 2. **Context max 500 chars** - Keep the context section concise
-3. **Link to source** - Always link back to the OpenSpec change and requirement
-4. **Portable format** - Ensure the document is readable without OpenSpec context
+3. **Link to source** - Always link back to the change (native: `spec/<id>/`; `engine: openspec`: `openspec/changes/<id>/`) and the requirement
+4. **Portable format** - Ensure the document is readable without the spec context
 5. **Spanish content** - Write the summary in Spanish for the user
 
 ## Common Scenarios
 
-### Scenario: Specification completed
+### Scenario: Change completed
 
 1. User says "la especificación está completa"
-2. Skill reads OpenSpec change artifacts
-3. Generates summary in Obsidian
+2. Skill reads the change artifacts (native: the archived change and the brain summary)
+3. Completes the folder note sections in Obsidian
 4. Shows confirmation
 
 ### Scenario: User asks for summary
 
 1. User says "genera un resumen de lo que hicimos"
 2. Skill finds the active change
-3. Generates summary in Obsidian
+3. Completes the folder note sections in Obsidian
 4. Shows confirmation
 
 ### Scenario: Before archiving
 
 1. User says "vamos a archivar este cambio"
-2. Skill generates summary first
-3. Then proceeds with archive workflow
+2. Skill completes the summary sections first
+3. Then proceeds with the archive workflow
 
 ## Notes
 
-- This skill creates documentation in Obsidian, not in the repository
+- This skill updates documentation in Obsidian, not in the repository
 - The summary is portable and can be read on any machine with Obsidian
-- OpenSpec files stay in the repository; the summary is a mirror for reference
+- The change files stay in the repository; the folder note is a mirror for reference
 - Use this skill to maintain the "Wiki del Proyecto" in Obsidian

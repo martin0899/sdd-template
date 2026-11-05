@@ -1,13 +1,15 @@
 ---
 name: spec-from-note
-description: Convert an Obsidian requirement note into OpenSpec changes and layered specs (frontend/backend/db) with a code-grounded briefing, mandatory confirmation rules and note traceability. Use when the user says "lee la nota/lee el archivo" pointing to a requirement note, asks to generate specs from a requirement, wants activities split into multiple OpenSpec changes, or after requirements-discovery produces a confirmed requirement.
+description: Convert an Obsidian requirement note into spec changes and layered specs (frontend/backend/db) with a code-grounded briefing, mandatory confirmation rules and note traceability. Use when the user says "lee la nota/lee el archivo" pointing to a requirement note, asks to generate specs from a requirement, wants activities split into multiple changes, or after requirements-discovery produces a confirmed requirement.
 author: SDD-template
-version: 1.1.0
+version: 1.2.0
 ---
 
 # spec-from-note
 
-Convierte una nota de requerimiento (Obsidian) en changes y especificaciones OpenSpec por capa, ancladas a la realidad del código mediante un briefing investigado. **Nunca escribe specs sin confirmación explícita del usuario para las decisiones no definidas en la nota.**
+Convierte una nota de requerimiento (Obsidian) en changes y especificaciones por capa, ancladas a la realidad del código mediante un briefing investigado. **Nunca escribe specs sin confirmación explícita del usuario para las decisiones no definidas en la nota.**
+
+> **Motor del flujo**: el flujo **nativo** es el primario (`spectralis spec ...` sobre el directorio de changes resuelto, `spec/` por defecto). El CLI externo `openspec` queda como **motor opcional** (`engine: openspec`): en ese caso, la creación de changes y la lectura de specs vigentes se hacen con sus comandos y sus rutas (`openspec/changes/`, `openspec/specs/`). Todo lo demás de esta skill es neutral respecto al motor.
 
 ## Rutas y Configuración
 
@@ -20,7 +22,7 @@ Convierte una nota de requerimiento (Obsidian) en changes y especificaciones Ope
 | `backlog_cmd` | Comando para listar notas de backlog de un proyecto | `spectralis backlog <proyecto> --json` (lista `01_Proyectos/<proyecto>/_Notas/`) |
 | `project_registry` | Registro de requerimientos procesados por proyecto | `.sdd-registry/REGISTRY.md` (dentro del repo del proyecto) |
 | `project_briefings` | Briefings técnicos generados durante la investigación | `.sdd-registry/briefings/` (dentro del repo del proyecto) |
-| `changes_dir` | Carpeta de cambios OpenSpec | `openspec/changes/` (dentro del repo del proyecto) |
+| `changes_dir` | Carpeta de cambios del proyecto | `spec/` (dentro del repo del proyecto); se override con `spec_dir` (manifiesto `.sdd-manifest.json` o config global) o con el flag `--spec-dir` de los comandos |
 
 **Resolución de rutas al inicio de cada invocación:**
 
@@ -56,7 +58,7 @@ La nota puede estar en `{requirements_dir}` (vault de Obsidian) o en cualquier o
 
 ### 2. Investigar el repo
 - Si existe graphify en el proyecto (`graphify-out/graph.json`): usa `graphify query` para módulos y patrones relacionados con cada actividad, `graphify path` para relaciones y `graphify explain` para conceptos.
-- Lee `openspec/specs/` para detectar capabilities vigentes que la nota evoluciona o reutiliza (ej. una API-01 que ya tiene spec).
+- Lee `spec/` (layout nativo) para detectar capabilities vigentes que la nota evoluciona o reutiliza (ej. una API-01 que ya tiene spec). Con `engine: openspec`, el equivalente es `openspec/specs/` (y `openspec/changes/<id>/` para los changes en curso).
 - Revisa el esquema de BD real (migraciones, modelos) para detectar conflictos de nombres o cambios destructivos.
 - Si no hay graphify montado: investigación directa de código y specs. El briefing pierde profundidad pero el flujo funciona.
 
@@ -76,16 +78,17 @@ Si la nota trae **Mapa de Impacto Técnico**, úsalo como input para las seccion
 - Las contradicciones nota-vs-código se resuelven aquí, antes de especificar.
 
 ### 5. Desglose ID-xx a changes
-- Propone el mapeo: cada actividad ID-xx -> un change OpenSpec (`add-id01-<slug>`), con la capa que indica la columna Componente.
+- Propone el mapeo: cada actividad ID-xx -> un change de spec (`add-id01-<slug>`), con la capa que indica la columna Componente.
 - **Aplican las reglas de confirmación** (ver abajo) para el desglose y cualquier decisión técnica.
 - Actividades dependientes se ordenan; actividades independientes quedan como changes separados.
 
-### 6. Crear los changes OpenSpec
-- Por cada actividad confirmada: `openspec new change "add-idXX-<slug>"` (nunca crear carpetas a mano).
+### 6. Crear los changes
+- Por cada actividad confirmada: `spectralis spec create <id> --nombre "<nombre legible>"` (nunca crear carpetas a mano; el comando crea el change en el directorio de changes resuelto y su `change.json`).
+- Con `engine: openspec`, la alternativa legacy es crear el change con el CLI externo (`openspec` + su comando de creación de change); no se mezclan: cada motor usa el suyo.
 - Cada change incluye:
   - `proposal.md` con línea de trazabilidad: `Fuente: <ruta de la nota> · Actividad: ID-xx` y sección **Impact** con áreas y archivos afectados (del briefing)
   - `design.md` con **Risks / Trade-offs** y **Migration Plan** con rollback concreto (queries inversas o reverts; el SELECT de verificación de la nota alimenta la tarea de verificación previa)
-  - `specs/<capa>/spec.md` con requisitos y escenarios WHEN/THEN, incluyendo **escenarios de error** para fallos identificables
+  - `specs/<capa>/spec.md` (dentro del change) con requisitos y escenarios WHEN/THEN, incluyendo **escenarios de error** para fallos identificables
   - `tasks.md` con tareas verificables
 - Backend: los escenarios derivan de los bloques request/response del contrato API-xx referenciado. El front NO duplica el JSON: su spec describe comportamientos de UI (estados loading/error/vacío, validaciones) y referencia el contrato.
 - Si una API-01 ya tiene spec vigente y la nota la evoluciona: delta MODIFIED, no duplicado.
@@ -132,10 +135,10 @@ Lo que el agente **nunca** inventa: intención de negocio ambigua (pregunta) y f
 ## Contratos de API compartidos
 
 - Los contratos viven en la nota que los introduce (sección 7) y **evolucionan por copia**: una nota posterior que modifica API-01 lleva el bloque actualizado (v2).
-- El briefing detecta si un bloque es reuso (idéntico a la spec vigente) o evolución (difiere) comparando contra `openspec/specs/`.
-- El historial de evolución lo guarda el archive de OpenSpec, no Obsidian.
+- El briefing detecta si un bloque es reuso (idéntico a la spec vigente) o evolución (difiere) comparando contra `openspec/specs/` (motor `openspec`) o contra `spec/` (motor nativo).
+- El historial de evolución lo guarda el archive del change (nativo: `spectralis spec archive`; `engine: openspec`: el archive de OpenSpec), no Obsidian.
 
 ## Notas
 
-- Esta skill termina en artefactos OpenSpec; la implementación es territorio de `/opsx-apply`.
+- Esta skill termina en los artefactos del change (nativo: `spec/<id>/`; `engine: openspec`: `openspec/changes/<id>/`); la implementación es territorio del ciclo de apply.
 - Para updates posteriores de una misma nota, re-invoca la skill con la misma ruta; el registro detecta que ya fue procesada.

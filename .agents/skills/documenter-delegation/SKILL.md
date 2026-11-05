@@ -2,7 +2,7 @@
 name: documenter-delegation
 description: Contrato de delegación documental — los subagentes entregan una solicitud estructurada al coordinador, este la consolida y despacha al rol documentador; nunca publiques por tu cuenta.
 author: spectralis
-version: 1.0.0
+version: 1.1.0
 ---
 
 # documenter-delegation
@@ -11,7 +11,7 @@ Contrato de solicitud, consolidación y despacho del trabajo documental entre lo
 
 ## Frontera de responsabilidad
 
-- **Los subagentes solicitan, nunca publican.** Si detectas trabajo documental (crear/actualizar `briefing.md`, `resumen.md`, `tests.md`, notas `obsidian-*`, wiki o documentos del cerebro), **no escribas ni sincronices por tu cuenta** en el cerebro ni en `05_wiki/`.
+- **Los subagentes solicitan, nunca publican.** Si detectas trabajo documental (crear/actualizar el briefing, el resumen, la sección de tests, notas `obsidian-*`, wiki o documentos del cerebro), **no escribas ni sincronices por tu cuenta** en el cerebro ni en `05_wiki/`.
 - Entrega al `coordinador` una **solicitud estructurada** completa (ver esquema) y deja que él la despache.
 - **Publicación directa prohibida**: si intentas publicar sin pasar por el coordinador, la operación no está permitida; canaliza el trabajo como solicitud.
 
@@ -27,6 +27,13 @@ Contrato de solicitud, consolidación y despacho del trabajo documental entre lo
 | `pending` | string[] | Pendientes explícitos, si existen |
 
 Una solicitud sin todos los campos es **rechazada** indicando los campos faltantes (validador determinista `validateDocumenterRequest` en `src/core/documenter-request.ts`) y **no se despacha** al `documentador`.
+
+### Origen del briefing (nativo vs motor opcional)
+
+- **Nativo (default)**: el briefing técnico del change vive en `spec/<id>/change.json`, en el campo `resumen.abstracto`; su reflejo en el cerebro es la sección `## Contexto` del folder note único (`01_Proyectos/<proyecto>/<id>/<id>.md`).
+- **`engine: openspec`**: el change no lleva `change.json`, así que el briefing se toma del folder note del vault (sección `## Contexto`).
+
+En ambos motores el esquema de la solicitud es el mismo: `mode: sdd` y los campos obligatorios de la tabla.
 
 ## Consolidación y despacho (el coordinador)
 

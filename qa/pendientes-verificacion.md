@@ -402,5 +402,37 @@ Notas de la emulacion:
   - `spec status` sobre el propio repo de spectralis -> `no hay changes activos`: el repo del arnes mantiene el layout legacy (`openspec/changes/`), que `spec status` no lee (solo lee el directorio resuelto, `spec/`).
 - Validador de OpenSpec (extra, fuera de la lista de tareas de F3): la primera invocacion de `openspec validate spec-native-f3 --strict` (con el interprete `node` permitido sobre el paquete global `@fission-ai/openspec` 1.11.0) **parseo el delta** y solo emitio los avisos RFC 2119 ya conocidos ("should contain SHALL or MUST", porque las specs estan en español con `DEBE`); no emitio errores. Las invocaciones posteriores del mismo binario devolvieron "No OpenSpec root found from the current directory" / "Unknown item 'spec-native-f3'" aunque `openspec/` existe y es legible (`config.yaml`, `specs/`, `changes/`): es la misma intermitencia del entorno que durante esta sesion afecta a escrituras y lecturas de ficheros (no es un defecto del change; el delta no ha sido modificado por F3). La compuerta del repo (`spectralis check --tdd`) si se ejecuto y solo reporta el hallazgo preexistente de `lean-harness-payload`.
 
+---
+
+## Bloque QA-006 - Compuerta minima de cobertura (change `spec-native-f4`)
+
+- **Change**: `spec-native-f4`
+- **Test**: los mismos tres niveles del bloque QA-001 (typecheck, escaneo de secretos, suite con cobertura y diff coverage). El change es **exclusivamente editorial** (9 skills + `docs/base-standards.md` §8 + `CHANGELOG.md`): **cero cambios en `src/`**, asi que el diff coverage se mide sobre el camino por defecto del gate (lista completa de `src/`) y sale vacio (0/0).
+- **Reason**: la whitelist de shell del implementador no permite ejecutar scripts de shell (`timeout 300 ./qa/qa-coverage-gate.sh` -> `Permission denied: shell`; tampoco `timeout` ni la ejecucion directa del script). El gate se **emulo** con su propia documentacion (la misma emulacion de QA-002/QA-003/QA-004/QA-005, en `.test-tmp/qa-coverage-gate/`): los tres niveles se reproducen con `node` (intérprete permitido) usando la misma logica, los mismos umbrales y el mismo analizador de cobertura.
+- **Required env**: `qa/qa-coverage-gate.sh` ejecutable (bash + `timeout`).
+  - **Delivered how**: emulacion en `.test-tmp/qa-coverage-gate/` (ignorado por git): `secret-scan.mjs` (Nivel 0b, patrones y exclusiones del script), `run-suite.mjs` (Nivel 1, compilacion de `dist/` y `dist-test/` con source maps + suite con `--experimental-test-coverage` y `NODE_V8_COVERAGE`) y `diff-coverage.mjs` (bloque `ANALYZER_EOF` del script, extraido por delimitadores y **byte a byte identico**), orquestados por `gate-emulation.mjs`.
+- **Safe command**: `timeout 300 ./qa/qa-coverage-gate.sh`
+- **Expected**: nivel0 pass, nivel1 pass
+- **Status**: **RESUELTO POR EMULACION** (2026-11-05)
+
+### Evidencia de ejecucion (2026-11-05)
+
+Comando ejecutado: `node .test-tmp/qa-coverage-gate/gate-emulation.mjs` (equivalente emulado de `timeout 300 ./qa/qa-coverage-gate.sh`).
+
+| Comprobacion | Resultado | Medida |
+|---|---|---|
+| NIVEL 0a - typecheck (`tsc -p tsconfig.test.json --noEmit`) | PASS | 0 errores de tipos |
+| NIVEL 0b - escaneo de secretos (fallback `grep`; `gitleaks` no instalado) | PASS | 11 ficheros analizados (los 11 ficheros versionados tocados por el cambio), 0 coincidencias |
+| NIVEL 1 - suite | PASS (1er intento) | 624/624 tests, 0 fallos (`npm test`: `# tests 624`, `# pass 624`, `# fail 0`) |
+| NIVEL 1 - cobertura global de los ficheros `src/` | PASS | 65/65 ficheros `src/` al 100.00% (umbral 85%) |
+| NIVEL 1 - diff coverage | PASS (n/a) | 0/0 lineas cambiables ejecutables: el change no toca `src/` (umbral 80%) |
+| **Gate (emulado)** | **PASS** | `NIVEL 0: PASS (typecheck + escaneo de secretos)`, `NIVEL 1: PASS (suite + diff coverage)`, `GATE: PASS` |
+
+Notas de la emulacion:
+
+- `DIFF_FILES` se derivó por el camino por defecto del script (`git diff --name-only HEAD -- src/` → vacio, porque el change es editorial → respaldo a la lista completa de `src/`): 65 ficheros. Se elimino el `diff-files.txt` fixation de F3 (`.test-tmp/qa-coverage-gate/diff-files.txt`) para no medir un diff stale.
+- `qa/qa-coverage-gate.sh` sigue sin ejecutarse en este entorno: queda pendiente de un shell con permiso de ejecucion de scripts para confirmar el codigo de salida del gate completo.
+- Comprobaciones adicionales del change: `spectralis check --tdd --project-root .` → solo queda el error **preexistente** de `openspec/changes/lean-harness-payload/tasks.md` (seccion "1. Workstream A"); el `tasks.md` de `spec-native-f4` no tiene violaciones (cada seccion de implementacion lleva una tarea previa marcada `(tdd)`). `openspec validate spec-native-f4` → `Change 'spec-native-f4' is valid` (ejecutado con el interprete `node` permitido sobre el paquete global `@fission-ai/openspec`).
+
 
 

@@ -1,11 +1,13 @@
 ---
 name: openspec-gate
-description: Gatekeeper skill that enforces OpenSpec workflow for all requirement-related work. Use BEFORE implementing any code change, feature, or fix. Verifies that an active OpenSpec change exists with updated tasks.md. If no change exists, routes to requirements-discovery or openspec-propose.
+description: Gatekeeper skill that enforces the SDD spec workflow for all requirement-related work. Use BEFORE implementing any code change, feature, or fix. Verifies that an active change exists with updated tasks.md (native spec flow by default; the external openspec CLI is an optional engine). If no change exists, routes to requirements-discovery or openspec-propose.
 ---
 
 # openspec-gate
 
-Gatekeeper that enforces OpenSpec workflow for all requirement-related work. **Blocks implementation until OpenSpec conditions are met.**
+Gatekeeper that enforces the spec workflow for all requirement-related work. **Blocks implementation until the spec conditions are met.**
+
+The native spec flow is the primary path: a change lives in the resolved changes directory (`spec/` by default, overridable with `spec_dir`) and its state is read with `spectralis spec status` (or `spectralis view`). The external `openspec` CLI is an **optional engine** (`engine: openspec`): when a project declares it, the same gate applies, but the active-change list is read with the external CLI's own list command instead. The rest of this skill is engine-neutral.
 
 ## When to Use
 
@@ -31,24 +33,26 @@ The request is NOT a requirement if it is:
 - Configuration changes that don't affect behavior
 - Code exploration or understanding (read-only)
 
-### Step 2: Check for active OpenSpec change
+### Step 2: Check for an active change
 
-Run the following checks:
+Run the following check (native flow, read-only):
 
 ```bash
-openspec list --json
+spectralis spec status
 ```
+
+`spectralis view` lists the same active changes with their progress. Neither command writes anything.
 
 Verify:
 1. At least one change exists with status "in-progress" or "complete"
 2. The change name relates to the current request
 
-If no change exists → BLOCK and route to OpenSpec workflow.
+If no change exists → BLOCK and route to the spec workflow (`requirements-discovery` / `openspec-propose`).
 
 ### Step 3: Verify tasks.md exists and is current
 
 For the active change, check:
-1. `tasks.md` exists in the change directory
+1. `tasks.md` exists in the change directory (inside the resolved changes dir)
 2. Tasks are marked with status (pending/in-progress/completed)
 3. At least one task is "in-progress" or "pending" (not all completed)
 
@@ -68,13 +72,13 @@ If specs are missing or incomplete → BLOCK and complete specs first.
 ### PASS - Allow implementation
 
 All conditions met:
-- Active OpenSpec change exists
+- An active change exists
 - tasks.md is present and current
 - Specs cover the implementation
 
 Proceed with implementation.
 
-### BLOCK - Route to OpenSpec
+### BLOCK - Route to the spec workflow
 
 One or more conditions failed:
 - No active change → Route to `openspec-propose` or `requirements-discovery`
@@ -129,22 +133,22 @@ When `openspec-propose` completes, the gate verifies:
 1. **Never bypass the gate** — Even if the user says "just do it quickly", the gate must pass before implementation.
 2. **Tasks are mandatory** — A change without tasks.md is incomplete. Always create/update tasks.md.
 3. **Specs must match implementation** — If implementing a feature, the spec for that feature must exist.
-4. **One change per requirement** — Each requirement should map to one or more OpenSpec changes, not ad-hoc code.
+4. **One change per requirement** — Each requirement should map to one or more spec changes (native or `engine: openspec`), not ad-hoc code.
 
 ## Common Scenarios
 
 ### Scenario: User asks to add a new feature
 
 1. Gate checks → No active change
-2. Gate blocks → "No active OpenSpec change found"
+2. Gate blocks → "No active change found"
 3. Route → `requirements-discovery` to define the requirement
-4. Then → `spec-from-note` to generate OpenSpec artifacts
+4. Then → `spec-from-note` to generate the change artifacts
 5. Then → Implementation can proceed
 
 ### Scenario: User asks to fix a bug
 
 1. Gate checks → No active change
-2. Gate blocks → "No active OpenSpec change found"
+2. Gate blocks → "No active change found"
 3. Route → `openspec-propose` with bug fix description
 4. Then → Implementation can proceed
 
@@ -155,16 +159,16 @@ When `openspec-propose` completes, the gate verifies:
 3. Gate verifies → Specs cover the modification
 4. Gate passes → Implementation can proceed
 
-### Scenario: User asks to implement without mentioning OpenSpec
+### Scenario: User asks to implement without mentioning the spec flow
 
 1. Gate checks → No active change
-2. Gate blocks → "Requirement detected but no OpenSpec change exists"
-3. Route → Appropriate OpenSpec workflow
-4. Explain → "All requirement work must go through OpenSpec for traceability"
+2. Gate blocks → "Requirement detected but no active change exists"
+3. Route → Appropriate spec workflow
+4. Explain → "All requirement work must go through the spec workflow for traceability"
 
 ## Notes
 
 - This gate is a **soft block** — it informs and routes, but does not permanently prevent work
 - The gate should be invoked automatically when the agent detects requirement-like requests
-- If the user explicitly says "skip OpenSpec" or "no need for specs", document the exception but still note the requirement in the change
-- The gate works in conjunction with the "Mandatory OpenSpec for Requirements" rule in AGENTS.md
+- If the user explicitly says "skip the spec workflow" or "no need for specs", document the exception but still note the requirement in the change
+- The gate works in conjunction with the requirement-work rule in AGENTS.md (skill `openspec-gate`)

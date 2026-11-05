@@ -2,7 +2,7 @@
 name: agent-rules-contract
 description: Contrato central de las reglas del ciclo SDD — define una sola vez, referencia en vez de redefinir; invoca la interfaz central de Spectralis, no dupliques el ciclo.
 author: spectralis
-version: 1.0.0
+version: 1.1.0
 ---
 
 # agent-rules-contract
@@ -32,8 +32,11 @@ Contrato único y compartido de las reglas del ciclo SDD. Dispara con: "reglas d
 
 ## OpenSpec: backend SDD no reimplementado
 
-- OpenSpec permanece como backend SDD detrás de la interfaz central de Spectralis.
-- Este contrato describe **reglas del ciclo**, no un motor SDD paralelo: no se copia la lógica interna de OpenSpec.
+> Título conservado por estabilidad de navegación: el motor primario del ciclo es hoy el **nativo** (`spectralis spec ...` sobre `spec/`), y `openspec` queda como motor opcional.
+
+- La comunidad de specs **nativa** es la ruta primaria del ciclo: `spectralis spec create/status/validate/archive` sobre el directorio de changes resuelto (`spec/` por defecto, override con `spec_dir`).
+- `openspec` permanece como **motor opcional** detrás de la interfaz central de Spectralis: se activa con la clave de configuración `engine` (`native` | `openspec`; default `native`, con cascada manifiesto > configuración global > default) y aporta las rutas y comandos legacy (`openspec/changes/`, `openspec/specs/`).
+- Este contrato describe **reglas del ciclo**, no un motor SDD paralelo: no se copia la lógica interna de OpenSpec ni de ningún otro motor.
 
 ## Detección
 
