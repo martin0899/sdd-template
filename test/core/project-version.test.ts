@@ -25,8 +25,16 @@ test('bumpMajor increments major and resets minor/patch', () => {
   assert.equal(bumpMajor('1.9.9'), '2.0.0');
 });
 
-test('bumpMajor caps at 99', () => {
-  assert.equal(bumpMajor('99.9.9'), '99.0.0');
+test('bumpMajor wraps around at 99 (odometer)', () => {
+  assert.equal(bumpMajor('99.9.9'), '0.0.0');
+});
+
+test('bumpMinor wraps around at 99 (odometer)', () => {
+  assert.equal(bumpMinor('99.99.5'), '0.0.0');
+});
+
+test('bumpPatch wraps around at 99.99.99 (odometer)', () => {
+  assert.equal(bumpPatch('99.99.99'), '0.0.0');
 });
 
 test('invalid version falls back to 1.0.0', () => {

@@ -31,6 +31,8 @@ import { runNotesInit, runNotesSync } from '../commands/notes';
 import { runBacklog } from '../commands/backlog';
 import { runWikiSearch } from '../commands/wiki-search';
 import { runBump } from '../commands/bump';
+import { runView } from '../commands/view';
+import { runTask } from '../commands/task';
 
 const pkg = require('../../package.json') as { version: string };
 
@@ -57,14 +59,18 @@ Examples:
   $ spectralis status                   # Show installed harness status
   $ spectralis config                   # Show harness configuration
   $ spectralis doctor                   # Verify host prerequisites
-  $ spectralis bump                     # Bump project version (patch)
+  $ spectralis bump patch               # Bump project version (patch)
   $ spectralis bump minor               # Bump project version (minor)
+  $ spectralis bump major               # Bump project version (major)
   $ spectralis bump --spectralis        # Bump spectralis own version
   $ spectralis bump --dry-run           # Preview bump without writing
   $ spectralis skills                   # Detect skills and refresh _INDEX_SKILLS.json
   $ spectralis distill Spectralis        # Distill project specs to wiki
   $ spectralis backlog Spectralis         # List backlog notes from project
   $ spectralis wiki search Spectralis arquitectura  # Search in wiki
+  $ spectralis view                     # Show the state of the active changes (read-only)
+  $ spectralis view spec-native-f1       # Show the detail of one change
+  $ spectralis task spec-native-f1 1.1 --done  # Mark a task as done
   $ spectralis --v                      # Show version (alias for --version)
 `);
 
@@ -125,7 +131,7 @@ program
 
 program
   .command('bump [level]')
-  .description('Bump version (patch | minor | major). Defaults to patch.')
+  .description('Bump version (patch | minor | major). Defaults to patch. Components are 0-99 and wrap 99→0.')
   .option('-d, --dry-run', 'show the new version without writing')
   .option('--spectralis', 'bump spectralis own version (package.json)')
   .option('--project', 'bump project version (.sdd-manifest.json)')
@@ -250,6 +256,43 @@ program
     const code = await runSeed({ project: opts.project, dryRun: opts.dryRun || opts.demo || opts.dd });
     process.exitCode = code;
   });
+
+program
+  .command('view [change]')
+  .description('Show the state of the active changes (read-only)')
+  .option('-p, --project-root <path>', 'project root (default: the project of the current directory)')
+  .action(async (change: string | undefined, opts: { projectRoot?: string }) => {
+    const code = await runView({ change, projectRoot: opts.projectRoot });
+    process.exitCode = code;
+  });
+
+program
+  .command('task <change> <taskId>')
+  .description('Update the progress of a task and mirror it in tasks.md')
+  .option('--done', 'mark the task as done')
+  .option('--undone', 'mark the task as not done')
+  .option('--estado <status>', 'task status (todo | in-progress | done)')
+  .option('--porcentaje <n>', 'task percentage (0-100)')
+  .option('-p, --project-root <path>', 'project root (default: the project of the current directory)')
+  .action(
+    async (
+      change: string,
+      taskId: string,
+      opts: { done?: boolean; undone?: boolean; estado?: string; porcentaje?: string; projectRoot?: string }
+    ) => {
+      const porcentaje = opts.porcentaje === undefined ? undefined : Number(opts.porcentaje);
+      const code = await runTask({
+        change,
+        taskId,
+        done: opts.done,
+        undone: opts.undone,
+        estado: opts.estado,
+        porcentaje,
+        projectRoot: opts.projectRoot
+      });
+      process.exitCode = code;
+    }
+  );
 
 const notesCmd = program
   .command('notes')

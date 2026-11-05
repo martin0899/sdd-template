@@ -10,10 +10,6 @@ function parse(version: string): [number, number, number] {
   return [major, minor, patch];
 }
 
-function clamp(v: number): number {
-  return Math.min(v, MAX_COMPONENT);
-}
-
 export function bumpPatch(version: string): string {
   const [major, minor, patch] = parse(version);
   if (patch < MAX_COMPONENT) return `${major}.${minor}.${patch + 1}`;
@@ -28,5 +24,7 @@ export function bumpMinor(version: string): string {
 
 export function bumpMajor(version: string): string {
   const [major] = parse(version);
-  return `${clamp(major + 1)}.0.0`;
+  // Odometer wrap-around: components are limited to 0..99, so 99 rolls over to 0.
+  if (major < MAX_COMPONENT) return `${major + 1}.0.0`;
+  return '0.0.0';
 }
