@@ -1,5 +1,13 @@
 # Spectralis
 
+```
+╔══════════════════════════════╗
+║                              ║
+║          SPECTRALIS          ║
+║                              ║
+╚══════════════════════════════╝
+```
+
 **Instalador de la plantilla SDD (Spec-Driven Development) para tus proyectos.**
 
 ![Node](https://img.shields.io/badge/node-%E2%89%A522-339933?style=flat-square)
