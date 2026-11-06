@@ -55,41 +55,41 @@ Los manuales técnicos del arnés viven en `notes/` (se sincronizan al cerebro c
 
 ## Skills
 
-Portable skills live in `.agents/skills/` (Agent Skills standard). Full index: `.agents/skills/INDEX.md`. Each skill is loaded on demand; load only the one selected.
+Las skills portables viven en `.agents/skills/` (estándar Agent Skills). Índice completo: `.agents/skills/INDEX.md`. Cada skill se carga bajo demanda; carga solo la elegida.
 
-| Skill | Purpose |
-|-------|---------|
-| adversarial-review | Independent red-team review before archiving a spec change |
-| agent-rules-contract | Define cycle rules once and reference them instead of redefining |
-| brainstorming | Explore intent, requirements and design before any creative work |
-| code-auditing | Code quality, security and tech-debt audit |
-| commit | Focused commits and pull requests per repo standards |
-| documenter-delegation | Structured documentation requests to the coordinator |
-| enrich-us | Enrich user stories with technical detail (ticket/Jira) |
-| explain | Teach underlying concepts with clear mental models |
-| exploration-briefing | Verified briefing before turning an exploration into a change |
-| find-skills | Discover and install ecosystem skills |
-| frontend-design | Distinctive, intentional UI visual direction |
-| graphify-usage | Investigate code with graphify (query/path/explain) |
-| grilling | Relentless interview to stress-test a plan or idea |
-| lessons | Manage learned lessons and anti-repetition log |
-| meta-prompt | Rewrite prompts with prompt-engineering best practices |
-| obsidian-briefing | Technical briefing in Obsidian for spec changes |
-| obsidian-orchestration | Orchestrate brain-spec sync (obsidianSync switch) |
-| obsidian-summary | Summary in Obsidian after completing a spec |
-| obsidian-tests | Test documentation in Obsidian for regression |
-| requirements-discovery | Define a requirement from conversation/document/ticket/note |
-| sdd-onboard-project | SDD onboarding post-install with graphify and docs adaptation |
-| second-brain | Obsidian vault as Second Brain (CODE+PARA) |
-| show-spec-working | Live demo of a spec/feature/ticket |
-| spec-from-note | Convert an Obsidian requirement note into layered specs |
-| subagent-contract | Subagent contract (coordinator/planner/implementer/reviewer) |
-| systematic-debugging | Before proposing fixes for bugs/test failures |
-| tui-design | Terminal UI (TUI) design |
-| update-docs | Identify and update required technical docs after changes |
-| using-git-worktrees | Isolate workspace when starting feature work |
-| web-design-guidelines | Review UI code against Web Interface Guidelines |
-| writing-skills | Create/edit/verify skills before deployment |
+| Skill | Para qué sirve |
+|-------|----------------|
+| adversarial-review | Revisión adversarial/red-team independiente antes de archivar un change de spec |
+| agent-rules-contract | Definir las reglas del ciclo una sola vez y referenciarlas en vez de redefinirlas |
+| brainstorming | Explorar intención, requisitos y diseño antes de cualquier trabajo creativo |
+| code-auditing | Auditoría de calidad de código, seguridad y deuda técnica |
+| commit | Commits y pull requests enfocados según estándares del repo |
+| documenter-delegation | Solicitudes de documentación estructuradas al coordinador |
+| enrich-us | Enriquecer user stories con detalle técnico (ticket/Jira) |
+| explain | Enseñar conceptos subyacentes con modelos mentales claros |
+| exploration-briefing | Briefing verificado antes de convertir una exploración en change |
+| find-skills | Descubrir e instalar skills del ecosistema |
+| frontend-design | Dirección visual distintiva e intencional en UI |
+| graphify-usage | Investigar código con graphify (query/path/explain) |
+| grilling | Entrevista implacable para estresar un plan o idea |
+| lessons | Gestionar lecciones aprendidas y registro anti-repetición |
+| meta-prompt | Reescribir prompts con mejores prácticas de prompt engineering |
+| obsidian-briefing | Briefing técnico en Obsidian para cambios de spec |
+| obsidian-orchestration | Orquestar sincronización cerebro-spec (switch obsidianSync) |
+| obsidian-summary | Resumen en Obsidian tras completar un spec |
+| obsidian-tests | Documentación de tests en Obsidian para regresión |
+| requirements-discovery | Definir un requerimiento desde conversación/documento/ticket/nota |
+| sdd-onboard-project | Onboarding SDD post-instalación con graphify y adaptación de docs |
+| second-brain | Vault de Obsidian como Second Brain (CODE+PARA) |
+| show-spec-working | Demo en vivo de un spec/feature/ticket |
+| spec-from-note | Convertir nota de requerimiento de Obsidian en specs por capa |
+| subagent-contract | Contrato de subagentes (coordinador/planificador/implementador/revisor) |
+| systematic-debugging | Antes de proponer arreglos para bugs/fallos de test |
+| tui-design | Diseño de interfaces de terminal (TUI) |
+| update-docs | Identificar y actualizar documentación técnica tras cambios |
+| using-git-worktrees | Aislar el workspace al iniciar trabajo de features |
+| web-design-guidelines | Revisar código UI contra las Web Interface Guidelines |
+| writing-skills | Crear/editar/verificar skills antes de desplegarlas |
 
 ## Prerrequisitos
 
