@@ -91,6 +91,14 @@ Las skills portables viven en `.agents/skills/` (estándar Agent Skills). Índic
 | web-design-guidelines | Revisar código UI contra las Web Interface Guidelines |
 | writing-skills | Crear/editar/verificar skills antes de desplegarlas |
 
+## Versionado
+
+Regla de bump de versión:
+
+- Cambios **sin spec** (docs, refactor, fixes menores, tooling) → **patch** (`x.y.Z`).
+- Cambios **con spec** (nuevo change archivado en `spec/_archived/`) → **minor** (`x.Y.0`).
+- Cambio **breaking** (retiro de funcionalidad/compatibilidad) → **major** (`X.0.0`).
+
 ## Prerrequisitos
 
 | Herramienta | Verificación | Notas |
