@@ -61,36 +61,42 @@ program
 program.addHelpText('before', printLogo('doctor', currentPalette()) + '\n');
 
 program.addHelpText('after', `
-Examples:
-  $ spectralis init                     # Install SDD in current directory
-  $ spectralis init my-project          # Install SDD in specific directory
-  $ spectralis init --demo              # Show plan without writing (alias for --dry-run)
-  $ spectralis update                   # Sync installed destination with template
-  $ spectralis update --check           # Check for updates without applying
-  $ spectralis status                   # Show installed harness status
-  $ spectralis config                   # Show harness configuration
-  $ spectralis doctor                   # Verify host prerequisites
-  $ spectralis bump patch               # Bump project version (patch)
-  $ spectralis bump minor               # Bump project version (minor)
-  $ spectralis bump major               # Bump project version (major)
-  $ spectralis bump --spectralis        # Bump spectralis own version
-  $ spectralis bump --dry-run           # Preview bump without writing
-  $ spectralis skills                   # Detect skills and refresh _INDEX_SKILLS.json
-  $ spectralis distill Spectralis        # Distill project specs to wiki
-  $ spectralis backlog Spectralis         # List backlog notes from project
-  $ spectralis wiki search Spectralis arquitectura  # Search in wiki
-  $ spectralis view                     # Show the state of the active changes (read-only)
-  $ spectralis view spec-native-f1       # Show the detail of one change
-  $ spectralis view --archived           # List archived changes (spec/_archived)
-  $ spectralis task spec-native-f1 1.1 --done  # Mark a task as done
-  $ spectralis spec create my-change --nombre \"My change\"  # Create a native change
-  $ spectralis spec migrate              # Import legacy openspec/changes into spec/
-  $ spectralis spec archive my-change    # Archive a completed native change (writes brain summary)
-  $ spectralis spec status               # Native status of all changes
-  $ spectralis spec validate my-change   # Validate a native change
-  $ spectralis init --all               # Select every available tool without interactive menu
-  $ spectralis update --prune           # Delete retired files (backup first)
-  $ spectralis --v                      # Show version (alias for --version)
+Comandos por grupo:
+
+  Instalación
+    init [destino]        Instala la plantilla SDD en un proyecto
+    doctor                Verifica prerrequisitos del host (git, node, graphify)
+    bump [level]          Sube versión (patch|minor|major); --spectralis para el propio paquete
+
+  Sincronización
+    update [destino]      Sincroniza el destino con la plantilla (--check, --prune)
+    status [destino]      Estado del harness instalado
+    config [destino]      Muestra/modifica configuración
+    skills [destino]      Detecta skills y refresca _INDEX_SKILLS.json
+
+  Specs (SDD)
+    spec <action>         create | migrate | archive | status | validate
+    view [change]         Vista read-only de changes activos (--archived)
+    task <change> <id>    Actualiza progreso de una tarea (--done/--undone)
+    check                 Valida flujo SDD (repo, REGISTRY, brain, TDD)
+
+  Vault / Brain
+    notes init|sync       Gestiona manuales en el second brain
+    projects              Estado de changes en todos los proyectos locales
+    seed                  Carga inicial de 05_wiki/
+    backlog <proyecto>     Lista notas de backlog
+    wiki search <p> [q]   Busca en la wiki agregada
+    distill <proyecto>    Destila specs a 05_wiki/
+
+  Utilidades
+    --v                   Muestra la versión
+    --help                Muestra esta ayuda
+
+Ejemplos:
+  $ spectralis init                     # Instalar en el directorio actual
+  $ spectralis update --check           # Verificar actualizaciones sin aplicar
+  $ spectralis view                     # Ver changes activos
+  $ spectralis spec create my-change --nombre "My change"
 `);
 
 program
