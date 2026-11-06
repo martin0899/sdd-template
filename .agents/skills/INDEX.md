@@ -23,7 +23,6 @@ obsidian-briefing: briefing técnico en Obsidian para cambios de spec → .agent
 obsidian-orchestration: orquesta sincronización cerebro-spec (switch obsidianSync) → .agents/skills/obsidian-orchestration/SKILL.md
 obsidian-summary: resumen en Obsidian tras completar un spec → .agents/skills/obsidian-summary/SKILL.md
 obsidian-tests: documentación de tests en Obsidian para regresión → .agents/skills/obsidian-tests/SKILL.md
-openspec-gate: gatekeeper que verifica change activo antes de implementar; rutea a workflows de spec → .agents/skills/openspec-gate/SKILL.md
 requirements-discovery: definir requerimiento desde conversación/documento/ticket/nota Obsidian → .agents/skills/requirements-discovery/SKILL.md
 sdd-onboard-project: onboarding SDD post-instalación con graphify y adaptación de docs → .agents/skills/sdd-onboard-project/SKILL.md
 second-brain: vault Obsidian como Second Brain (CODE+PARA); captura y depura notas → .agents/skills/second-brain/SKILL.md
