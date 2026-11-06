@@ -50,7 +50,7 @@ function formatTimestamp(iso: string): string {
 function progressBar(percent: number, width = 18): string {
   const clamped = Math.max(0, Math.min(100, percent));
   const filled = Math.round((clamped / 100) * width);
-  return `[${'#'.repeat(filled)}${'.'.repeat(width - filled)}]`;
+  return `[${'█'.repeat(filled)}${'░'.repeat(width - filled)}]`;
 }
 
 /** Derive progress from a tasks.md document's checkboxes. */
@@ -70,8 +70,6 @@ function renderList(projectRoot: string, changesDir: string): number {
   }
   const registry = readProgress(projectRoot);
   console.log('\n  spectralis view · changes activos\n');
-  console.log('  Change              | Progreso             | Updated');
-  console.log('  --------------------|----------------------|-------------------');
   for (const id of changes) {
     const entry: ProgressChange | undefined = registry.change.find((change) => change.id === id);
     const tasksPath = join(changesDir, id, 'tasks.md');
@@ -83,7 +81,7 @@ function renderList(projectRoot: string, changesDir: string): number {
     const bar = (entry && entry.task.length > 0) || fallback ? progressBar(percent) : `[${'.'.repeat(18)}]`;
     const updated = entry && entry.updatedAt ? formatTimestamp(entry.updatedAt) : (entry ? '—' : 'sin registro');
     console.log(
-      `  ${id.padEnd(20)}| ${bar} ${percentText.padStart(4)} | ${updated}`
+      `  ${id.padEnd(20)} ${bar} ${percentText.padStart(4)}  ${updated}`
     );
   }
   console.log('');
@@ -96,16 +94,18 @@ function renderArchivedList(projectRoot: string): number {
     console.log('\n  no hay changes archived\n');
     return 0;
   }
+  const idWidth = Math.max(20, ...archived.map((id) => id.length));
   console.log('\n  spectralis view --archived · changes archivados\n');
-  console.log('  Change              | Fecha       | Tareas  | Nombre');
-  console.log('  --------------------|-------------|---------|-----------------------------');
+  console.log(`  ${'Change'.padEnd(idWidth)}| Fecha       | Tareas  | Estado   | Nombre`);
+  console.log(`  ${'-'.repeat(idWidth)}|-------------|---------|----------|-----------------------------`);
   for (const id of archived) {
     const dir = join(projectRoot, 'spec', '_archived', id);
-    let meta: { fecha: string; nombre: string } = { fecha: '—', nombre: '—' };
+    let meta: { fecha: string; estado: string; nombre: string } = { fecha: '—', estado: 'done', nombre: '—' };
     try {
       const cj = readChangeJson(dir);
       if (cj) {
         meta.fecha = cj.fecha || '—';
+        meta.estado = cj.estado || 'done';
         meta.nombre = cj.nombre || '—';
       }
     } catch {
@@ -118,7 +118,7 @@ function renderArchivedList(projectRoot: string): number {
     const tasksText = total === 0 ? '—' : `${done}/${total}`;
     const nombre = meta.nombre.length > 46 ? meta.nombre.slice(0, 46) + '…' : meta.nombre;
     console.log(
-      `  ${id.padEnd(20)}| ${meta.fecha.padEnd(11)} | ${tasksText.padEnd(7)} | ${nombre}`
+      `  ${id.padEnd(idWidth)}| ${meta.fecha.padEnd(11)} | ${tasksText.padEnd(7)} | ${meta.estado.padEnd(8)} | ${nombre}`
     );
   }
   console.log('');
