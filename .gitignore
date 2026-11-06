@@ -3,7 +3,7 @@ node_modules/
 
 # Salidas de herramientas
 graphify-out/
-
+_INDEX_SKILLS.json
 # Backups del instalador SDD
 .sdd-backup-*/
 
