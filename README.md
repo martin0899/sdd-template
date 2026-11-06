@@ -236,6 +236,7 @@ La orquestación es idempotente (no regenera documentos ya correctos) y no modif
 | OpenCode (por defecto) | `opencode` | `.agents/` + `.opencode/` + docs + AGENTS.md + spec/ |
 | Antigravity | `antigravity` | `.agents/` + docs + AGENTS.md + spec/ (sin `.opencode/`) |
 | Claude Code | `claude` | igual que `antigravity` (ver `npx skills` más abajo) |
+| Codex CLI | `codex` | `.agents/` + **espejo** `.codex/skills/` + docs + AGENTS.md + spec/ (sin `.opencode/`) |
 | Todos | `all` | `.agents/` + `.opencode/` + docs + AGENTS.md + spec/ |
 
 > **Detalle**: `spectralis init --dry-run` muestra el plan completo sin escribir nada.
@@ -446,6 +447,8 @@ Consulta la skill `commit` del arnés (`.agents/skills/commit/SKILL.md`) para ve
 ## Exponer skills a otros agentes
 
 `.agents/skills/` es el estándar Agent Skills: **OpenCode, Cursor, Codex CLI, Gemini CLI, Kiro, Antigravity y OpenClaw** lo cargan sin ningún paso extra.
+
+**Codex CLI** (`--agent codex`): además de `.agents/skills/`, el instalador genera un **espejo** en `.codex/skills/` (copia, nunca symlink) para que el modo de proyecto de Codex funcione sin configuración extra. El espejo se gestiona en el manifiesto: `spectralis update` lo mantiene sincronizado y `spectralis update --prune` lo retira si Codex deja de estar entre las herramientas. `.codex/` **no** se añade al `.gitignore` gestionado: el espejo forma parte del proyecto y se versiona.
 
 Dos mecanismos opt-in complementarios:
 

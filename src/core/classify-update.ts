@@ -2,6 +2,7 @@ import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { sha256File, readManifest } from './manifest';
 import { listPayloadFiles, listDocsFiles, COMPOSED_STANDARDS } from './copy-payload';
+import { isCodexMirrorPath } from './codex-mirror';
 import type { ManifestData } from './manifest';
 
 export type FileStatus = 'unchanged' | 'updatable' | 'conflict' | 'new' | 'retired';
@@ -83,8 +84,12 @@ export function classifyFiles(
   // Retired files: in manifest but not in current plantilla.
   if (manifest) {
     const templateSet = new Set(templatePayload);
+    // The codex mirror is managed by the mirror step, not by the template
+    // payload: it is only retired when codex is no longer among the tools.
+    const mirrorManaged = (manifest.tools || []).includes('codex');
     for (const entry of manifest.files) {
       if (!templateSet.has(entry.path) && !SPECIAL_MANAGED_PATHS.has(entry.path)) {
+        if (mirrorManaged && isCodexMirrorPath(entry.path)) continue;
         result.push({ rel: entry.path, status: 'retired' });
       }
     }

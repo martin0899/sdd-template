@@ -11,6 +11,7 @@ export const TOOLS_CATALOG: ToolDef[] = [
   { id: 'opencode', label: 'OpenCode', dirs: ['.opencode'] },
   { id: 'claude', label: 'Claude Code', dirs: ['.claude'] },
   { id: 'antigravity', label: 'Antigravity', dirs: ['.antigravity'] },
+  { id: 'codex', label: 'Codex CLI', dirs: ['.codex'] },
   { id: 'shared-agents', label: 'Shared .agents skills', dirs: ['.agents'] }
 ];
 

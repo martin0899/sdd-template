@@ -39,6 +39,23 @@ test('empty target returns empty array', () => {
   }
 });
 
+test('detects .codex directory', () => {
+  const dst = scratch('codex');
+  try {
+    mkdirSync(join(dst, '.codex'), { recursive: true });
+    assert.deepEqual(detectTools(dst), ['codex']);
+  } finally {
+    rmSync(dst, { recursive: true, force: true });
+  }
+});
+
+test('the catalog exposes codex with its directory', () => {
+  const codex = TOOLS_CATALOG.find((t) => t.id === 'codex');
+  assert.ok(codex, 'codex must be part of the catalog');
+  assert.equal(codex.label, 'Codex CLI');
+  assert.deepEqual(codex.dirs, ['.codex']);
+});
+
 test('labelTool appends (detected) when true', () => {
   const tool = TOOLS_CATALOG.find((t) => t.id === 'opencode')!;
   assert.equal(labelTool(tool, true), 'OpenCode (detected)');

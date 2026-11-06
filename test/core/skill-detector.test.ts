@@ -7,6 +7,7 @@ import {
   detectSkills,
   extractSkillMetadata,
   buildSkillsIndex,
+  SKILL_AGENT_DIRS,
   DetectedSkill
 } from '../../src/core/skill-detector';
 
@@ -29,6 +30,27 @@ test('detectSkills scans .agents/.claude/.cursor skill dirs', () => {
     const skills = detectSkills(root);
     assert.equal(skills.length, 3);
     assert.deepEqual(skills.map((s) => s.agent).sort(), ['claude', 'cursor', 'opencode']);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('SKILL_AGENT_DIRS maps .codex/skills to the codex agent', () => {
+  assert.ok(
+    SKILL_AGENT_DIRS.some((entry) => entry.dir === '.codex/skills' && entry.agent === 'codex'),
+    'the codex skills directory must be mapped'
+  );
+});
+
+test('detectSkills picks up the SKILL.md files of .codex/skills', () => {
+  const root = scratch('codex');
+  try {
+    makeSkill(root, '.codex/skills', 'delta', '---\nname: delta\ndescription: Does delta things.\n---\n');
+    const skills = detectSkills(root);
+    assert.equal(skills.length, 1);
+    assert.equal(skills[0].agent, 'codex');
+    assert.equal(skills[0].name, 'delta');
+    assert.ok(skills[0].path.endsWith('.codex/skills/delta/SKILL.md'));
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

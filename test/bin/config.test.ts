@@ -38,6 +38,33 @@ test('--config shows configuration with exit code 0', () => {
   }
 });
 
+test('--config lists the directories of the codex tool', () => {
+  const tmpDir = join(process.cwd(), '.test-tmp-config-codex');
+  rmSync(tmpDir, { recursive: true, force: true });
+  mkdirSync(tmpDir, { recursive: true });
+  mkdirSync(join(tmpDir, '.codex'), { recursive: true });
+
+  writeFileSync(join(tmpDir, '.sdd-manifest.json'), JSON.stringify({
+    schemaVersion: 3,
+    spectralisVersion: '1.3.0',
+    templateVersion: '1.3.0',
+    tools: ['codex'],
+    files: [{ path: 'package.json', hash: 'abc123' }]
+  }));
+
+  try {
+    const result = execSync(`node ${CLI} config`, {
+      cwd: tmpDir,
+      encoding: 'utf8'
+    });
+    assert.ok(result.includes('codex'), 'Should show the codex tool');
+    assert.ok(result.includes('.codex'), 'Should map the codex tool to its directory');
+    assert.match(result, /\.codex: exists/, 'The codex directory must be reported as present');
+  } finally {
+    rmSync(tmpDir, { recursive: true, force: true });
+  }
+});
+
 test('--config exits with code 2 when no manifest', () => {
   const tmpDir = join(process.cwd(), '.test-tmp-config-nomanifest');
   rmSync(tmpDir, { recursive: true, force: true });

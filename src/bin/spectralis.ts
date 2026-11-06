@@ -77,7 +77,7 @@ Examples:
 program
   .command('init [destino]')
   .description('Install the SDD template into a destination project')
-  .option('--agent <agente>', 'target agent (opencode | antigravity | claude | all)')
+  .option('--agent <agente>', 'target agent (opencode | antigravity | claude | codex | all)')
   .option('-d, --dry-run', 'show the full plan without writing anything')
   .option('--demo', 'alias for --dry-run')
   .option('--dd', 'alias for --dry-run')
@@ -107,7 +107,7 @@ program
   .option('-a, --auto', 'apply all updates without asking (alias for --yes + autoUpdate config)')
   .option('--prune', 'delete retired files whose hash matches the manifest (backup first, fs only)')
   .option('--repair-agents', 'rebuild the managed AGENTS.md block (repairs skipped-* states with backup + confirmation)')
-  .option('--agent <agente>', 'target agent profile (opencode | antigravity | claude | all)')
+  .option('--agent <agente>', 'target agent profile (opencode | antigravity | claude | codex | all)')
   .option('--obsidian', 'force obsidian orchestration (notes sync) even if obsidianSync=0')
   .option('--no-obsidian', 'disable obsidian orchestration even if obsidianSync=1')
   .action(

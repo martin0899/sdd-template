@@ -60,7 +60,7 @@ test('spec create writes the seeds, the change.json and the first progress entry
   const registry = readProgress(root);
   const entry = registry.change.find((c) => c.id === 'my-change');
   assert.ok(entry, 'the change must be registered in the progress registry');
-  assert.equal(entry.nombre, 'my-change');
+  assert.equal(entry.nombre, 'Mi cambio');
   assert.equal(entry.porcentaje, 0);
   assert.equal(entry.estado, 'todo');
   assert.deepEqual(entry.task, []);

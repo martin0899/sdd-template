@@ -43,6 +43,7 @@ const TOOL_PATHS: Record<string, string[]> = {
   opencode: ['.opencode', '.agents'],
   claude: ['.claude', '.agents'],
   antigravity: ['.antigravity', '.agents'],
+  codex: ['.codex', '.agents'],
   agents: ['.agents']
 };
 

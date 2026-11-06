@@ -4,6 +4,7 @@ import { readManifest, writeManifest, sha256File, type ManifestData } from '../c
 import { classifyFiles, countByStatus, hasChanges, type ClassifiedFile } from '../core/classify-update';
 import { manageAgentsMd, detectAgentsMdDrift } from '../core/agents-md';
 import { COMPOSED_STANDARDS } from '../core/copy-payload';
+import { mirrorCodexSkills, type MirrorResult } from '../core/codex-mirror';
 import { makeConfirm } from '../util/prompt';
 import { readGlobalConfig } from '../core/config';
 import { currentPalette, printBanner, promptMark } from '../util/ui';
@@ -226,6 +227,18 @@ export async function runUpdate(opts: UpdateOptions = {}): Promise<number> {
   const counts = countByStatus(files);
   const changes = hasChanges(files);
 
+  // Codex mirror: the paths of the mirror and the hashes recorded in the
+  // manifest tell an outdated mirror from a hand-edited one. The preview is
+  // read-only: it decides whether the mirror still needs a sync.
+  const codexSelected = (manifest.tools || []).includes('codex');
+  const knownHashes = new Map(manifest.files.map((f) => [f.path, f.hash]));
+  const mirrorPreview = codexSelected
+    ? mirrorCodexSkills({ target, knownHashes, dryRun: true })
+    : undefined;
+  const mirrorOutOfSync =
+    mirrorPreview !== undefined &&
+    (mirrorPreview.needsWrite || mirrorPreview.paths.some((rel) => !knownHashes.has(rel)));
+
   // Retired files (in the manifest, no longer in the template) and the prune
   // plan: only files whose hash matches the manifest can be deleted.
   const retiredFiles = files.filter((f) => f.status === 'retired');
@@ -252,13 +265,14 @@ export async function runUpdate(opts: UpdateOptions = {}): Promise<number> {
 
     if (opts.prune) reportPrunePlan(prunePlan);
 
-    if (!changes && !agentsDrift) {
+    if (!changes && !agentsDrift && !mirrorOutOfSync) {
       console.log('✓ Destination is up to date with the template.');
       return 0;
     }
 
     console.log('Updates available:');
     if (agentsDrift) console.log('  ~ AGENTS.md (managed block drift)');
+    if (mirrorOutOfSync) console.log('  ~ .codex/skills mirror (out of sync)');
     if (counts.new > 0) console.log(`  + ${counts.new} new file(s)`);
     if (counts.updatable > 0) console.log(`  ~ ${counts.updatable} updatable file(s)`);
     if (counts.conflict > 0) console.log(`  ! ${counts.conflict} conflict(s)`);
@@ -271,7 +285,7 @@ export async function runUpdate(opts: UpdateOptions = {}): Promise<number> {
   // Nothing classified changed and AGENTS.md is fine (no repair requested):
   // still honor the "update ALWAYS manages AGENTS.md" contract (a no-op when
   // synced) before reporting success.
-  if (!changes && !agentsDrift && !opts.repairAgents) {
+  if (!changes && !agentsDrift && !opts.repairAgents && !mirrorOutOfSync) {
     if (opts.prune) reportPrunePlan(prunePlan);
     const agentsStep = manageAgentsStep(root, target, confirmFn, false);
     console.log('Destination is up to date with the template. Nothing to do.');
@@ -373,6 +387,30 @@ export async function runUpdate(opts: UpdateOptions = {}): Promise<number> {
     }
   }
 
+  // Codex mirror: keep .codex/skills/ in sync with the shared skills. It runs
+  // after the payload copy (the source is already up to date) and before the
+  // manifest is rewritten (the mirror paths stay managed).
+  let mirrorResult: MirrorResult | undefined;
+  if (codexSelected) {
+    mirrorResult = mirrorCodexSkills({
+      target,
+      confirmFn,
+      // `ask` + the auto-confirm of `--yes` resolves a hand-edited mirror with
+      // the backup-and-replace flow promised by the design; an interactive run
+      // prompts before replacing it.
+      conflictPolicy: 'ask',
+      knownHashes,
+      backupRoot
+    });
+    console.log(
+      `[OK] Codex mirror: ${mirrorResult.created.length} new, ${mirrorResult.updated.length} updated, ${mirrorResult.unchanged.length} unchanged, ${mirrorResult.conflicts.length} conflicts`
+    );
+    for (const rel of mirrorResult.failed) {
+      console.error(`[ERROR] Failed to mirror: ${rel}`);
+      partial = true;
+    }
+  }
+
   // Execute prune: backup first, then delete (fs only, never git).
   const prunedPaths: string[] = [];
   if (pruneApproved) {
@@ -399,7 +437,12 @@ export async function runUpdate(opts: UpdateOptions = {}): Promise<number> {
       if (reference) hashOverrides[rel] = reference;
     }
     const allManaged = Array.from(
-      new Set([...classified, ...retainedRetired, ...preservedManifestPaths(target, manifest)])
+      new Set([
+        ...classified,
+        ...retainedRetired,
+        ...preservedManifestPaths(target, manifest),
+        ...(mirrorResult?.paths ?? [])
+      ])
     );
     const projectFields: Record<string, unknown> = {};
     if (manifest.obsidianSync !== undefined) projectFields.obsidianSync = manifest.obsidianSync;

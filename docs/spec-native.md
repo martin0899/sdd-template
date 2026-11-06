@@ -242,3 +242,41 @@ read. The historical layout is still supported in a migration-only way:
 
 The Spanish context is injected in `spec/config.yaml` only, and the post-checks
 look for it there only.
+
+## Codex mirror
+
+Codex CLI reads the project skills from `.codex/skills/` (and the open Agent
+Skills standard from `.agents/skills/`). When `codex` is among the selected
+tools, the installer mirrors the shared skills:
+
+```
+.agents/skills/<skill>/  ->  .codex/skills/<skill>/
+```
+
+- **Copy, never symlink**: Codex project mode must work on Windows and on
+  filesystems without symlink support. The whole skill tree travels with the
+  `SKILL.md`.
+- **Guarded**: the mirror only runs when `codex` is one of the selected tools
+  (`init --agent codex`, or `codex` among the tools of the interactive menu).
+- **Managed**: the mirror paths are part of the `managedPaths` of the manifest,
+  so `spectralis update` keeps them in sync and `spectralis update --prune`
+  retires them when codex is no longer among the tools.
+- **Conflicts**: a mirror file edited by hand is a conflict, never a silent
+  overwrite: `update` backs it up and asks (in `--yes` mode the hand-edited
+  file is preserved).
+- **Not ignored**: `.codex/` is **not** part of the managed `.gitignore` block.
+  The mirror is the committed copy of the skills in Codex format, so a fresh
+  clone works without running `spectralis init` again.
+
+## Build caveats
+
+`tsc -p tsconfig.json` (the `npm run build` alias) **does not prune `dist/`**:
+a renamed or deleted source leaves its compiled `.js` behind as a ghost file.
+A stale `dist/` can therefore serve an old implementation at runtime (the
+orphan-dist caveat, with the close-out residuals lesson as precedent).
+
+Clean the output before a release build:
+
+```bash
+rm -rf dist && npm run build
+```

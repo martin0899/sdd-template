@@ -66,7 +66,7 @@ export async function runSpecCreate(opts: SpecCreateOptions): Promise<number> {
     const tasksMd = existsSync(tasksPath) ? readFileSync(tasksPath, 'utf8') : '';
     registry.change.push({
       id: changeId,
-      nombre: changeId,
+      nombre: opts.nombre ?? changeId,
       porcentaje: 0,
       estado: 'todo',
       updatedAt: new Date().toISOString(),

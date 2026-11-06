@@ -464,5 +464,35 @@ Notas de la emulacion:
 - `qa/qa-coverage-gate.sh` sigue sin ejecutarse en este entorno: queda pendiente de un shell con permiso de ejecucion de scripts para confirmar el codigo de salida del gate completo.
 - Comprobaciones adicionales del change: `node dist/bin/spectralis.js check --tdd` → `[OK] Sin hallazgos` (el repositorio tiene sus changes en el layout historico `openspec/changes/` y, con la lectura dual retirada, el resolutor apunta a `spec/`; el layout propio del repo se migra en el paso de dogfood post-commit, que queda fuera del alcance de este change).
 
+## Bloque QA-008 - Compuerta minima de cobertura (change `codex-compat`)
+
+- **Change**: `codex-compat`
+- **Test**: los mismos tres niveles del bloque QA-001 (typecheck, escaneo de secretos, suite con cobertura y diff coverage). El change **si** toca `src/` (perfil `codex`, catalogo de herramientas, mapas de rutas y el espejo `.agents/skills` → `.codex/skills`), asi que el diff coverage se mide sobre los ficheros `src/` modificados.
+- **Reason**: la whitelist de shell del implementador no permite ejecutar scripts de shell (`timeout 300 ./qa/qa-coverage-gate.sh` → `Permission denied: shell`; tampoco `timeout` ni la ejecucion directa del script). El gate se **emulo** con `node` (intérprete permitido) usando la misma logica, los mismos umbrales y **el mismo analizador de cobertura** (bloque `ANALYZER_EOF` del script, extraido por delimitadores y copiado byte a byte).
+- **Required env**: `qa/qa-coverage-gate.sh` ejecutable (bash + `timeout`).
+  - **Delivered how**: emulacion en `.test-tmp/qa-emulate.mjs` (ignorado por git): reproduce el preflight, el Nivel 0a (`tsc -p tsconfig.test.json --noEmit`), el Nivel 0b (patrones y exclusiones del script, sobre las lineas anadidas del diff + el contenido de los ficheros sin seguimiento), el Nivel 1 (compilacion de `dist/` y `dist-test/` con source maps, suite con `--experimental-test-coverage` y `NODE_V8_COVERAGE`) y el Nivel 1b (analizador extraido del script).
+- **Safe command**: `timeout 300 ./qa/qa-coverage-gate.sh`
+- **Expected**: nivel0 pass, nivel1 pass with diff_coverage >= 80%
+- **Status**: **RESUELTO POR EMULACION** (2026-11-06)
+
+### Evidencia de ejecucion (2026-11-06)
+
+Comando ejecutado: `node .test-tmp/qa-emulate.mjs` (equivalente emulado de `timeout 300 ./qa/qa-coverage-gate.sh`).
+
+| Comprobacion | Resultado | Medida |
+|---|---|---|
+| NIVEL 0a - typecheck (`tsc -p tsconfig.test.json --noEmit`) | PASS | 0 errores de tipos |
+| NIVEL 0b - escaneo de secretos (fallback `grep`; `gitleaks` no instalado) | PASS | 28 ficheros analizados (versionados tocados + sin seguimiento), 0 coincidencias |
+| NIVEL 1 - suite | PASS (1er intento) | **642/642 tests, 0 fallos** (`npm test`: `# tests 642`, `# pass 642`, `# fail 0`) |
+| NIVEL 1 - cobertura global de los ficheros `src/` tocados | PASS | 11/11 ficheros versionados tocados al **100.00%**; `src/core/codex-mirror.ts` (nuevo, sin seguimiento) **184/184 = 100.00%** (umbral 85%) |
+| NIVEL 1 - diff coverage | PASS | **74/74 = 100.00%** lineas cambiadas ejecutables cubiertas (umbral 80%) |
+| **Gate (emulado)** | **PASS** | `NIVEL 0: PASS (typecheck + escaneo de secretos)`, `NIVEL 1: PASS (suite + diff coverage)`, `GATE: PASS` |
+
+Notas de la emulacion:
+
+- `DIFF_FILES` se derivó por el camino por defecto del script (`git diff --name-only HEAD -- src/`): 11 ficheros `src/` modificados. El fichero **nuevo** `src/core/codex-mirror.ts` no aparece en esa lista porque `git diff` no ve los ficheros sin seguimiento: es el mismo comportamiento del gate real; su cobertura global se midio aparte con el mismo analizador (100.00%).
+- `npm run build` (alias nuevo de `package.json`, task 1.3) no se pudo ejecutar: la whitelist de shell no lo permite. La compilacion de `dist/` se realizo con el mismo `tsc -p tsconfig.json` que ejecuta `npm test` (los scripts `prepare` y `build` son identicos).
+- Comprobaciones adicionales del change: `node dist/bin/spectralis.js check --tdd` → `[OK] Sin hallazgos`; smoke en `/tmp/opencode/codex-smoke/project`: `init --agent codex --yes` → 31 skills fuente y 31 espejos identicos (sha256), 58 rutas `.codex/skills/**` gestionadas en el manifiesto, `tools: ["codex"]`, `.gitignore` sin `.codex/`; `update --yes` restauró un espejo borrado y lo mantuvo gestionado; `spec status` lista `codex-compat`.
+
 
 

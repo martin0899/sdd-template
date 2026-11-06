@@ -50,6 +50,21 @@ test('resolveTools non-TTY uses detection', () => {
   }
 });
 
+test('resolveTools surfaces the detected codex directory', () => {
+  const dst = scratch('codex');
+  try {
+    mkdirSync(join(dst, '.codex'), { recursive: true });
+    const r = resolveTools({ target: dst });
+    assert.ok(r.selected.includes('codex'), 'the detected codex directory must be selected');
+    assert.ok(
+      TOOLS_CATALOG.some((tool: ToolDef) => tool.id === 'codex'),
+      'codex must be offered by the interactive menu'
+    );
+  } finally {
+    rmSync(dst, { recursive: true, force: true });
+  }
+});
+
 test('resolveTools includes detected tools in pre-selection', () => {
   const dst = scratch('detected');
   try {

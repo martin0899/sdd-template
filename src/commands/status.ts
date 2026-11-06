@@ -23,6 +23,7 @@ function checkToolExists(tool: string): boolean {
     opencode: ['.opencode'],
     claude: ['.claude'],
     antigravity: ['.antigravity'],
+    codex: ['.codex'],
     agents: ['.agents']
   };
   

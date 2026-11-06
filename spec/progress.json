@@ -1,0 +1,151 @@
+{
+  "change": [
+    {
+      "id": "codex-compat",
+      "nombre": "Compatibilidad Codex CLI (perfil, deteccion y skills en formato estandar)",
+      "porcentaje": 100,
+      "estado": "done",
+      "updatedAt": "2026-11-06T05:37:04.054Z",
+      "task": [
+        {
+          "id": "1.1",
+          "descripcion": "(TDD) test/commands/spec-create.test.ts: test passing `nombre: 'Mi cambio'` asserts the progress registry entry records `nombre === 'Mi cambio'` (not changeId). RED first (current bug: src/commands/spec-create.ts sets `nombre: changeId`).",
+          "porcentaje": 100,
+          "estatus": "done"
+        },
+        {
+          "id": "1.2",
+          "descripcion": "Fix src/commands/spec-create.ts: registry entry uses `nombre: opts.nombre ?? changeId`. Update the existing assertion accordingly. GREEN.",
+          "porcentaje": 100,
+          "estatus": "done"
+        },
+        {
+          "id": "1.3",
+          "descripcion": "package.json: add `\"build\": \"tsc -p tsconfig.json\"` script alias (no test needed; verified by `npm run build` succeeding).",
+          "porcentaje": 100,
+          "estatus": "done"
+        },
+        {
+          "id": "1.4",
+          "descripcion": "docs/spec-native.md: new section documenting the orphan-dist caveat (tsc does not prune dist; cleanup: `rm -rf dist && npm run build`). No code change.",
+          "porcentaje": 100,
+          "estatus": "done"
+        },
+        {
+          "id": "2.1",
+          "descripcion": "(TDD) test for AGENT_PROFILES.codex { includeOpencode: false } and resolveAgent('codex') resolving correctly. RED.",
+          "porcentaje": 100,
+          "estatus": "done"
+        },
+        {
+          "id": "2.2",
+          "descripcion": "Add `codex: { includeOpencode: false }` to AGENT_PROFILES in src/agents/profiles.ts; update --agent help strings in src/bin/spectralis.ts to list codex. GREEN.",
+          "porcentaje": 100,
+          "estatus": "done"
+        },
+        {
+          "id": "2.3",
+          "descripcion": "(TDD) test for detect-tools: `.codex` detection + TOOLS_CATALOG entry `{ id: 'codex', label: 'Codex CLI', dirs: ['.codex'] }`. RED.",
+          "porcentaje": 100,
+          "estatus": "done"
+        },
+        {
+          "id": "2.4",
+          "descripcion": "Add the catalog entry in src/agents/detect-tools.ts; interactive menu surfaces codex (tool-selector). GREEN.",
+          "porcentaje": 100,
+          "estatus": "done"
+        },
+        {
+          "id": "3.1",
+          "descripcion": "(TDD) test for skill-detector: SKILL_AGENT_DIRS gets `{ dir: '.codex/skills', agent: 'codex' }` and detectSkills picks up SKILL.md under .codex/skills/. RED.",
+          "porcentaje": 100,
+          "estatus": "done"
+        },
+        {
+          "id": "3.2",
+          "descripcion": "Add the SKILL_AGENT_DIRS entry in src/core/skill-detector.ts. GREEN.",
+          "porcentaje": 100,
+          "estatus": "done"
+        },
+        {
+          "id": "3.3",
+          "descripcion": "(TDD) test for status toolDirs detection of `.codex`. RED.",
+          "porcentaje": 100,
+          "estatus": "done"
+        },
+        {
+          "id": "3.4",
+          "descripcion": "Add `codex: ['.codex']` to toolDirs in src/commands/status.ts; add `codex: '.codex'` to TOOL_PATHS in src/core/config.ts. GREEN.",
+          "porcentaje": 100,
+          "estatus": "done"
+        },
+        {
+          "id": "4.1",
+          "descripcion": "(TDD) new test (test/core/codex-mirror.test.ts): when codex is among selected tools, init produces `.codex/skills/<name>/SKILL.md` mirroring `.agents/skills/<name>/SKILL.md`, and mirror paths appear in the manifest managedPaths. RED.",
+          "porcentaje": 100,
+          "estatus": "done"
+        },
+        {
+          "id": "4.2",
+          "descripcion": "Implement the mirror in src/commands/init.ts: after copyPayload, before writeManifest, only when toolSelection.selected includes 'codex': walk the TARGET `.agents/skills/` and copy each SKILL.md tree into `.codex/skills/`; append mirror paths to managedPaths. GREEN.",
+          "porcentaje": 100,
+          "estatus": "done"
+        },
+        {
+          "id": "4.3",
+          "descripcion": "Add the same guarded mirror step to src/commands/update.ts so update keeps the mirror in sync; targeted test for the update path.",
+          "porcentaje": 100,
+          "estatus": "done"
+        },
+        {
+          "id": "4.4",
+          "descripcion": "src/commands/plan.ts: mention the `.codex/skills` mirror in the dry-run plan text when codex is selected (init plan test must still pass).",
+          "porcentaje": 100,
+          "estatus": "done"
+        },
+        {
+          "id": "5.1",
+          "descripcion": "README.md: mention `codex` as supported `--agent` value (Codex compatibility note).",
+          "porcentaje": 100,
+          "estatus": "done"
+        },
+        {
+          "id": "5.2",
+          "descripcion": "docs/spec-native.md: codex mirror behavior section (if tool lists live there).",
+          "porcentaje": 100,
+          "estatus": "done"
+        },
+        {
+          "id": "5.3",
+          "descripcion": "Review existing unit tests: no hardcoded catalog-length/profile-keys assumptions break (test/agents/detect-tools.test.ts, test/core/tool-selector.test.ts, test/commands/init.test.ts); update to include codex.",
+          "porcentaje": 100,
+          "estatus": "done"
+        },
+        {
+          "id": "5.4",
+          "descripcion": "Run `npm test` from 622/622 baseline (report real counts); `tsc` clean.",
+          "porcentaje": 100,
+          "estatus": "done"
+        },
+        {
+          "id": "5.5",
+          "descripcion": "Smoke: in a temp project, `node (dist) init --agent codex --yes` → `.agents/skills/` AND `.codex/skills/` mirrors + `AGENTS.md`; `spec status` lists codex-compat; `spectralis skill detect`/status tool labels correct. Report evidence.",
+          "porcentaje": 100,
+          "estatus": "done"
+        },
+        {
+          "id": "5.6",
+          "descripcion": "Run `timeout 300 bash qa/qa-coverage-gate.sh` if shell allows (or emulate per its docs; register QA-n in qa/pendientes-verificacion.md); `spectralis check --tdd` clean for this change.",
+          "porcentaje": 100,
+          "estatus": "done"
+        },
+        {
+          "id": "5.7",
+          "descripcion": "Update spec/codex-compat/change.json `estado` (open → done) and run `spectralis task codex-compat <last-task-id> --estado done` so the registry mirrors completion.",
+          "porcentaje": 100,
+          "estatus": "done"
+        }
+      ]
+    }
+  ]
+}

@@ -9,7 +9,8 @@ export function buildInitPlan(
   target: string,
   stack: StackInfo,
   profile: ResolvedAgent,
-  templateRoot: string
+  templateRoot: string,
+  selectedTools: string[] = []
 ): string[] {
   const lines: string[] = [];
   lines.push('== PLAN (dry-run; nothing written yet) ==');
@@ -38,6 +39,9 @@ export function buildInitPlan(
     lines.push(`     + ${rel}`);
   }
   lines.push(`     + ... (${listPayloadFiles(templateRoot, profile.includeOpencode).length} payload files, ${listDocsFiles(templateRoot).length} docs files)`);
+  if (selectedTools.includes('codex')) {
+    lines.push('  4a. Codex mirror: .agents/skills/ -> .codex/skills/ (copy, never symlink; tracked in the manifest).');
+  }
   lines.push('  4b. Standards composed from docs-variants/ based on the detected stack:');
   lines.push(
     stack.backend === 'none'

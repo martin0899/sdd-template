@@ -14,6 +14,7 @@ import {
 } from '../core/copy-payload';
 import { fillPlaceholders, resolveVariantFile, findUnresolvedPlaceholders, reportUnresolved } from '../core/compose-standards';
 import { writeManifest } from '../core/manifest';
+import { mirrorCodexSkills } from '../core/codex-mirror';
 import { runPostChecks } from '../core/post-checks';
 import { installGitHooks } from '../core/git-hooks';
 import { detectVaultRoot, readGlobalConfig, writeGlobalConfig, resolveEffectivePhilosophy } from '../core/config';
@@ -153,7 +154,7 @@ export async function runInit(opts: InitOptions = {}): Promise<number> {
   const includeOpencode = toolSelection.selected.includes('opencode');
 
   if (opts.dryRun) {
-    for (const line of buildInitPlan(target, stack, profile, root)) console.log(line);
+    for (const line of buildInitPlan(target, stack, profile, root, toolSelection.selected)) console.log(line);
     console.log(`  tools: ${toolSelection.selected.join(', ')} (via ${toolSelection.source})`);
     return 0;
   }
@@ -207,6 +208,17 @@ export async function runInit(opts: InitOptions = {}): Promise<number> {
   }
   console.log(`  ${pal.green('✔')} payload copy ........ ${copyReport.created.length} new, ${copyReport.conflicts.length} conflicts, ${copyReport.kept.length} kept`);
 
+  // 6b. Codex mirror: .agents/skills/ -> .codex/skills/ (copy, never symlink).
+  //     Only when codex is among the selected tools; the mirror paths are
+  //     managed by the manifest so `update` keeps them in sync.
+  let mirrorPaths: string[] = [];
+  if (toolSelection.selected.includes('codex')) {
+    const mirror = mirrorCodexSkills({ target, confirmFn });
+    mirrorPaths = mirror.paths;
+    console.log(`  ${pal.green('✔')} codex mirror ........ ${mirror.created.length} new, ${mirror.updated.length} updated, ${mirror.unchanged.length} unchanged, ${mirror.conflicts.length} conflicts`);
+    for (const rel of mirror.failed) console.log(`  [ERROR] Failed to mirror: ${rel}`);
+  }
+
   // 7. Standards composed from docs-variants per detected stack.
   let composedCount = 0;
   if (stack.backend !== 'none') {
@@ -225,7 +237,8 @@ export async function runInit(opts: InitOptions = {}): Promise<number> {
       ...listDocsFiles(root),
       'AGENTS.md',
       ...(stack.backend !== 'none' ? [COMPOSED_STANDARDS[0]] : []),
-      ...(stack.frontend !== 'none' ? [COMPOSED_STANDARDS[1]] : [])
+      ...(stack.frontend !== 'none' ? [COMPOSED_STANDARDS[1]] : []),
+      ...mirrorPaths
     ])
   );
   writeManifest(target, managedPaths, projectVersion, version, toolSelection.selected);

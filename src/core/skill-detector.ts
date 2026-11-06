@@ -9,7 +9,8 @@ import matter from 'gray-matter';
 export const SKILL_AGENT_DIRS: ReadonlyArray<{ dir: string; agent: string }> = [
   { dir: '.agents/skills', agent: 'opencode' },
   { dir: '.claude/skills', agent: 'claude' },
-  { dir: '.cursor/skills', agent: 'cursor' }
+  { dir: '.cursor/skills', agent: 'cursor' },
+  { dir: '.codex/skills', agent: 'codex' }
 ];
 
 export interface DetectedSkill {

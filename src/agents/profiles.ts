@@ -13,6 +13,7 @@ export const AGENT_PROFILES: Record<string, AgentProfile> = {
   opencode: { includeOpencode: true },
   antigravity: { includeOpencode: false },
   claude: { includeOpencode: false },
+  codex: { includeOpencode: false },
   all: { includeOpencode: true }
 };
 

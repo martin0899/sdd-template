@@ -36,6 +36,33 @@ test('--status shows installed info with exit code 0', () => {
   }
 });
 
+test('--status reports the codex tool when its directory exists', () => {
+  const tmpDir = join(process.cwd(), '.test-tmp-status-codex');
+  rmSync(tmpDir, { recursive: true, force: true });
+  mkdirSync(tmpDir, { recursive: true });
+  mkdirSync(join(tmpDir, '.codex'), { recursive: true });
+
+  writeFileSync(join(tmpDir, '.sdd-manifest.json'), JSON.stringify({
+    schemaVersion: 3,
+    spectralisVersion: '1.3.0',
+    templateVersion: '1.3.0',
+    tools: ['codex'],
+    files: [{ path: 'package.json', hash: 'abc123' }]
+  }));
+
+  try {
+    const result = execSync(`node ${CLI} status`, {
+      cwd: tmpDir,
+      encoding: 'utf8'
+    });
+    assert.ok(result.includes('codex'), 'Should show the codex tool');
+    assert.match(result, /✓ codex/, 'The codex directory must be detected');
+    assert.doesNotMatch(result, /codex - directory not found/, 'The codex directory exists');
+  } finally {
+    rmSync(tmpDir, { recursive: true, force: true });
+  }
+});
+
 test('--status exits with code 2 when no manifest', () => {
   const tmpDir = join(process.cwd(), '.test-tmp-status-nomanifest');
   rmSync(tmpDir, { recursive: true, force: true });
