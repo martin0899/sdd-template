@@ -146,6 +146,275 @@
           "estatus": "done"
         }
       ]
+    },
+    {
+      "id": "lean-harness-payload",
+      "nombre": "lean-harness-payload",
+      "porcentaje": 0,
+      "estado": "todo",
+      "updatedAt": "2026-11-06T05:55:31.216Z",
+      "task": []
+    },
+    {
+      "id": "remove-openspec-engine",
+      "nombre": "remove-openspec-engine",
+      "porcentaje": 100,
+      "estado": "done",
+      "updatedAt": "2026-11-06T05:55:31.219Z",
+      "task": [
+        {
+          "id": "1.1",
+          "descripcion": "Write tests for `src/core/sdd-essentials.ts` covering `missingSddEssentials` function with `resolveChangesDir`-based signature. Verify tests pass with current facade implementation before extraction.",
+          "porcentaje": null,
+          "estatus": "done"
+        },
+        {
+          "id": "1.2",
+          "descripcion": "Extract `missingSddEssentials` from `src/core/spec-facade.ts` to `src/core/sdd-essentials.ts`. Update imports in `src/commands/spec-validate.ts` to use new location. Verify `spectralis spec validate` still works and tests pass.",
+          "porcentaje": null,
+          "estatus": "done"
+        },
+        {
+          "id": "1.3",
+          "descripcion": "Delete `src/core/spec-facade.ts` and all facade-related tests. Verify no imports reference it and `tsc` compiles cleanly.",
+          "porcentaje": null,
+          "estatus": "done"
+        },
+        {
+          "id": "1.4",
+          "descripcion": "Delete `.spectralis/facade-state.json` handling code. Verify no code reads or writes facade-state. Existing state files left inert on disk.",
+          "porcentaje": null,
+          "estatus": "done"
+        },
+        {
+          "id": "2.1",
+          "descripcion": "Write tests verifying config commands (`config --set`, `config --get`, `config list`) reject or ignore `engine` key. Verify tests fail with current implementation.",
+          "porcentaje": null,
+          "estatus": "done"
+        },
+        {
+          "id": "2.2",
+          "descripcion": "Remove `engine` key from `SpectralisConfig` type in `src/core/config.ts`. Remove engine-related validation and serialization. Verify tests pass.",
+          "porcentaje": null,
+          "estatus": "done"
+        },
+        {
+          "id": "2.3",
+          "descripcion": "Delete `src/core/resolve-engine.ts` and all its exports. Remove imports from `src/core/config.ts`, `src/core/prereqs.ts`, `src/commands/doctor.ts`. Verify `tsc` compiles cleanly.",
+          "porcentaje": null,
+          "estatus": "done"
+        },
+        {
+          "id": "2.4",
+          "descripcion": "Remove `openspecCheck` and `OPENSPEC_TOOL` from `src/core/prereqs.ts`. Remove openspec from prerequisite checks. Verify `spectralis doctor` does not report openspec and tests pass.",
+          "porcentaje": null,
+          "estatus": "done"
+        },
+        {
+          "id": "2.5",
+          "descripcion": "Remove openspec labels from `src/commands/doctor.ts`. Remove conditional engine-based reporting. Verify doctor output contains no openspec mentions and tests pass.",
+          "porcentaje": null,
+          "estatus": "done"
+        },
+        {
+          "id": "3.1",
+          "descripcion": "Write tests for native init: verify `spec/` directory created with `progress.json` (empty-seeded) and `config.yaml` with spanish-context section. Verify tests fail with current openspec init call.",
+          "porcentaje": null,
+          "estatus": "done"
+        },
+        {
+          "id": "3.2",
+          "descripcion": "Remove `openspec init` call from `src/commands/init.ts:170-183`. Replace with native scaffolding: create `spec/` directory, seed empty `progress.json`, inject spanish-context into `spec/config.yaml`. Verify tests pass.",
+          "porcentaje": null,
+          "estatus": "done"
+        },
+        {
+          "id": "3.3",
+          "descripcion": "Remove `openspecTools` field from profiles in `src/agents/profiles.ts`. Remove openspec-specific tooling entries. Verify `spectralis init --tools` still accepts flag but does not influence openspec tooling.",
+          "porcentaje": null,
+          "estatus": "done"
+        },
+        {
+          "id": "3.4",
+          "descripcion": "Update `src/commands/plan.ts` to remove openspec init references. Update plan output to reflect native-only scaffolding. Verify plan command output is correct.",
+          "porcentaje": null,
+          "estatus": "done"
+        },
+        {
+          "id": "4.1",
+          "descripcion": "Write tests verifying commands (doctor, tdd-check, projects, seed, view) use single-dir via `resolveChangesDir()`. Verify tests fail with current dual-read implementation.",
+          "porcentaje": null,
+          "estatus": "done"
+        },
+        {
+          "id": "4.2",
+          "descripcion": "Update `src/core/tdd-check.ts` to use `resolveChangesDir()` only. Remove dual-read logic. Verify `spectralis check --tdd` reads from single directory and tests pass.",
+          "porcentaje": null,
+          "estatus": "done"
+        },
+        {
+          "id": "4.3",
+          "descripcion": "Update `src/core/vault-doctor.ts` to use `resolveChangesDir()` only. Remove dual-read logic. Verify doctor reports on single directory and tests pass.",
+          "porcentaje": null,
+          "estatus": "done"
+        },
+        {
+          "id": "4.4",
+          "descripcion": "Update `src/commands/projects.ts`, `src/commands/seed.ts`, `src/commands/view.ts` to use `resolveChangesDir()` only. Remove dual-read logic. Verify tests pass.",
+          "porcentaje": null,
+          "estatus": "done"
+        },
+        {
+          "id": "4.5",
+          "descripcion": "Decide: delete `src/core/legacy-changes-reader.ts` OR repurpose for migrate-only. If deleted, move legacy reader logic into `src/commands/spec-migrate.ts` as direct reader. Update spec-migrate to use inline or dedicated reader. Verify `spectralis spec migrate` still works.",
+          "porcentaje": null,
+          "estatus": "done"
+        },
+        {
+          "id": "4.6",
+          "descripcion": "Update `src/core/resolve-changes-dir.ts` comments to reflect single-dir philosophy. Remove references to dual-read window. Verify `tsc` compiles cleanly.",
+          "porcentaje": null,
+          "estatus": "done"
+        },
+        {
+          "id": "5.1",
+          "descripcion": "Write tests for retired-marking behavior: verify `openspec/config.yaml` is classified as retired by `classify-update.ts` and removed by `update --prune`. Verify tests fail with current special-path handling.",
+          "porcentaje": null,
+          "estatus": "done"
+        },
+        {
+          "id": "5.2",
+          "descripcion": "Update `src/commands/update.ts:41` to remove `openspec/config.yaml` from `MANIFEST_SPECIAL_PATHS`. Add retired-file marking logic. Verify tests pass.",
+          "porcentaje": null,
+          "estatus": "done"
+        },
+        {
+          "id": "5.3",
+          "descripcion": "Update `src/core/classify-update.ts:16-20` to treat `openspec/config.yaml` as retired. Verify classification logic marks it correctly and tests pass.",
+          "porcentaje": null,
+          "estatus": "done"
+        },
+        {
+          "id": "5.4",
+          "descripcion": "Update `src/core/copy-payload.ts` to stop listing `openspec/config.yaml`. Remove from payload files. Verify `spectralis seed` does not copy legacy config.",
+          "porcentaje": null,
+          "estatus": "done"
+        },
+        {
+          "id": "5.5",
+          "descripcion": "Update `src/core/post-checks.ts` to check spanish-context in `spec/config.yaml` only. Remove `openspec/config.yaml` from config file list. Verify post-checks work correctly.",
+          "porcentaje": null,
+          "estatus": "done"
+        },
+        {
+          "id": "5.6",
+          "descripcion": "Update `src/core/spanish-context.ts` to write to `spec/config.yaml` only. Remove legacy config path handling. Verify spanish-context injection targets native config.",
+          "porcentaje": null,
+          "estatus": "done"
+        },
+        {
+          "id": "6.1",
+          "descripcion": "Write tests verifying `copy-payload.ts` excludes opsx-* commands and openspec-* skills. Verify tests fail with current payload.",
+          "porcentaje": null,
+          "estatus": "done"
+        },
+        {
+          "id": "6.2",
+          "descripcion": "Update `src/core/copy-payload.ts:4-5` to remove vendor payload (opsx-* commands, openspec-* skills). Update `PAYLOAD_DIRS` and `PAYLOAD_FILES` to exclude openspec-specific content. Verify tests pass.",
+          "porcentaje": null,
+          "estatus": "done"
+        },
+        {
+          "id": "6.3",
+          "descripcion": "Update `src/agents/profiles.ts` to remove openspec tooling entries from profile lists. Verify profiles load correctly without openspec references.",
+          "porcentaje": null,
+          "estatus": "done"
+        },
+        {
+          "id": "6.4",
+          "descripcion": "Update `src/core/rules-contract.ts` comments to remove references to opsx-* commands and openspec-* skills. Verify `tsc` compiles cleanly.",
+          "porcentaje": null,
+          "estatus": "done"
+        },
+        {
+          "id": "7.1",
+          "descripcion": "Identify test-pinned sections using header-freeze method: graphify-usage '## Navegación del vault Obsidian', agent-rules-contract CYCLE ids. Verify none of the 9 F4-edited skills is pinned to legacy strings before scrubbing.",
+          "porcentaje": null,
+          "estatus": "done"
+        },
+        {
+          "id": "7.2",
+          "descripcion": "Update `.agents/skills/exploration-briefing/SKILL.md` §6: replace 6× 'openspec new change' with 'spectralis spec create <id> --nombre'. Verify skill content updated and tests pass.",
+          "porcentaje": null,
+          "estatus": "done"
+        },
+        {
+          "id": "7.3",
+          "descripcion": "Update `.agents/skills/spec-from-note/SKILL.md`, `.agents/skills/agent-rules-contract/SKILL.md`, `.agents/skills/adversarial-review/SKILL.md`, `.agents/skills/graphify-usage/SKILL.md`, `.agents/skills/obsidian-*/SKILL.md` to drop legacy openspec mentions. Preserve header-frozen sections. Verify skills updated correctly.",
+          "porcentaje": null,
+          "estatus": "done"
+        },
+        {
+          "id": "7.4",
+          "descripcion": "Update `docs/base-standards.md` §8: rename heading to '## 8. Change Artifact Updates for Post-Apply Changes' and update prose to native-only. Verify document updated and references correct.",
+          "porcentaje": null,
+          "estatus": "done"
+        },
+        {
+          "id": "7.5",
+          "descripcion": "Update `docs/spec-native.md` to de-dual: remove openspec engine references, describe single native mode. Verify document updated.",
+          "porcentaje": null,
+          "estatus": "done"
+        },
+        {
+          "id": "7.6",
+          "descripcion": "Update `README.md` and `CHANGELOG.md` to reflect F5 changes. Update installation/setup sections to remove openspec CLI references. Verify documents updated.",
+          "porcentaje": null,
+          "estatus": "done"
+        },
+        {
+          "id": "7.7",
+          "descripcion": "Verify git marks: `src/core/gitignore.ts:14` keeps `openspec/` ignore pattern (documented as migration-only). `src/core/config.ts:312` keeps detection marker (documented as migration-only). Add comments documenting both as migration-only.",
+          "porcentaje": null,
+          "estatus": "done"
+        },
+        {
+          "id": "8.1",
+          "descripcion": "Run `npm test` and recompute baseline from 624/624 minus deleted suites. Report real count. Verify all tests pass.",
+          "porcentaje": null,
+          "estatus": "done"
+        },
+        {
+          "id": "8.2",
+          "descripcion": "Run `tsc` and verify clean compilation with no errors.",
+          "porcentaje": null,
+          "estatus": "done"
+        },
+        {
+          "id": "8.3",
+          "descripcion": "Run `spectralis check --tdd` and verify qa gate passes.",
+          "porcentaje": null,
+          "estatus": "done"
+        },
+        {
+          "id": "8.4",
+          "descripcion": "Run grep verification: `src/` has NO functional 'openspec' references except (gitignore string in `src/core/gitignore.ts:14`, config.ts:312 marker string, spec-migrate legacy reader, comments/history, retired-marking tests). Verify grep results match acceptance criteria.",
+          "porcentaje": null,
+          "estatus": "done"
+        },
+        {
+          "id": "8.5",
+          "descripcion": "Run grep verification: skills have zero functional openspec prescriptions ('openspec new change' only as historical name in openspec-gate). Verify grep results match acceptance criteria.",
+          "porcentaje": null,
+          "estatus": "done"
+        },
+        {
+          "id": "8.6",
+          "descripcion": "Document dogfood step: coordinator runs `spectralis spec migrate` post-commit (out of change scope). Add note in CHANGELOG or commit message.",
+          "porcentaje": null,
+          "estatus": "done"
+        }
+      ]
     }
   ]
 }

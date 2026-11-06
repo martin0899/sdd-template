@@ -1,0 +1,6 @@
+{
+  "changes": [
+    "lean-harness-payload",
+    "remove-openspec-engine"
+  ]
+}
