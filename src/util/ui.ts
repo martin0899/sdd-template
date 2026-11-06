@@ -88,11 +88,9 @@ export function printBanner(
 ): string {
   const lines: string[] = [];
   const rule = '─'.repeat(52);
-  lines.push(p.bold('  ╔═╗╦═╗╔═╗╔═╗╦═╗╔═╗╦  ╔═╗'));
-  lines.push(p.bold('  ╠═╣╠╦╝╠═╣║  ╠╦╝╠═╣║  ╚═╗'));
-  lines.push(p.bold('  ╩ ╩╩╚═╩ ╩╚═╝╩╚═╩ ╩╩═╝╚═'));
-  lines.push(p.dim('  Spec-Driven Development toolkit · no npm registry'));
-  lines.push(p.dim(`  spectralis ${spectralisVersion} · ${label} ${projectVersion}`));
+  lines.push(p.bold('  spectralis'));
+  lines.push(p.dim('  Spec-Driven Development toolkit'));
+  lines.push(p.dim(`  arnés ${spectralisVersion} · ${label} ${projectVersion}`));
   return [rule, ...lines, rule].join('\n');
 }
 
