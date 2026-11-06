@@ -103,13 +103,13 @@ export async function runInit(opts: InitOptions = {}): Promise<number> {
   const detectedVault = detectVaultRoot();
   const globalCfg = readGlobalConfig();
   if (!globalCfg.vault_root && detectedVault) {
-    console.log(`  ${pal.green('✔')} vault detected ..... ${detectedVault}`);
+    console.log(`  ${pal.green('●')} vault detected ..... ${detectedVault}`);
     globalCfg.vault_root = detectedVault;
     globalCfg.templates_dir = join(detectedVault, '09_Plantilla');
     globalCfg.requirements_dir = join(detectedVault, '00_Notas');
     globalCfg.projects_dir = join(detectedVault, '01_Proyectos');
     writeGlobalConfig(globalCfg);
-    console.log(`  ${pal.green('✔')} vault routes saved . global config updated`);
+    console.log(`  ${pal.green('●')} vault routes saved . global config updated`);
   }
 
   // Destination defaults to the current working directory (git init style).
@@ -178,7 +178,7 @@ export async function runInit(opts: InitOptions = {}): Promise<number> {
   if (!existsSync(join(specDir, 'progress.json'))) {
     writeProgress(target, { change: [] });
   }
-  console.log(`  ${pal.green('✔')} native scaffolding .. spec/ created (progress.json)`);
+  console.log(`  ${pal.green('●')} native scaffolding .. spec/ created (progress.json)`);
 
   // 4. Spanish context injection (APPEND semantics) into spec/config.yaml.
   const contextFiles = injectSpanishContextInProject(target);
@@ -187,15 +187,15 @@ export async function runInit(opts: InitOptions = {}): Promise<number> {
     return 1;
   }
   for (const file of contextFiles) {
-    console.log(`  ${pal.green('✔')} Spanish context ..... injected (${file})`);
+    console.log(`  ${pal.green('●')} Spanish context ..... injected (${file})`);
   }
 
   // 5. Managed blocks: AGENTS.md and .gitignore (idempotent).
   const agentsResult = manageAgentsMd(root, target, { confirmFn });
-  console.log(`  ${pal.green('✔')} AGENTS.md managed block .: ${agentsResult.status}`);
+  console.log(`  ${pal.green('●')} AGENTS.md managed block .: ${agentsResult.status}`);
   for (const w of agentsResult.warnings) console.log(`  [WARN] ${w}`);
   const giResult = manageGitignore(target, { confirmFn });
-  console.log(`  ${pal.green('✔')} managed .gitignore ..: ${giResult.status}`);
+  console.log(`  ${pal.green('●')} managed .gitignore ..: ${giResult.status}`);
   for (const w of giResult.warnings) console.log(`  [WARN] ${w}`);
 
   // 6. Payload + docs copy with anti-corruption policy.
@@ -209,7 +209,7 @@ export async function runInit(opts: InitOptions = {}): Promise<number> {
     console.error(`[ERROR] Partial installation: ${copyReport.failed.length} file(s) failed. Backups preserved in ${String(copyReport.backupRoot)}`);
     return 1;
   }
-  console.log(`  ${pal.green('✔')} payload copy ........ ${copyReport.created.length} new, ${copyReport.conflicts.length} conflicts, ${copyReport.kept.length} kept`);
+  console.log(`  ${pal.green('●')} payload copy ........ ${copyReport.created.length} new, ${copyReport.conflicts.length} conflicts, ${copyReport.kept.length} kept`);
 
   // 6b. Codex mirror: .agents/skills/ -> .codex/skills/ (copy, never symlink).
   //     Only when codex is among the selected tools; the mirror paths are
@@ -218,7 +218,7 @@ export async function runInit(opts: InitOptions = {}): Promise<number> {
   if (toolSelection.selected.includes('codex')) {
     const mirror = mirrorCodexSkills({ target, confirmFn });
     mirrorPaths = mirror.paths;
-    console.log(`  ${pal.green('✔')} codex mirror ........ ${mirror.created.length} new, ${mirror.updated.length} updated, ${mirror.unchanged.length} unchanged, ${mirror.conflicts.length} conflicts`);
+    console.log(`  ${pal.green('●')} codex mirror ........ ${mirror.created.length} new, ${mirror.updated.length} updated, ${mirror.unchanged.length} unchanged, ${mirror.conflicts.length} conflicts`);
     for (const rel of mirror.failed) console.log(`  [ERROR] Failed to mirror: ${rel}`);
   }
 
@@ -245,12 +245,12 @@ export async function runInit(opts: InitOptions = {}): Promise<number> {
     ])
   );
   writeManifest(target, managedPaths, projectVersion, version, toolSelection.selected);
-  console.log(`  ${pal.green('✔')} manifest ............ ${managedPaths.length} files hashed (project v${projectVersion})`);
+  console.log(`  ${pal.green('●')} manifest ............ ${managedPaths.length} files hashed (project v${projectVersion})`);
 
   // 9. Git hooks (post-merge auto-rebuild).
   const hookResult = installGitHooks(target);
   if (hookResult.installed) {
-    console.log(`  ${pal.green('✔')} git hooks ........... post-merge installed`);
+    console.log(`  ${pal.green('●')} git hooks ........... post-merge installed`);
   } else if (hookResult.skipped) {
     console.log(`  ${pal.check} git hooks ........... ${hookResult.skipped}`);
   }
@@ -272,7 +272,7 @@ export async function runInit(opts: InitOptions = {}): Promise<number> {
   const obsidianActive = isObsidianActive({ obsidian: opts.obsidian, noObsidian: opts.noObsidian }, target);
   if (obsidianActive) {
     console.log('');
-    console.log(`  ${pal.green('✔')} obsidianSync ..... active — syncing manuals to the brain`);
+    console.log(`  ${pal.green('●')} obsidianSync ..... active — syncing manuals to the brain`);
     await runNotesInit({ destino: target, templateRoot: root });
     await runNotesSync({ destino: target, templateRoot: root });
   }
