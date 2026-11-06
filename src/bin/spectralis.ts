@@ -33,6 +33,7 @@ import { runWikiSearch } from '../commands/wiki-search';
 import { runBump } from '../commands/bump';
 import { runView } from '../commands/view';
 import { runTask } from '../commands/task';
+import { maybePrintUpdateNotice } from '../core/version-check';
 
 const pkg = require('../../package.json') as { version: string };
 
@@ -43,6 +44,10 @@ if (process.argv.includes('--v')) {
 }
 
 const program = new Command();
+
+program.hook('preAction', () => {
+  maybePrintUpdateNotice(pkg.version);
+});
 
 program
   .name('spectralis')
@@ -259,8 +264,9 @@ program
   .command('view [change]')
   .description('Show the state of the active changes (read-only)')
   .option('-p, --project-root <path>', 'project root (default: the project of the current directory)')
-  .action(async (change: string | undefined, opts: { projectRoot?: string }) => {
-    const code = await runView({ change, projectRoot: opts.projectRoot });
+  .option('--archived', 'list or inspect archived changes (spec/_archived)')
+  .action(async (change: string | undefined, opts: { projectRoot?: string; archived?: boolean }) => {
+    const code = await runView({ change, projectRoot: opts.projectRoot, archived: opts.archived });
     process.exitCode = code;
   });
 
