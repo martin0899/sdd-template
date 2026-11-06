@@ -148,18 +148,11 @@ test('checkOrphanedRegistryEntries still reports a truly dangling spec-id', () =
   assert.equal(findings[0].severity, 'warning');
 });
 
-test('contract: an archive folder name from this repo resolves without its date prefix', () => {
-  // The name comes from the real archive of this repo (a date-prefixed folder
-  // must resolve by its bare spec-id). The fixture pins the historical layout,
-  // so the resolver points at the directory that holds the archive.
-  const repoArchive = join(process.cwd(), 'openspec', 'changes', 'archive');
-  const names = readdirSync(repoArchive, { withFileTypes: true })
-    .filter((d) => d.isDirectory())
-    .map((d) => d.name);
-  const prefixed = names.filter((n) => /^\d{4}-\d{2}-\d{2}-/.test(n));
-  assert.ok(prefixed.length > 0, 'the repo must actually store date-prefixed archive folders');
-  // Every prefixed folder must be resolvable by its bare spec-id.
-  const specId = prefixed[prefixed.length - 1].replace(/^\d{4}-\d{2}-\d{2}-/, '');
+test('contract: an archive folder name resolves without its date prefix', () => {
+  // A date-prefixed archive folder must resolve by its bare spec-id. After the
+  // removal of the openspec engine the repo no longer keeps date-prefixed
+  // archive folders, so the fixture pins the historical layout itself.
+  const specId = 'archive-resolution-fixture';
   const root = scratch();
   writeArchivedChange(root, specId);
   const rows = writeRegistry(

@@ -69,7 +69,7 @@ function skillFolderHash(dir: string): string {
 
 test('la spec viva de optimize-token-consumption declara el router de 22–28 líneas', () => {
   const spec = readFileSync(
-    join(REPO, 'openspec', 'specs', 'optimize-token-consumption', 'spec.md'),
+    join(REPO, 'spec', '_archived', 'optimize-token-consumption', 'design.md'),
     'utf8'
   );
   assert.ok(
