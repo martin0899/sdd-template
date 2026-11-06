@@ -7,7 +7,7 @@ description: Review and complete the live folder-note details in Obsidian after 
 
 > **Orquestada**: cuando `obsidianSync=1` (o `--obsidian`), esta skill se invoca automáticamente desde `obsidian-orchestration` al archivar un change. Con el switch en `0`, se usa solo por invocación explícita.
 
-Revisa y completa los detalles del **folder note vivo** en Obsidian después de cerrar un change. En el flujo **nativo** el resumen portátil del wiki lo escribe directamente el archive (`spectralis spec archive`), así que esta skill ya **no genera documentos aparte**: consolida en el folder note único (`## Cambios realizados`, `## Lecciones aprendidas`) lo que el archive no puede dejar escrito allí. Con `engine: openspec` su comportamiento es el legacy: generar el resumen a partir de los artefactos del change.
+Revisa y completa los detalles del **folder note vivo** en Obsidian después de cerrar un change. En el flujo **nativo** el resumen portátil del wiki lo escribe directamente el archive (`spectralis spec archive`), así que esta skill ya **no genera documentos aparte**: consolida en el folder note único (`## Cambios realizados`, `## Lecciones aprendidas`) lo que el archive no puede dejar escrito allí.
 
 ## Rutas y Configuración
 
@@ -45,7 +45,7 @@ Read the change artifacts to understand what was done:
 spectralis spec status <change-id>
 ```
 
-In the native flow the archive has already written the portable summary in the brain (`05_wiki/<wiki-project>/<change-id>.md`): read it as the source of truth and complete the folder note with what is missing. With `engine: openspec`, the context comes from the external CLI's own status command.
+In the native flow the archive has already written the portable summary in the brain (`05_wiki/<wiki-project>/<change-id>.md`): read it as the source of truth and complete the folder note with what is missing.
 
 Extract:
 - Change name and description
@@ -56,7 +56,7 @@ Extract:
 
 ### Step 2: Read Change Artifacts
 
-Read the following files from the change directory (native: `spec/<change-id>/`, or `spec/_archived/<change-id>/` once archived; `engine: openspec`: `openspec/changes/<change-name>/`):
+Read the following files from the change directory (`spec/<change-id>/`, or `spec/_archived/<change-id>/` once archived):
 
 1. `proposal.md` - What was proposed
 2. `design.md` - How it was designed
@@ -151,7 +151,7 @@ tags:
 - <pending-item>
 
 ## 6. Enlaces
-- **Change**: `spec/<change-name>` (nativo) · `openspec/changes/<change-name>` (`engine: openspec`)
+- **Change**: `spec/<change-name>`
 - **Briefing**: `.sdd-registry/briefings/<req-id>.md`
 - **Requerimiento Original**: <requirement-link>
 ```
@@ -174,7 +174,7 @@ Complete the tests section alongside the summary for complete documentation.
 
 1. **Always use template** - Use the template from `09_Plantilla/Resumen de Especificacion.md`
 2. **Context max 500 chars** - Keep the context section concise
-3. **Link to source** - Always link back to the change (native: `spec/<id>/`; `engine: openspec`: `openspec/changes/<id>/`) and the requirement
+3. **Link to source** - Always link back to the change (`spec/<id>/`) and the requirement
 4. **Portable format** - Ensure the document is readable without the spec context
 5. **Spanish content** - Write the summary in Spanish for the user
 

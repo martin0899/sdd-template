@@ -32,10 +32,10 @@ Una consulta de graphify devuelve nodos del **código**; el vault es donde vive 
 
 - **Notas del proyecto activo** — `01_Proyectos/<proyecto-activo>/_Notas/`: es el único lugar donde se buscan notas pendientes o propuestas. `_Notas/_lessons.md` registra las lecciones aprendidas (skill `lessons`).
 - **Índice del grafo** — `graphify-out/wiki/index.md`: punto de entrada para recorrer el grafo sin releer el código fuente.
-- **Contratos y ciclos** — `spec/` (requisitos vigentes y changes del ciclo activo; layout nativo) y, con el motor opcional `engine: openspec`, `openspec/specs/` (requisitos vigentes) y `openspec/changes/<id>/` (artefactos del cambio activo).
+- **Contratos y ciclos** — `spec/` (requisitos vigentes y changes del ciclo activo; layout nativo). `openspec/specs/` se conserva solo como archivo histórico de instalaciones antiguas: el arnés no lo lee ni lo escribe.
 - **Manuales del cerebro** — `03_Recursos/02_Sistemas_info/`: manuales canónicos del arnés, sincronizados con `spectralis notes sync`.
 
-Flujo recomendado: `graphify query "<pregunta>"` → nodo relevante → nota del proyecto en `01_Proyectos/` → spec en `spec/` (nativo) u `openspec/specs/` (motor `engine: openspec`) si el comportamiento está especificado.
+Flujo recomendado: `graphify query "<pregunta>"` → nodo relevante → nota del proyecto en `01_Proyectos/` → spec en `spec/` si el comportamiento está especificado.
 
 ## Mantenimiento
 

@@ -25,7 +25,9 @@ test('buildInitPlan mentions every mandatory section', () => {
     const profile = resolveAgent(undefined);
     const plan = buildInitPlan(dir, stack, profile, join(__dirname, '..', '..', '..')).join('\n');
     assert.match(plan, /PLAN/);
-    assert.match(plan, /openspec init/);
+    assert.match(plan, /native scaffolding/i);
+    assert.match(plan, /spec\//);
+    assert.doesNotMatch(plan, /openspec/i);
     assert.match(plan, /AGENTS\.md/);
     assert.match(plan, /gitignore/i);
     assert.match(plan, /Spanish context/);

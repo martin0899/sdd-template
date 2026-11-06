@@ -1,6 +1,6 @@
 # spectralis CLI Manual
 
-Standard usage documentation for the `spectralis` CLI: the tool that installs and updates the SDD template (OpenSpec root, skills, opencode commands, composed standards, managed blocks) into any project without corrupting it.
+Standard usage documentation for the `spectralis` CLI: the tool that installs and updates the SDD template (native spec root, skills, opencode commands, composed standards, managed blocks) into any project without corrupting it.
 
 ## Overview
 
@@ -21,7 +21,6 @@ spectralis update                  (re-sync installed destination with current t
 |------|-------------|-----------------|
 | git | `spectralis doctor` | any recent |
 | node | `spectralis doctor` | >= 22 |
-| openspec CLI | `spectralis doctor` | current |
 | graphify CLI | `spectralis doctor` | current |
 
 ## Commands
@@ -37,8 +36,8 @@ Installs the SDD template into a project. With no argument, the destination is t
 1. Prerequisites gate — aborts without writing when a tool is missing
 2. Read-only stack recognition (backend/frontend variants from project indicators)
 3. Tool selection (interactive menu or `--agent` flag)
-4. `openspec init` (non-interactive) when the OpenSpec root is missing
-5. Spanish context injected by APPEND into `openspec/config.yaml` (comments and user context preserved)
+4. Native scaffolding — `spec/` is created with `spec/progress.json` seeded empty (no external CLI is spawned)
+5. Spanish context injected by APPEND into `spec/config.yaml` (comments and user context preserved)
 6. Managed blocks in `AGENTS.md` (create / append / refresh, idempotent) and `.gitignore` (incl. `.claude/`)
 7. Payload copy — new files copied in batch after confirmation; conflicts shown in a single summary with per-file decisions; identical files are skipped
 8. Standards composed from `docs-variants/` per detected stack (placeholders filled; unresolvable placeholders stay visible for onboarding)
@@ -63,10 +62,10 @@ Nothing is written before the user confirms. Re-runs are idempotent
 
 | Agent | Value | Ships |
 |-------|-------|-------|
-| OpenCode (default) | `opencode` | `.agents/` + `.opencode/` + `docs/` + AGENTS.md + openspec |
-| Antigravity | `antigravity` | `.agents/` + `docs/` + AGENTS.md + openspec (no `.opencode/`) |
+| OpenCode (default) | `opencode` | `.agents/` + `.opencode/` + `docs/` + AGENTS.md + spec/ |
+| Antigravity | `antigravity` | `.agents/` + `docs/` + AGENTS.md + spec/ (no `.opencode/`) |
 | Claude Code | `claude` | same as `antigravity` (plus optional `npx skills`) |
-| All | `all` | `.agents/` + `.opencode/` + `docs/` + AGENTS.md + openspec |
+| All | `all` | `.agents/` + `.opencode/` + `docs/` + AGENTS.md + spec/ |
 
 Unknown `--agent` values are rejected with the valid list before any write.
 
@@ -99,12 +98,12 @@ $ spectralis init my-project
 == PLAN ==
   1. Prerequisites verified.
   -- recognition: ./my-project
-     openspec/            missing (will be created with openspec init)
+     spec/                missing (will be created with the native scaffolding)
      backend : variant generic
      frontend: variant generic
      project : my-project
-  2. openspec init (non-interactive) with tools: opencode
-  3. Spanish context injected by APPEND into openspec/config.yaml
+  2. Native scaffolding: spec/ + spec/progress.json (no external CLI is spawned).
+  3. Spanish context injected by APPEND into spec/config.yaml
   ... (confirmation prompt; nothing written until confirmed)
 ```
 
@@ -113,12 +112,12 @@ $ spectralis init --agent opencode --dry-run
 == PLAN (dry-run; nothing written yet) ==
   1. Prerequisites verified.
   -- recognition: /path/to/demo-project
-     openspec/            missing (will be created with openspec init)
+     spec/                missing (will be created with the native scaffolding)
      graphify-out/        missing (create it later: graphify update .)
      backend : variant generic
      frontend: variant generic
      project : demo-project
-  2. openspec init (non-interactive) with tools: opencode
+  2. Native scaffolding: spec/ + spec/progress.json (no external CLI is spawned).
   ...
   4b. Standards composed from docs-variants/ based on the detected stack:
      backend-standards.md  <- docs-variants/backend/generic.md (known placeholders filled)
@@ -253,7 +252,6 @@ $ spectralis doctor
   spectralis doctor · host prerequisites
   [OK] git (git version 2.52.0)
   [OK] node (v22.21.1)
-  [OK] openspec (Usage: openspec [options] [command])
   [OK] graphify (Usage: graphify <command>)
 
 [OK] Host is ready. Run: spectralis init
@@ -263,7 +261,7 @@ $ spectralis doctor
 $ spectralis doctor        # when a tool is missing
   spectralis doctor · host prerequisites
   [OK] git (git version 2.52.0)
-  [FAIL] openspec (not found)
+  [FAIL] graphify (not found)
   -> Install instructions for the detected OS are printed below.
 
 [FAIL] Host not ready. Install the missing tools and re-run.
@@ -391,12 +389,12 @@ $ spectralis config --set obsidianSync=1
 
 ### `spectralis check`
 
-Deterministic, LLM-free doctor that validates the SDD flow consistency and the vault note ID conventions. Runs anywhere, never writes to the vault, `.sdd-registry/`, `05_wiki/`, or `openspec/`.
+Deterministic, LLM-free doctor that validates the SDD flow consistency and the vault note ID conventions. Runs anywhere, never writes to the vault, `.sdd-registry/`, `05_wiki/`, or `spec/`.
 
 | Option | Effect |
 |--------|--------|
 | *(no flags)* | Run both sub-checks |
-| `--registry` | Consistency of the triangle repo ↔ `.sdd-registry/REGISTRY.md` ↔ brain ↔ openspec |
+| `--registry` | Consistency of the triangle repo ↔ `.sdd-registry/REGISTRY.md` ↔ brain |
 | `--ids` | Validate vault note IDs (format `TYPE-YYYYMMDD-slug`, uniqueness, registration) |
 
 - Exit code `0` when there are no errors (warnings do not block); `1` when at least one finding has severity error.
@@ -407,7 +405,7 @@ Deterministic, LLM-free doctor that validates the SDD flow consistency and the v
 | Option | Description | Default | Required |
 |--------|-------------|---------|----------|
 | *(no flags)* | Run both sub-checks (`--registry` + `--ids`) | active | — |
-| `--registry` | Consistency of repo ↔ REGISTRY.md ↔ brain ↔ openspec | off | no |
+| `--registry` | Consistency of repo ↔ REGISTRY.md ↔ brain | off | no |
 | `--ids` | Validate vault note IDs (format, uniqueness, registration) | off | no |
 | `--tdd` | Validate TDD ordering (Step K) in `tasks.md` of active changes | off | no |
 | `-v, --vault-root <path>` | Vault root path override | from config | no |
@@ -419,7 +417,7 @@ Deterministic, LLM-free doctor that validates the SDD flow consistency and the v
 $ spectralis check --registry
   spectralis check --registry · consistencia del triángulo (spectralis)
   [FAIL] 9 error(es)
-  error   openspec/changes/add-foo (spectralis)
+  error   spec/add-foo (spectralis)
          -> Registra el change add-foo en .sdd-registry/REGISTRY.md
 ```
 
@@ -439,7 +437,7 @@ $ spectralis check           # all green
 ```
 
 **Notes:**
-- Read-only: never writes to the vault, `.sdd-registry/`, `05_wiki/`, or `openspec/`.
+- Read-only: never writes to the vault, `.sdd-registry/`, `05_wiki/`, or `spec/`.
 - Warnings do not affect the exit code; any severity `error` forces exit `1`.
 - `--tdd` is explicit (not part of the no-flag default).
 
@@ -498,7 +496,7 @@ $ spectralis notes sync
 
 ### `spectralis seed`
 
-Initial load of the machine-local wiki layer (`05_wiki/`): discovers projects under `projects_base` (recursively, up to depth 5) that have an `openspec/` root, creates the project directory `05_wiki/<project>/` (4-aggregate scheme — no legacy `decisiones/`, `errores/` or `log/` subfolders), reads each project's `stack.json`, and writes `05_wiki/_INDEX.json` with per-project `content`, `stack`, `changes` count and `updated` timestamp. The index is written atomically (temp file + rename).
+Initial load of the machine-local wiki layer (`05_wiki/`): discovers projects under `projects_base` (recursively, up to depth 5) that have a `spec/` root, creates the project directory `05_wiki/<project>/` (4-aggregate scheme — no legacy `decisiones/`, `errores/` or `log/` subfolders), reads each project's `stack.json`, and writes `05_wiki/_INDEX.json` with per-project `content`, `stack`, `changes` count and `updated` timestamp. The index is written atomically (temp file + rename).
 
 | Option | Effect |
 |--------|--------|
@@ -541,13 +539,13 @@ $ spectralis seed
 ```
 
 **Notes:**
-- Discovers projects with an `openspec/` root under `projects_base`, recursively up to depth 5.
+- Discovers projects with a `spec/` root under `projects_base`, recursively up to depth 5.
 - Writes `05_wiki/_INDEX.json` with per-project `changes` count and `updated` timestamp.
 - Fails fast with a hint if `projects_base` is not configured.
 
 ### `spectralis projects`
 
-Shows OpenSpec status across local projects found under `projects_base`: name, number of changes, and how many are complete/pending (by checking `tasks.md` checkboxes). `--json` prints the same data as JSON. Requires `projects_base` to be configured.
+Shows the status of the changes across local projects found under `projects_base`: name, number of changes, and how many are complete/pending (by checking `tasks.md` checkboxes). `--json` prints the same data as JSON. Requires `projects_base` to be configured.
 
 **Parameters:**
 
@@ -834,7 +832,7 @@ $ head -5 <project>/.sdd-manifest.json
 ### Arnés (this template repo)
 
 - The package is born at `1.0.0`.
-- Format: `MAJOR.MINOR.<N>`, where **`N` (the PATCH value) is the count of completed/archived OpenSpec changes**. Every archived change increments `N`; there is no manual judgment about whether a change is "minor" or "patch".
+- Format: `MAJOR.MINOR.<N>`, where **`N` (the PATCH value) is the count of completed/archived changes**. Every archived change increments `N`; there is no manual judgment about whether a change is "minor" or "patch".
 - `MINOR` bumps: reserved for explicit, user-approved re-scoping (e.g. a contract change or major restructuring) and are never inferred from change count.
 - `MAJOR` bumps: only on explicit user confirmation; the agent may suggest them when accumulated project changes justify it.
 
@@ -873,12 +871,12 @@ When run inside a project (directory with `.sdd-manifest.json`), `--project` is 
 
 ## Obsidian orchestration switch (`obsidianSync`)
 
-The `obsidianSync` switch (default `0` = off) controls whether the CLI and the OpenSpec workflow synchronize with the **cerebro** (the second brain) automatically. Off by default means **zero extra token cost**.
+The `obsidianSync` switch (default `0` = off) controls whether the CLI and the spec workflow synchronize with the **cerebro** (the second brain) automatically. Off by default means **zero extra token cost**.
 
 | Value | Behavior |
 |-------|----------|
 | `0` (default) | No orchestration. Nothing is written to the brain unless a command runs manually. |
-| `1` | Orchestration on. `init`/`update` run `notes init` + `notes sync`; `/opsx-apply` invokes `obsidian-briefing`; `/opsx-archive` invokes `obsidian-summary` + `obsidian-tests` + `spec complete`. |
+| `1` | Orchestration on. `init`/`update` run `notes init` + `notes sync`; the apply cycle invokes `obsidian-briefing`; the archive invokes `obsidian-summary` + `obsidian-tests` + `spec complete`. |
 
 Configure and inspect it:
 
@@ -897,7 +895,7 @@ spectralis update --obsidian                  # force for this run
 spectralis update --no-obsidian             # disable for this run
 ```
 
-The orchestration logic lives in the `obsidian-orchestration` skill (`.agents/skills/`), referenced from the managed `AGENTS.md` block; it is idempotent and never modifies the vendor-managed `.opencode/commands/opsx-*` files.
+The orchestration logic lives in the `obsidian-orchestration` skill (`.agents/skills/`), referenced from the managed `AGENTS.md` block; it is idempotent and never modifies the payload of third-party tools.
 
 ## Reproducible stack detection (`stack.json`)
 
@@ -933,7 +931,7 @@ The orchestration logic lives in the `obsidian-orchestration` skill (`.agents/sk
 - Any existing file that differs is backed up to `.sdd-backup-<fecha>/` before being questioned.
 - Idempotent re-runs: identical files are skipped, managed blocks are never duplicated.
 - `.sdd-manifest.json` inventories every managed file with a SHA-256 hash — the exact payload that traveled to the destination.
-- Managed `.gitignore` block includes `openspec/`, `.claude/`, and `05_wiki/`: the SDD spec/changes tree and the biblioteca (LLM Wiki) layer are machine-local and never committed.
+- Managed `.gitignore` block includes `spec/`, `openspec/` (legacy projects only), `.claude/`, and `05_wiki/`: the SDD spec/changes tree and the biblioteca (LLM Wiki) layer are machine-local and never committed.
 - `notes/` (this file, and all other manuals in the template) never leak into the destination — they live in the cerebro (the second brain) and are synced with `spectralis notes sync`.
 - `install.sh` (removed) and `docs-variants/` never leak into the destination.
 
@@ -963,7 +961,7 @@ The orchestration logic lives in the `obsidian-orchestration` skill (`.agents/sk
 | `spectralis check` | Validate SDD flow consistency and vault note IDs |
 | `spectralis notes init/sync` | Create/sync manual folders in the second brain |
 | `spectralis seed` | Initial load of `05_wiki/` from discovered projects |
-| `spectralis projects` | Show OpenSpec status across local projects |
+| `spectralis projects` | Show the status of the changes across local projects |
 | `spectralis backlog <proyecto>` | List backlog notes from a project's _Notas/ folder |
 | `spectralis spec init/complete` | Create/validate a spec folder in the brain |
 | `spectralis skills` | Detect skills and write `_INDEX_SKILLS.json` + system-reminder |

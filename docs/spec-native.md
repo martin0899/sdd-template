@@ -1,13 +1,13 @@
 # Spec-native mode
 
-The **spec-native** mode lets the harness work on its own changes without the
-external OpenSpec CLI: it creates, migrates and archives them, keeps their
-progress in a single registry and publishes a portable summary in the vault.
+The harness works on its own changes: it creates, migrates and archives them,
+keeps their progress in a single registry and publishes a portable summary in
+the vault. There is a single engine — the native one — and no external CLI is
+spawned for any operation.
 
 This document describes the capability as it stands after F1 (progress
-registry, `view` and `task`), F2 (the full lifecycle) and F3 (the engine
-config, the demotion of `openspec` and the native `status` and `validate`
-commands).
+registry, `view` and `task`), F2 (the full lifecycle), F3 (the native `status`
+and `validate` commands) and F5 (the retirement of the external engine).
 
 ## Layout
 
@@ -16,18 +16,22 @@ commands).
 | `spec/<change-id>/` | Change folder: `proposal.md`, `design.md`, `tasks.md`, `change.json` |
 | `spec/progress.json` | Progress registry: the source of truth of every change |
 | `spec/_archived/<change-id>/` | Archived changes |
-| `spec/config.yaml` | Config of a spec-native project (Spanish context) |
-| `openspec/changes/<change-id>/` | Legacy layout, read during the migration window |
+| `spec/config.yaml` | Config of the project (Spanish context) |
+| `openspec/changes/<change-id>/` | Historical layout: read only by `spec migrate` |
 
 The changes directory is resolved by `resolveChangesDir` with a deterministic
 cascade: explicit value > `spec_dir` of the manifest (`.sdd-manifest.json`) >
 `spec_dir` of the global config > **`spec/`** (the native default).
 
-A project that keeps the historical layout pins it explicitly:
+There is a single changes directory per project: the operational commands
+(doctor, `check --tdd`, `projects`, `seed`, `view`, `status`, `validate`) never
+inspect the historical layout. A project that keeps it pins it explicitly:
 
 ```bash
 spectralis config --set spec_dir=openspec/changes
 ```
+
+and migrates it with `spectralis spec migrate`.
 
 ## The `spec` command
 
@@ -51,8 +55,7 @@ A missing argument is a usage error (exit code `1`); an unknown action exits
 with `1` and lists the valid ones.
 
 `spec complete` (brain flow, specs that live in the vault) and `spec archive`
-(repo flow, changes of a repository) coexist: `spec archive` never invokes the
-`openspec` binary.
+(repo flow, changes of a repository) coexist.
 
 ## `spec create`
 
@@ -168,9 +171,8 @@ spectralis spec status
 spectralis spec status mi-cambio
 ```
 
-The status is **native**: it never invokes the `openspec` binary and it is
-**read-only** (it never writes `progress.json`, never writes `REGISTRY.md` and
-never rewrites `tasks.md`).
+The status is **native** and **read-only** (it never writes `progress.json`,
+never writes `REGISTRY.md` and never rewrites `tasks.md`).
 
 Without a change id it lists every active change of the resolved changes
 directory (`_archived/` and `archive/` are excluded):
@@ -201,9 +203,9 @@ spectralis spec validate mi-cambio
 ```
 
 The validation is **native** and **existence-only**: it reuses
-`missingSddEssentials` (the same contract the facade applies before delegating
-an apply) with the resolved directory of the change, and it never validates the
-schema nor the content of the artifacts.
+`missingSddEssentials` (`src/core/sdd-essentials.ts`) with the resolved
+directory of the change, and it never validates the schema nor the content of
+the artifacts.
 
 | Result | Output | Exit code |
 | :--- | :--- | :--- |
@@ -214,47 +216,29 @@ The artifacts it looks for are `proposal.md`, `design.md` and `tasks.md`.
 
 ## The engine
 
-The key `engine` decides how the harness treats the external OpenSpec CLI. It
-is resolved with a deterministic cascade (the mirror of `resolveChangesDir`):
+There is no engine to select: the harness always operates in native mode.
 
-1. `engine` in the manifest of the project (`.sdd-manifest.json`)
-2. `engine` in the global configuration
-3. Default: `native`
+- The `engine` configuration key no longer exists: `config --set engine` and
+  `config --get engine` report it as an unknown key, and `config list` does
+  not expose it. A manifest that declares `engine` is ignored.
+- No module resolves an engine: `src/core/resolve-engine.ts` does not exist.
+- The external CLI is never probed: `spectralis doctor` reports `git`, `node`
+  and `graphify`, and nothing else.
 
-```bash
-spectralis config --set engine=openspec   # project (or --global)
-spectralis config --get engine            # prints the value and its origin
-```
+## Migration support
 
-An unknown value is rejected with a descriptive error (nothing is written).
+The native layout is the default and the only one the operational commands
+read. The historical layout is still supported in a migration-only way:
 
-The engine only decides two things: how `openspec` is **labelled** and whether
-it is **probed** at all. The native paths of the harness never spawn it.
+- **Detection marker**: a project that has an `openspec/` directory is still
+  detected as a project of the harness. The marker never selects a mode.
+- **Gitignore**: the pattern `openspec/` stays in the managed block so a legacy
+  installation keeps ignoring its historical directory.
+- **`spec migrate`**: the only command that reads `openspec/changes/`, through
+  a reader that lives inside the command itself.
+- **Retired config**: `openspec/config.yaml` is never written nor read. In an
+  existing installation it is a retired file: `spectralis update --prune`
+  deletes it (with a backup) because its hash still matches the manifest.
 
-| Engine | `openspec` in the prerequisites | Doctor label | Missing binary |
-| :--- | :--- | :--- | :--- |
-| `native` (default) | Not probed | `optional` | Warning, exit `0` |
-| `openspec` | Probed | `required` | Error, exit `1` and explicit warning |
-
-`REQUIRED_TOOLS` keeps `openspec` in the list: the list documents the full
-toolchain of the harness, the *probe* is what became conditional.
-
-## Migration window
-
-The native layout is the default, but the readers that validate the history of
-a project (the REGISTRY doctor, `spectralis check --tdd`, the OpenSpec facade
-and the counters of `spectralis projects` / `spectralis seed`) read **both**
-layouts while the migration is open. A project that has not migrated yet does
-not lose its checks.
-
-The config of the project is read the same way: the Spanish context is
-injected in `spec/config.yaml` of a spec-native project, it stays in
-`openspec/config.yaml` of a legacy one, and the post-checks accept the block
-in both places.
-
-## Archive order
-
-F1 must be archived before F2: F2's delta adds requirements to the
-`spec-native` capability created by F1, and the merge fails when the target
-spec does not exist yet. F3 follows the same rule: its delta adds requirements
-to the same capability, so the order is **F1 → F2 → F3**.
+The Spanish context is injected in `spec/config.yaml` only, and the post-checks
+look for it there only.

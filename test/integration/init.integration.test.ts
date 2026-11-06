@@ -56,7 +56,12 @@ test('fresh install into clean destination matches the anti-corruption contract'
   try {
     const r = runCli(['init', dst, '--yes'], 's\n');
     assert.equal(r.status, 0, r.stderr + r.stdout);
-    assert.match(readFileSync(join(dst, 'openspec/config.yaml'), 'utf8'), /All interactions/);
+    assert.match(readFileSync(join(dst, 'spec/config.yaml'), 'utf8'), /All interactions/);
+    assert.equal(
+      existsSync(join(dst, 'openspec')),
+      false,
+      'no legacy directory is created by a fresh install'
+    );
     const agents = readFileSync(join(dst, 'AGENTS.md'), 'utf8');
     assert.match(agents, /BEGIN: SDD template rules/);
     assert.match(agents, /ALWAYS use graphify first/);

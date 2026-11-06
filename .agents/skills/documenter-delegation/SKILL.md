@@ -28,12 +28,11 @@ Contrato de solicitud, consolidación y despacho del trabajo documental entre lo
 
 Una solicitud sin todos los campos es **rechazada** indicando los campos faltantes (validador determinista `validateDocumenterRequest` en `src/core/documenter-request.ts`) y **no se despacha** al `documentador`.
 
-### Origen del briefing (nativo vs motor opcional)
+### Origen del briefing
 
-- **Nativo (default)**: el briefing técnico del change vive en `spec/<id>/change.json`, en el campo `resumen.abstracto`; su reflejo en el cerebro es la sección `## Contexto` del folder note único (`01_Proyectos/<proyecto>/<id>/<id>.md`).
-- **`engine: openspec`**: el change no lleva `change.json`, así que el briefing se toma del folder note del vault (sección `## Contexto`).
+- **Nativo**: el briefing técnico del change vive en `spec/<id>/change.json`, en el campo `resumen.abstracto`; su reflejo en el cerebro es la sección `## Contexto` del folder note único (`01_Proyectos/<proyecto>/<id>/<id>.md`).
 
-En ambos motores el esquema de la solicitud es el mismo: `mode: sdd` y los campos obligatorios de la tabla.
+El esquema de la solicitud es el mismo: `mode: sdd` y los campos obligatorios de la tabla.
 
 ## Consolidación y despacho (el coordinador)
 

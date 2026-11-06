@@ -14,16 +14,6 @@ let baseEnv: NodeJS.ProcessEnv;
 before(() => {
   fakeBin = mkdtempSync(join(tmpdir(), 'spectralis-init-modes-bin-'));
   home = mkdtempSync(join(tmpdir(), 'spectralis-init-modes-home-'));
-  const openspecStub = [
-    '#!/usr/bin/env node',
-    'const fs = require("fs");',
-    'if (process.argv[2] === "init") {',
-    '  fs.mkdirSync("openspec", { recursive: true });',
-    '  fs.writeFileSync("openspec/config.yaml", "schema: spec-driven\\n");',
-    '}',
-    'process.exit(0);'
-  ].join('\n');
-  writeFileSync(join(fakeBin, 'openspec'), openspecStub);
   writeFileSync(join(fakeBin, 'graphify'), '#!/usr/bin/env node\nprocess.exit(0);\n');
   baseEnv = {
     ...process.env,
@@ -71,16 +61,18 @@ test('init --sdd falla como opcion desconocida', () => {
   }
 });
 
-test('init sin flags mantiene la ejecucion de openspec init', () => {
+test('init sin flags crea el scaffolding nativo y no invoca ningun CLI externo', () => {
   const dst = mkdtempSync(join(tmpdir(), 'spectralis-init-sdd-'));
   try {
     const r = runInit(dst);
     assert.equal(r.status, 0, r.stderr + r.stdout);
-    assert.ok(existsSync(join(dst, 'openspec/config.yaml')), 'openspec must be initialized');
+    assert.ok(existsSync(join(dst, 'spec/config.yaml')), 'the native config must be created');
+    assert.ok(existsSync(join(dst, 'spec/progress.json')), 'the progress registry must be seeded');
+    assert.equal(existsSync(join(dst, 'openspec')), false, 'no external engine directory is created');
     const files = (manifestOf(dst).files as { path: string }[]) ?? [];
     assert.ok(
-      files.some((f) => f.path === 'openspec/config.yaml'),
-      'manifest must manage openspec/config.yaml'
+      !files.some((f) => f.path === 'openspec/config.yaml'),
+      'the manifest must not manage the legacy config'
     );
   } finally {
     rmSync(dst, { recursive: true, force: true });

@@ -6,7 +6,7 @@ import { writeChangeJson, type ChangeJson } from './change-json';
  * Seeds of a new change.
  *
  * The scaffold is minimal on purpose: it gives the change its three planning
- * artifacts and its metadata, so the work can start without the OpenSpec CLI.
+ * artifacts and its metadata, so the work can start without any external CLI.
  */
 export interface ScaffoldedChange {
   /** Absolute path of the folder of the change. */

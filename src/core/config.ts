@@ -11,24 +11,6 @@ export interface RouteConfig {
 }
 
 /**
- * Engine of the spec workflow.
- *
- * `native` is the harness itself (the changes live in `spec/`); `openspec`
- * delegates to the external OpenSpec CLI. The engine only decides how the
- * harness *labels* and *probes* the external CLI: the native paths never spawn
- * it.
- */
-export type SpecEngine = 'openspec' | 'native';
-
-/**
- * Engine as it is stored on disk.
- *
- * An unknown value is tolerated on read (the file is never rewritten): the
- * resolver rejects it with a descriptive error instead of guessing.
- */
-export type StoredSpecEngine = SpecEngine | (string & {});
-
-/**
  * The only supported philosophy. SDD is the single mode of the harness; any
  * other stored value is tolerated on read (never written, never rewritten).
  */
@@ -45,11 +27,6 @@ export interface SpectralisConfig extends RouteConfig {
    * resolver falls back to `<projectRoot>/spec`.
    */
   spec_dir?: string;
-  /**
-   * Engine of the spec workflow. Empty means "not configured": the resolver
-   * falls back to `native`.
-   */
-  engine?: StoredSpecEngine;
 }
 
 const DEFAULT_CONFIG: SpectralisConfig = {
@@ -63,8 +40,7 @@ const DEFAULT_CONFIG: SpectralisConfig = {
   obsidianSync: 0,
   philosophy: 'sdd',
   current_project_root: '',
-  spec_dir: '',
-  engine: ''
+  spec_dir: ''
 };
 
 function globalConfigDir(): string {
@@ -93,10 +69,7 @@ export function readGlobalConfig(): SpectralisConfig {
       current_project_root: raw.current_project_root ?? '',
       // Tolerant read: the hyphenated spelling is accepted as an alias so a
       // config written by hand with `spec-dir` still resolves.
-      spec_dir: raw.spec_dir ?? raw['spec-dir'] ?? '',
-      // Tolerant read: an unknown engine is kept as-is so the resolver can
-      // reject it with a descriptive error (the file is never rewritten).
-      engine: raw.engine ?? ''
+      spec_dir: raw.spec_dir ?? raw['spec-dir'] ?? ''
     };
   } catch {
     return { ...DEFAULT_CONFIG };
@@ -152,25 +125,6 @@ export function setSpecDir(value: string, global: boolean, projectRoot?: string)
     const manifestPath = join(projectRoot, '.sdd-manifest.json');
     const manifest = existsSync(manifestPath) ? JSON.parse(readFileSync(manifestPath, 'utf8')) : {};
     manifest.spec_dir = value;
-    writeFileSync(manifestPath, JSON.stringify(manifest, null, 2) + '\n', 'utf8');
-  }
-}
-
-/**
- * Stores the engine of the spec workflow.
- *
- * The value is validated by the caller before it reaches this function: only
- * `openspec` and `native` are written.
- */
-export function setEngine(value: SpecEngine, global: boolean, projectRoot?: string): void {
-  if (global) {
-    const config = readGlobalConfig();
-    config.engine = value;
-    writeGlobalConfig(config);
-  } else if (projectRoot) {
-    const manifestPath = join(projectRoot, '.sdd-manifest.json');
-    const manifest = existsSync(manifestPath) ? JSON.parse(readFileSync(manifestPath, 'utf8')) : {};
-    manifest.engine = value;
     writeFileSync(manifestPath, JSON.stringify(manifest, null, 2) + '\n', 'utf8');
   }
 }
@@ -355,8 +309,11 @@ export function resolveEffectivePhilosophy(projectRoot?: string): EffectivePhilo
 }
 
 export function detectProjectFromCwd(cwd: string): { project: string; root: string } | null {
-  // The markers are additive: `spec/` marks a spec-native project (F2), while
+  // The markers are additive: `spec/` marks a spec-native project, while
   // `.sdd-manifest.json` and `openspec/` keep marking the legacy ones.
+  // MIGRATION-ONLY: the `openspec/` marker survives the retirement of the
+  // external engine so a project that has not migrated yet is still detected.
+  // It never selects a mode: the harness always operates in native mode.
   if (
     existsSync(join(cwd, '.sdd-manifest.json')) ||
     existsSync(join(cwd, 'openspec')) ||
@@ -370,8 +327,10 @@ export function detectProjectFromCwd(cwd: string): { project: string; root: stri
 /**
  * Whether a directory holds a project of the harness.
  *
- * `openspec/` marks a legacy project and `spec/` a spec-native one (F2): both
- * are accepted while the migration window is open.
+ * `spec/` marks a spec-native project and `openspec/` a legacy one.
+ * MIGRATION-ONLY: the `openspec/` marker survives the retirement of the
+ * external engine so a project that has not migrated yet is still detected.
+ * It never selects a mode: the harness always operates in native mode.
  */
 export function isProjectDir(dir: string): boolean {
   return existsSync(join(dir, 'openspec')) || existsSync(join(dir, 'spec'));

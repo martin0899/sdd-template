@@ -41,7 +41,7 @@ Version precedence for release or version-bump requests:
 
 Project version bump rules (deterministic, managed by the arnés):
 
-- **PATCH** increments by 1 for every archived OpenSpec change (with its commit); there is no reliable way to detect bugs, so each completed spec counts. Carry: `1.2.99` + spec → `1.3.0`.
+- **PATCH** increments by 1 for every archived change (with its commit); there is no reliable way to detect bugs, so each completed spec counts. Carry: `1.2.99` + spec → `1.3.0`.
 - **MINOR** increments by 1 (and PATCH resets to 0) when the user requests creating a version release ("crea versión release y commit de cambios"). Carry: `1.99.5` → `2.0.0`.
 - **MAJOR** increments only on explicit compatibility-breaking decisions.
 - Each component is capped at `99`; the bump carries to the next component instead of exceeding it.

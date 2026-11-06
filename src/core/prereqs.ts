@@ -1,5 +1,4 @@
 import { spawnSync } from 'node:child_process';
-import type { SpecEngine } from './config';
 
 export interface PrereqResult {
   tool: string;
@@ -26,22 +25,11 @@ export interface PrereqCheck {
   versionArgs: string[];
 }
 
-/** Tool whose presence depends on the engine of the project. */
-export const OPENSPEC_TOOL = 'openspec';
-
 export const REQUIRED_TOOLS: PrereqCheck[] = [
   { tool: 'git', versionArgs: ['--version'] },
   { tool: 'node', minMajor: 22, versionArgs: ['--version'] },
-  { tool: 'openspec', versionArgs: ['--help'] },
   { tool: 'graphify', versionArgs: ['--help'] }
 ];
-
-/** The check of the external OpenSpec CLI. */
-export function openspecCheck(): PrereqCheck {
-  const check = REQUIRED_TOOLS.find((c) => c.tool === OPENSPEC_TOOL);
-  if (!check) throw new Error(`REQUIRED_TOOLS must declare ${OPENSPEC_TOOL}`);
-  return check;
-}
 
 export function parseNodeMajor(version: string | undefined): number | undefined {
   if (!version) return undefined;
@@ -52,12 +40,10 @@ export function parseNodeMajor(version: string | undefined): number | undefined 
 /**
  * Problem reported when a tool is not in the PATH.
  *
- * The message of `openspec` does not depend on the platform: it is the message
- * the engine regression rule relies on (a project that declares
- * `engine: openspec` must be told the same thing everywhere).
+ * The message is the same on every platform: the harness never labels a tool
+ * as required or optional any more.
  */
 function toolNotFoundProblem(tool: string, platform: NodeJS.Platform): string {
-  if (tool === OPENSPEC_TOOL) return `${tool} not found in PATH`;
   return platform === 'win32' ? `${tool} not found in PATH` : `${tool} no se encuentra en PATH`;
 }
 
@@ -94,19 +80,8 @@ export function checkTool(
   return { tool: check.tool, ok: true, version: probeResult.version };
 }
 
-export function checkPrereqs(
-  probe: ProbeFn,
-  platform: NodeJS.Platform,
-  engine: SpecEngine = 'native'
-): PrereqReport {
-  // openspec is an unconditional prerequisite: SDD is the only mode.
-  // Since F3 it is only *probed* when the project declares the openspec
-  // engine: a native project works without the external CLI.
-  const tools =
-    engine === 'openspec'
-      ? REQUIRED_TOOLS
-      : REQUIRED_TOOLS.filter((check) => check.tool !== OPENSPEC_TOOL);
-  const results = tools.map((check) => checkTool(probe, check, platform));
+export function checkPrereqs(probe: ProbeFn, platform: NodeJS.Platform): PrereqReport {
+  const results = REQUIRED_TOOLS.map((check) => checkTool(probe, check, platform));
   return { ok: results.every((r) => r.ok), results };
 }
 
@@ -120,8 +95,6 @@ export function installHint(tool: string, platform: NodeJS.Platform): string {
       return platform === 'win32'
         ? 'node >= 22: https://nodejs.org (LTS installer)'
         : `node >= 22: https://nodejs.org${platform === 'darwin' ? ' or: brew install node' : ''}`;
-    case 'openspec':
-      return 'openspec (CLI): si usas engine: openspec, instala openspec (npm i -g openspec o tu gestor de paquetes / docs de OpenSpec)';
     case 'graphify':
       return 'graphify (CLI): see the graphify documentation (provides: graphify update/query/explain)';
     default:

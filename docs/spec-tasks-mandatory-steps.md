@@ -1,15 +1,15 @@
 ---
-description: Enforce mandatory steps from openspec/config.yaml when creating tasks.md artifacts and ensure agent executes all manual tests
+description: Enforce mandatory steps from spec/config.yaml when creating tasks.md artifacts and ensure agent executes all manual tests
 alwaysApply: true
 ---
 
-# OpenSpec Tasks: Mandatory Steps Enforcement
+# Spec Tasks: Mandatory Steps Enforcement
 
-When creating or updating `tasks.md` artifacts in OpenSpec changes, you MUST:
+When creating or updating `tasks.md` artifacts in spec changes, you MUST:
 
-## 1. Read openspec/config.yaml First
+## 1. Read spec/config.yaml First
 
-**BEFORE** creating or updating any `tasks.md` file, you MUST read `openspec/config.yaml` to understand:
+**BEFORE** creating or updating any `tasks.md` file, you MUST read `spec/config.yaml` to understand:
 - Backend and frontend-specific mandatory steps
 - Branch naming conventions
 - Task structure requirements
@@ -65,7 +65,7 @@ All implementation tasks MUST include these steps in the correct order:
    - Capture command output summary (passed/failed/skipped)
 
 3. **Run Broader Unit Test Suite**:
-   - Execute the project/unit suite required by `openspec/config.yaml` (or justified subset if configured)
+   - Execute the project/unit suite required by `spec/config.yaml` (or justified subset if configured)
    - Record total test counts, failures, runtime, and any flaky behavior observed
 
 4. **Verify Post-Test Database State**:
@@ -150,9 +150,9 @@ All implementation tasks MUST include these steps in the correct order:
 4. **Test PUT/PATCH Endpoints** (UPDATE operations):
    - Create curl command with updated data: `curl -X PUT [endpoint-url] -H "Content-Type: application/json" -d '[json-body]'`
    - Execute curl command and capture response
-   - Verify response status code (200, 404, 400, etc.)
+   - Verify response status code (200, 400, etc.)
    - Verify response body contains updated resource
-   - **Restore Database State**: After testing, revert the updated record to its original values to restore database state
+   - **Restore Database State**: After testing, revert the updated record to its original values to restore database to original state
    - Document the curl command, response, and cleanup action
 
 5. **Test DELETE Endpoints**:
@@ -160,7 +160,7 @@ All implementation tasks MUST include these steps in the correct order:
    - Execute curl command and capture response
    - Verify response status code (200, 204, 404, etc.)
    - Verify deletion was successful
-   - **Restore Database State**: After testing, recreate the deleted record with original values to restore database state
+   - **Restore Database State**: After testing, recreate the deleted record with original values to restore database to original state
    - Document the curl command, response, and cleanup action
 
 6. **Test Error Cases**:
@@ -197,7 +197,7 @@ All implementation tasks MUST include these steps in the correct order:
 **Implementation Steps** (Agent must perform):
 1. **Prepare Test Environment**:
    - Ensure both frontend and backend servers are running (start if needed)
-   - Verify database is in a known state
+   - Ensure database is in a known state
    - Check available Playwright MCP tools using MCP file system
 
 2. **Navigate to Application**:
@@ -261,11 +261,10 @@ Before finalizing any `tasks.md` file, verify:
 ## 5. When This Applies
 
 This rule applies when:
-- Creating `tasks.md` via `/opsx:ff` (fast-forward) or `openspec-ff-change` skill
-- Creating `tasks.md` via `/opsx:continue` (continue change) or `openspec-continue-change` skill
-- Updating existing `tasks.md` files
+- Creating `tasks.md` with `spectralis spec create <id> --nombre "<nombre>"`
+- Updating the existing `tasks.md` files of a change
 - Any task creation that involves backend changes
-- Implementing tasks from `tasks.md` via `/opsx:apply` or `openspec-apply-change` skill - the agent must execute manual tests
+- Implementing tasks from `tasks.md` in the apply cycle — the agent must execute manual tests
 
 ## 6. Example Structure
 
@@ -315,7 +314,7 @@ This rule applies when:
 
 ## 7. Agent Execution Requirements
 
-**CRITICAL**: When implementing tasks from `tasks.md` (via `openspec-apply-change` skill or `/opsx:apply` command), the coding agent MUST:
+**CRITICAL**: When implementing tasks from `tasks.md` (in the apply cycle of the spec workflow), the coding agent MUST:
 
 1. **Execute All Manual Tests**: Never ask the user to run curl commands or E2E tests. The agent must:
    - Start servers if needed (backend, frontend)
@@ -346,6 +345,6 @@ This rule applies when:
 
 ## Failure to Follow
 
-If you create tasks without following these mandatory steps, the user will need to manually fix the tasks.md file. Always read `openspec/config.yaml` first and ensure all mandatory steps are included.
+If you create tasks without following these mandatory steps, the user will need to manually fix the tasks.md file. Always read `spec/config.yaml` first and ensure all mandatory steps are included.
 
 **If you implement tasks without executing manual tests yourself, you are violating this rule. The agent must execute all tests to mark tasks as completed.**

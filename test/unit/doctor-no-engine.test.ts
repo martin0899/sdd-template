@@ -32,7 +32,7 @@ function writeStub(dir: string, name: string, content: string): void {
 
 /** A PATH with the tools of the harness (and optionally the openspec binary). */
 function fakeBin(withOpenspec: boolean): string {
-  const bin = scratch('sp-doctor-engine-bin-');
+  const bin = scratch('sp-doctor-no-engine-bin-');
   writeStub(bin, 'git', '#!/bin/sh\necho "git version 2.40.0"\nexit 0\n');
   writeStub(bin, 'node', '#!/bin/sh\necho "v22.11.0"\nexit 0\n');
   writeStub(bin, 'graphify', '#!/bin/sh\necho "graphify 1.0.0"\nexit 0\n');
@@ -40,12 +40,13 @@ function fakeBin(withOpenspec: boolean): string {
   return bin;
 }
 
-/** A project that declares an engine (no engine means the native default). */
-function project(engine?: string): string {
-  const dir = scratch('sp-doctor-engine-proj-');
-  const manifest: Record<string, unknown> = { schemaVersion: 3 };
-  if (engine !== undefined) manifest.engine = engine;
-  writeFileSync(join(dir, '.sdd-manifest.json'), JSON.stringify(manifest, null, 2) + '\n', 'utf8');
+function project(manifest: Record<string, unknown> = {}): string {
+  const dir = scratch('sp-doctor-no-engine-proj-');
+  writeFileSync(
+    join(dir, '.sdd-manifest.json'),
+    JSON.stringify({ schemaVersion: 3, ...manifest }, null, 2) + '\n',
+    'utf8'
+  );
   return dir;
 }
 
@@ -70,50 +71,36 @@ function capture(fn: () => boolean): { ok: boolean; output: string } {
 
 function runDoctorIn(dir: string, withOpenspec: boolean): { ok: boolean; output: string } {
   const bin = fakeBin(withOpenspec);
-  const home = scratch('sp-doctor-engine-home-');
   process.env.PATH = bin;
-  process.env.HOME = home;
+  process.env.HOME = scratch('sp-doctor-no-engine-home-');
   process.chdir(dir);
   return capture(() => printDoctorReport());
 }
 
-test('doctor labels openspec as optional and does not fail when the engine is native and the binary is missing', () => {
-  const dir = project('native');
+test('doctor does not mention openspec when the binary is missing', () => {
+  const dir = project();
   const { ok, output } = runDoctorIn(dir, false);
-  assert.match(output, /openspec \(optional\)/);
-  assert.equal(ok, true, 'a native project does not need the openspec binary');
+  assert.doesNotMatch(output, /openspec/i);
+  assert.equal(ok, true, 'the host is ready without any external engine');
 });
 
-test('doctor labels openspec as optional and ok when the engine is native and the binary is present', () => {
-  const dir = project('native');
+test('doctor does not mention openspec when the binary is present', () => {
+  const dir = project();
   const { ok, output } = runDoctorIn(dir, true);
-  assert.match(output, /openspec \(optional\)/);
+  assert.doesNotMatch(output, /openspec/i);
   assert.equal(ok, true);
 });
 
-test('doctor labels openspec as required and fails when the engine is openspec and the binary is missing', () => {
-  const dir = project('openspec');
-  const { ok, output } = runDoctorIn(dir, false);
-  assert.match(output, /openspec \(required\)/);
-  assert.equal(ok, false, 'the declared engine requires the binary');
-});
-
-test('doctor warns explicitly when the engine is openspec and the binary is missing', () => {
-  const dir = project('openspec');
+test('doctor does not report an engine any more', () => {
+  const dir = project();
   const { output } = runDoctorIn(dir, false);
-  assert.match(output, /engine: openspec pero el binario openspec no está en PATH/);
+  assert.doesNotMatch(output, /engine/i);
 });
 
-test('doctor does not warn about the binary when the engine is openspec and it is present', () => {
-  const dir = project('openspec');
-  const { ok, output } = runDoctorIn(dir, true);
-  assert.doesNotMatch(output, /engine: openspec pero el binario openspec no está en PATH/);
+test('doctor ignores an engine declared in the manifest', () => {
+  const dir = project({ engine: 'openspec' });
+  const { ok, output } = runDoctorIn(dir, false);
   assert.equal(ok, true);
-});
-
-test('doctor reports an invalid engine as an error and fails', () => {
-  const dir = project('invalid');
-  const { ok, output } = runDoctorIn(dir, true);
-  assert.equal(ok, false);
-  assert.match(output, /invalid engine/i);
+  assert.doesNotMatch(output, /engine/i);
+  assert.doesNotMatch(output, /openspec/i);
 });

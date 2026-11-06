@@ -8,7 +8,7 @@
 ![Linux](https://img.shields.io/badge/Linux-FCC624?style=flat-square&logo=linux&logoColor=black)
 ![License](https://img.shields.io/badge/license-MIT-3da639?style=flat-square)
 
-Spectralis es la fuente canónica de la configuración SDD — **OpenSpec + skills + comandos + estándares de documentación** — para instalarla en proyectos **nuevos o existentes**, sin corromperlos.
+Spectralis es la fuente canónica de la configuración SDD — **spec changes + skills + comandos + estándares de documentación** — para instalarla en proyectos **nuevos o existentes**, sin corromperlos.
 
 > **Funciona en cualquier máquina**: Windows, macOS y Linux, con solo tener Node >= 22. No requiere WSL, Git Bash ni ninguna dependencia de plataforma — es un CLI de Node puro.
 
@@ -19,9 +19,9 @@ Spectralis es la fuente canónica de la configuración SDD — **OpenSpec + skil
 ```
 ├── dist/               ← CLI compilado (npm i -g . compila e instala)
 ├── src/                ← código fuente del CLI (TypeScript)
-├── openspec/           ← raíz OpenSpec: config con reglas de idioma español
+├── spec/               ← raíz nativa del ciclo: cambios y config con reglas de idioma español
 ├── .agents/skills/     ← 13+ skills portables (estándar Agent Skills)
-├── .opencode/          ← comandos opsx-* y skills del workflow OpenSpec
+├── .opencode/          ← payload de opencode (paquete y configuración)
 ├── docs/               ← estándares neutrales (base, api, data-model)
 ├── notes/              ← manuales canónicos del arnés (viven en el cerebro, no viajan)
 └── docs-variants/      ← variantes de estándares por stack (fuente del instalador)
@@ -39,9 +39,9 @@ Los manuales técnicos del arnés viven en `notes/` (se sincronizan al cerebro c
 | [CLI de spectralis](notes/spectralis-cli/manual.md) | Uso estándar completo del CLI: comandos, opciones, matriz de agentes, versionado y garantías |
 | [IA local](notes/local-ai/manual.md) | Stub que redirige a los manuales de graphify y del cerebro |
 
-**Qué viaja al destino**: `openspec/` (creada con `openspec init` + contexto español inyectado), `.agents/skills/`, `.opencode/` (sin `node_modules`), `docs/` — con `backend-standards.md` y `frontend-standards.md` **compuestos según el stack detectado** en tu proyecto.
+**Qué viaja al destino**: `spec/` (creada por el scaffolding nativo + contexto español inyectado), `.agents/skills/`, `.opencode/` (sin `node_modules`), `docs/` — con `backend-standards.md` y `frontend-standards.md` **compuestos según el stack detectado** en tu proyecto.
 
-**Qué NO viaja**: este README, `notes/`, `docs-variants/`, `openspec/changes/` del repo plantilla. Los manuales de `notes/` viven en el **cerebro** (el segundo cerebro, `03_Recursos/02_Sistemas_info/`) y se sincronizan con `spectralis notes sync`; nunca se copian al proyecto destino.
+**Qué NO viaja**: este README, `notes/`, `docs-variants/`, `spec/changes/` del repo plantilla. Los manuales de `notes/` viven en el **cerebro** (el segundo cerebro, `03_Recursos/02_Sistemas_info/`) y se sincronizan con `spectralis notes sync`; nunca se copian al proyecto destino.
 
 ---
 
@@ -51,10 +51,9 @@ Los manuales técnicos del arnés viven en `notes/` (se sincronizan al cerebro c
 |-------------|--------------|-------|
 | git | `git --version` | Para clonar la plantilla |
 | node | `node --version` | **>= 22** — la única dependencia de plataforma |
-| openspec CLI | `openspec --help` | Node-based, multiplataforma. **Solo es obligatorio con `engine: openspec`** (por defecto el arnés usa el motor nativo `spec/`) |
 | graphify | `graphify --help` | Se usa tras la instalación, en el onboarding |
 
-Si falta alguno, el instalador **aborta sin escribir nada** y te indica qué instalar. El binario `openspec` es la única excepción: con el motor nativo no se comprueba y su ausencia no bloquea (el doctor lo etiqueta como `optional`).
+Si falta alguno, el instalador **aborta sin escribir nada** y te indica qué instalar. El arnés no necesita ningún CLI externo: el motor de specs es nativo.
 
 ---
 
@@ -95,8 +94,8 @@ PASOS (en este orden, sin saltarte ninguno)
 
 1. Prerrequisitos
    - `node --version` debe ser >= 22. Si no lo es, detente y dime cómo actualizarlo.
-   - Verifica `git`, `openspec --help` y `graphify --help` (`openspec` solo con `engine: openspec`).
-   - Si falta openspec (con `engine: openspec`) o graphify, informa y ofrece el comando de instalación; no continúes.
+   - Verifica `git --version` y `graphify --help`.
+   - Si falta git o graphify, informa y ofrece el comando de instalación; no continúes.
 
 2. Instalar el CLI (una vez por máquina)
    - Si `spectralis --v` ya responde en el PATH, usa el que ya está: NO reinstales.
@@ -154,7 +153,7 @@ spectralis config           # Ver configuración del arnés
 spectralis check            # Validar consistencia del flujo SDD, IDs del vault y orden TDD
 ```
 
-El doctor **`spectralis check`** valida de forma determinista (sin LLM) la consistencia del triángulo repo ↔ `.sdd-registry/REGISTRY.md` ↔ brain ↔ `openspec`, la conformidad/unicidad de IDs del vault y el orden TDD de los `tasks.md` de los changes activos:
+El doctor **`spectralis check`** valida de forma determinista (sin LLM) la consistencia del triángulo repo ↔ `.sdd-registry/REGISTRY.md` ↔ brain, la conformidad/unicidad de IDs del vault y el orden TDD de los `tasks.md` de los changes activos:
 
 ```bash
 spectralis check            # Ejecuta los sub-checks por defecto (registry e ids)
@@ -164,9 +163,9 @@ spectralis check --tdd      # Solo validación del orden TDD (Step K) en tasks.m
 ```
 
 - Exit code `0` sin errores; `1` si hay hallazgos con severidad error (los warnings no bloquean).
-- Solo lectura: nunca modifica el vault, `.sdd-registry/`, `05_wiki/` ni `openspec/`.
+- Solo lectura: nunca modifica el vault, `.sdd-registry/`, `05_wiki/` ni `spec/`.
 - `--ids` usa caché por mtime (`.spectralis/ids-cache.json`) para re-validar solo notas cambiadas.
-- `--tdd` es explícito (no se ejecuta con `spectralis check` sin flags); exige que cada sección de implementación de un `tasks.md` tenga una tarea de tests con marcador TDD (`(TDD)`/`tests first`/`pruebas antes`) antes del primer task de código (Step K en `docs/openspec-tasks-mandatory-steps.md`).
+- `--tdd` es explícito (no se ejecuta con `spectralis check` sin flags); exige que cada sección de implementación de un `tasks.md` tenga una tarea de tests con marcador TDD (`(TDD)`/`tests first`/`pruebas antes`) antes del primer task de código (Step K en `docs/spec-tasks-mandatory-steps.md`).
 
 ### Estado de los changes (spec-native)
 
@@ -178,7 +177,7 @@ spectralis spec create mi-cambio --nombre "Mi cambio"   # Crea spec/mi-cambio/ c
 spectralis spec migrate              # Migra los changes de openspec/changes/ al layout nativo spec/
 spectralis spec migrate --dry-run    # Muestra el plan de migración sin escribir nada
 spectralis spec archive mi-cambio    # Archiva el change en spec/_archived/ y publica el resumen en la wiki
-spectralis spec status               # Estado de los changes nativos (solo lectura, sin el binario openspec)
+spectralis spec status               # Estado de los changes nativos (solo lectura)
 spectralis spec status mi-cambio     # Detalle de un change: estado, tareas y artefactos
 spectralis spec validate mi-cambio   # Comprueba que existen proposal.md, design.md y tasks.md
 ```
@@ -191,7 +190,7 @@ spectralis spec validate mi-cambio   # Comprueba que existen proposal.md, design
 - `spectralis spec migrate` es idempotente y atómico por change: si un change falla, los anteriores quedan migrados y el error lo nombra. Los changes ya archivados en `openspec/changes/archive/` se reportan como *ya cerrados* y no se mueven.
 - `spectralis spec archive` exige que las tareas estén completadas (`2` listando las pendientes; `--force` las fuerza con aviso), valida el change-id (`2` si no es kebab-case o intenta escapar de su carpeta), escribe el REGISTRY **antes** de mover (un fallo del REGISTRY aborta sin mover nada), mueve el change a `spec/_archived/`, elimina su entrada de `spec/progress.json` y escribe el resumen del change en la wiki del vault (`05_wiki/Spectralis/<id>.md`). Un resumen que ya existe no se sobrescribe: avisa, muestra su ruta y el archive local continúa (`--force` lo sobrescribe). Si el vault no está disponible, avisa y archiva igualmente.
 - `spectralis spec status` es **nativo y de solo lectura**: deriva el estado de `spec/progress.json`, etiqueta `sin registro` los changes legacy (y deriva su estado de `tasks.md`), y hace cross-check con `REGISTRY.md` solo si existe. `spectralis spec validate` comprueba la **existencia** de `proposal.md`, `design.md` y `tasks.md` (sin validar schema ni contenido): `0` si están, `1` listando los que faltan.
-- El **motor** del arnés se elige con la clave `engine` (`native` | `openspec`, por defecto `native`): `spectralis config --set engine=<valor>` y `spectralis config --get engine`. Se resuelve con la cascada manifiesto > config global > default. El motor solo decide cómo se etiqueta y si se comprueba el binario `openspec`: con `native` no se comprueba (queda como `optional`) y con `openspec` es obligatorio (`required`, exit `1` y aviso explícito si falta).
+- El **motor** del arnés es nativo y único: no hay clave `engine` (la clave se retiró; `config --set engine` la reporta como desconocida). El CLI externo no se sondea nunca y `spectralis doctor` solo comprueba `git`, `node` y `graphify`.
 - Detalle completo: [`docs/spec-native.md`](docs/spec-native.md).
 
 ### Manuales en el cerebro (segundo cerebro)
@@ -225,23 +224,23 @@ spectralis init --no-obsidian                   # desactivarla en esta instalaci
 Con `obsidianSync=1` (o `--obsidian`):
 
 - `spectralis init` / `spectralis update` ejecutan automáticamente `notes init` + `notes sync`.
-- `/opsx-apply` invoca la skill `obsidian-orchestration` → la skill `obsidian-briefing` escribe la sección de briefing **dentro del folder note único** de la spec (`<spec-id>/<spec-id>.md`).
-- `/opsx-archive` invoca `obsidian-orchestration` → `obsidian-summary` + `obsidian-tests` escriben sus secciones **en el mismo folder note** y luego `spectralis spec complete` lo valida antes de archivar.
+- El apply invoca la skill `obsidian-orchestration` → la skill `obsidian-briefing` escribe la sección de briefing **dentro del folder note único** de la spec (`<spec-id>/<spec-id>.md`).
+- El archive invoca `obsidian-orchestration` → `obsidian-summary` + `obsidian-tests` escriben sus secciones **en el mismo folder note** y luego `spectralis spec complete` lo valida antes de archivar.
 
-La orquestación es idempotente (no regenera documentos ya correctos) y no modifica los comandos `opsx-*` (vendor-managed por OpenSpec).
+La orquestación es idempotente (no regenera documentos ya correctos) y no modifica el payload de terceros.
 
 ### Matriz de agentes (`--agent`)
 
 | Agente | Valor | Payload |
 |--------|-------|---------|
-| OpenCode (por defecto) | `opencode` | `.agents/` + `.opencode/` + docs + AGENTS.md + openspec |
-| Antigravity | `antigravity` | `.agents/` + docs + AGENTS.md + openspec (sin `.opencode/`) |
+| OpenCode (por defecto) | `opencode` | `.agents/` + `.opencode/` + docs + AGENTS.md + spec/ |
+| Antigravity | `antigravity` | `.agents/` + docs + AGENTS.md + spec/ (sin `.opencode/`) |
 | Claude Code | `claude` | igual que `antigravity` (ver `npx skills` más abajo) |
-| Todos | `all` | `.agents/` + `.opencode/` + docs + AGENTS.md + openspec |
+| Todos | `all` | `.agents/` + `.opencode/` + docs + AGENTS.md + spec/ |
 
 > **Detalle**: `spectralis init --dry-run` muestra el plan completo sin escribir nada.
 >
-> **Versionado — arnés**: formato `MAJOR.MINOR.<N>` donde `N` es el **número de especificaciones OpenSpec completadas/archivadas** — cada change archivado incrementa `N` automáticamente, sin juicio manual de minor/patch. `MINOR`/`MAJOR` solo por decisión explícita.
+> **Versionado — arnés**: formato `MAJOR.MINOR.<N>` donde `N` es el **número de especificaciones completadas/archivadas** — cada change archivado incrementa `N` automáticamente, sin juicio manual de minor/patch. `MINOR`/`MAJOR` solo por decisión explícita.
 >
 > **Versionado — proyecto destino**: `spectralis init` pregunta la versión actual del proyecto (Enter = `1.0.0`) y la guarda como `projectVersion` en `.sdd-manifest.json`. PATCH sube +1 con cada spec archivada (con su commit); MINOR sube +1 (y resetea PATCH) al crear una versión release; MAJOR solo por ruptura de compatibilidad explícita. Cada componente topa en `99` con carry (`1.2.99` → `1.3.0`). El flujo commit/release usa `projectVersion` como fuente canónica.
 >
@@ -259,12 +258,12 @@ La orquestación es idempotente (no regenera documentos ya correctos) y no modif
 
 El proceso respeta tu proyecto en todo momento: **primero lee, luego pregunta, y solo entonces escribe.**
 
-1. **Prerrequisitos (gate)** — verifica `git`, `node >= 22`, `openspec` (solo con `engine: openspec`) y `graphify`; si falta algo, aborta sin escribir nada y te dice cómo instalarlo.
+1. **Prerrequisitos (gate)** — verifica `git`, `node >= 22` y `graphify`; si falta algo, aborta sin escribir nada y te dice cómo instalarlo.
 2. **Reconocimiento (lectura)** — escanea tu proyecto (`pom.xml`, `package.json`, `requirements.txt`, `go.mod`, ...) **sin escribir**: detecta backend y frontend.
 3. **`--dry-run` (opcional)** — muestra el plan completo y deja tu proyecto bit a bit idéntico.
 4. **Confirmación** — pregunta antes de escribir nada.
-5. **`openspec init`** — crea la raíz OpenSpec si no existe (`--tools` según `--agent`).
-6. **Contexto español** — se inyecta por APPEND en `openspec/config.yaml` (preserva comentarios y tu contexto propio).
+5. **Scaffolding nativo** — crea `spec/` con `spec/progress.json` sembrado vacío (sin ningún CLI externo).
+6. **Contexto español** — se inyecta por APPEND en `spec/config.yaml` (preserva comentarios y tu contexto propio).
 7. **Bloques gestionados** — `AGENTS.md`: se crea o se añade/refresca el bloque SDD con marcadores (tu contenido queda intacto, idempotente). `.gitignore`: bloque gestionado con `graphify-out/`, `.sdd-backup-*/`, `.agents/`, `.opencode/`, `skills-lock.json` y `.claude/`.
 8. **Payload** — copia `.agents/`, `.opencode/` (según `--agent`) y `docs/`; conflicto → backup + pregunta; idéntico → skip.
 9. **Estándares compuestos** — `docs/backend-standards.md` y `docs/frontend-standards.md` se generan desde la variante detectada con los placeholders rellenados.
@@ -274,7 +273,7 @@ El proceso respeta tu proyecto en todo momento: **primero lee, luego pregunta, y
 ### Puntos clave
 
 - **Cero escritura antes de tu confirmación** y re-ejecuciones idempotentes (los archivos idénticos se saltan, sin backups fantasma).
-- **Conflictos**: tu versión se respalda en `.sdd-backup-<fecha>/` y decides si reemplazarla; el contrato detallado vive en `openspec/specs/sdd-template-install`.
+- **Conflictos**: tu versión se respalda en `.sdd-backup-<fecha>/` y decides si reemplazarla; el contrato detallado vive en `docs/base-standards.md`.
 - Cualquier cambio no previsto aborta y el destino conserva los backups en `.sdd-backup-<fecha>/`.
 
 ---
@@ -292,7 +291,7 @@ npm i -g .
 
 ```bash
 spectralis --v          # Debe mostrar la versión (ej. 1.2.0)
-spectralis doctor       # Verifica prerrequisitos (git, node, graphify y openspec solo con engine: openspec)
+spectralis doctor       # Verifica prerrequisitos (git, node y graphify)
 ```
 
 ### 3. Instalar en un proyecto existente
@@ -326,7 +325,7 @@ spectralis update --check
 | Comando | Qué verifica |
 |---------|--------------|
 | `spectralis --v` | Versión instalada |
-| `spectralis doctor` | Prerrequisitos (git, node, graphify y openspec solo con `engine: openspec`) |
+| `spectralis doctor` | Prerrequisitos (git, node y graphify) |
 | `spectralis status` | Estado del arnés en el proyecto |
 | `spectralis config` | Configuración y tools |
 | `spectralis check` | Consistencia del flujo SDD y IDs del vault |
@@ -368,7 +367,7 @@ spectralis init /ruta/a/tu-proyecto
 
 - **Detección de stack**: el instalador examina tu proyecto (`pom.xml`, `package.json`, `requirements.txt`, `go.mod`, ...) e infiere backend y frontend — sin escribir nada.
 - **Estándares por stack**: `docs/backend-standards.md` y `docs/frontend-standards.md` se componen desde la variante detectada (`spring-boot`, `express-node`, `nestjs`, `react`, `angular` o genérica), rellenando nombre del proyecto, lenguaje, framework, versiones y build tool. Los valores no detectables quedan como placeholders visibles y los refina el onboarding. En un proyecto backend puro no se copia `frontend-standards.md` (y viceversa). El resultado se persiste en `stack.json` (detección reproducible: escaneo a profundidad 2 en monorepos, exclusión de carpetas de archivo/caché e invalidación por mtime).
-- El contexto español se inyecta por **APPEND** en `openspec/config.yaml` (nunca reemplaza tu configuración).
+- El contexto español se inyecta por **APPEND** en `spec/config.yaml` (nunca reemplaza tu configuración).
 - Las reglas de agentes (`AGENTS.md`): se crea si tu proyecto no lo tiene; si ya tienes uno, tus reglas quedan intactas y el bloque SDD (base-standards + graphify-first) se añade por APPEND con marcadores — idempotente, sin duplicar.
 - **Tooling de agente y artefactos generados nunca se versionan**: el instalador garantiza en tu `.gitignore` un bloque gestionado con `graphify-out/`, `.sdd-backup-*/`, `.agents/`, `.opencode/` y `skills-lock.json`. El grafo es machine-local: se reconstruye con `graphify update .` tras clonar o cambiar de máquina (AST-only, sin coste). No se distribuyen plugins opencode: el recordatorio de graphify vive en las reglas de `AGENTS.md`.
 - Archivo existente que difiere → se respalda en `.sdd-backup-<fecha>/` y **se te pregunta** si reemplazarlo (puedes conservar el tuyo).
@@ -429,7 +428,7 @@ Para restaurar un archivo, copia su versión desde el backup fechado conservando
 En el proyecto destino, con tu agente (opencode):
 
 1. `graphify update .` — construye el grafo del código
-2. Invoca la skill `sdd-onboard-project`: comenta la estructura, te ofrece persistirla como regla en `openspec/config.yaml` (opt-in), **refina los estándares compuestos por el instalador** (resuelve placeholders pendientes como ORM o testing con la evidencia real del grafo) y te guía para configurar la IA local y la navegación del conocimiento
+2. Invoca la skill `sdd-onboard-project`: comenta la estructura, te ofrece persistirla como regla en `spec/config.yaml` (opt-in), **refina los estándares compuestos por el instalador** (resuelve placeholders pendientes como ORM o testing con la evidencia real del grafo) y te guía para configurar la IA local y la navegación del conocimiento
 
 Cada escritura del onboarding requiere tu confirmación explícita.
 
@@ -458,7 +457,7 @@ npx skills    # en el proyecto destino (solo Claude Code; con lockfile)
 
 Alternativa manual sin dependencias: copiar `.agents/skills/<skill>/` a `.claude/skills/<skill>/`. No uses symlinks: Claude Code los corrompe con archivos internos `.system/`.
 
-**Skills propias (promoción)**: una skill que crees en un proyecto destino permanece local (nunca se versiona ahí). Para distribuirla a todos tus proyectos, cópiala a `.agents/skills/<nombre>/` en este repo plantilla y re-ejecuta `spectralis init` o `spectralis update` en los destinos. Excepción: las skills `openspec-*` son vendor-managed por el CLI de OpenSpec en `.opencode/skills/` y nunca se duplican en `.agents/`.
+**Skills propias (promoción)**: una skill que crees en un proyecto destino permanece local (nunca se versiona ahí). Para distribuirla a todos tus proyectos, cópiala a `.agents/skills/<nombre>/` en este repo plantilla y re-ejecuta `spectralis init` o `spectralis update` en los destinos. Excepción: las skills de herramientas de terceros se gestionan fuera de `.agents/` y nunca se duplican en `.agents/`.
 
 ---
 
@@ -475,7 +474,6 @@ Re-ejecuta el instalador tras clonar la plantilla actualizada: los archivos nuev
 | Herramienta | Uso en Spectralis | Licencia | Repositorio |
 |---|---|---|---|
 | [graphify](https://github.com/cysalguero/graphify) | Grafo de conocimiento del proyecto | MIT | [GitHub](https://github.com/cysalguero/graphify) |
-| [OpenSpec](https://github.com/cysalguero/openspec) | Gestión de especificaciones SDD | MIT | [GitHub](https://github.com/cysalguero/openspec) |
 | [Commander.js](https://github.com/tj/commander.js) | CLI parsing | MIT | [GitHub](https://github.com/tj/commander.js) |
 | [gray-matter](https://github.com/jonschlinkert/gray-matter) | Frontmatter YAML parsing | MIT | [GitHub](https://github.com/jonschlinkert/gray-matter) |
 
@@ -485,8 +483,8 @@ Re-ejecuta el instalador tras clonar la plantilla actualizada: los archivos nuev
 
 ## Mantenimiento del repo plantilla
 
-- Este repo usa su propio workflow SDD: los cambios se gestionan con `/opsx:propose`, `/opsx:apply`, `/opsx:archive`.
-- Las exploraciones nuevas deben pasar el briefing gate antes de `openspec new change` (protocolo: `.agents/skills/exploration-briefing/SKILL.md`).
+- Este repo usa su propio workflow SDD: los cambios se gestionan con `spectralis spec create`, el ciclo de apply y `spectralis spec archive`.
+- Las exploraciones nuevas deben pasar el briefing gate antes de crear el change (protocolo: `.agents/skills/exploration-briefing/SKILL.md`).
 - Los skills nuevos van en `.agents/skills/<nombre>/SKILL.md` (frontmatter: `name`, `description`, `author`, `version`).
 - **El trabajo documental se delega mediante el contrato de solicitud estructurada** (`documenter-delegation`): los subagentes solicitan al coordinador y nunca publican por su cuenta (detalle en la skill).
 - **Las reglas del ciclo viven en el contrato `agent-rules-contract`** y se validan con `spectralis check --rules` (define una sola vez, referencia en vez de redefinir).

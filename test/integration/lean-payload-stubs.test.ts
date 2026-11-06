@@ -15,16 +15,6 @@ let baseEnv: NodeJS.ProcessEnv;
 
 before(() => {
   fakeBin = mkdtempSync(join(tmpdir(), 'spectralis-fakebin-'));
-  const openspecStub = [
-    '#!/usr/bin/env node',
-    'const fs = require("fs");',
-    'if (process.argv[2] === "init") {',
-    '  fs.mkdirSync("openspec", { recursive: true });',
-    '  fs.writeFileSync("openspec/config.yaml", "schema: spec-driven\\n");',
-    '}',
-    'process.exit(0);'
-  ].join('\n');
-  writeFileSync(join(fakeBin, 'openspec'), openspecStub);
   writeFileSync(join(fakeBin, 'graphify'), '#!/usr/bin/env node\nprocess.exit(0);\n');
   baseEnv = {
     ...process.env,

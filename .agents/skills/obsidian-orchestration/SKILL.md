@@ -38,14 +38,14 @@ Regla de precedencia:
 
 ### Al archivar el change (orquestación activa)
 
-**Motor nativo (default):**
+**Al archivar (motor nativo):**
 
 1. Ejecuta `spectralis spec archive <change-id>`: mueve el change a `spec/_archived/<change-id>/`, completa la fila del REGISTRY y **escribe el resumen del cerebro directamente** (`05_wiki/<wiki-project>/<change-id>.md`), a partir del `change.json` del change (`resumen.abstracto`) y de sus artefactos.
 2. **No hace falta `spectralis spec complete`**: el archive nativo valida, registra y destila en un solo paso.
 3. Invoca `obsidian-summary` y `obsidian-tests` para **revisar y completar el folder note único** (`## Cambios realizados`/`## Lecciones aprendidas` y `## Tests de regresión`): en nativo ya no generan ficheros aparte, trabajan sobre el folder note vivo.
 4. Si el archive falla (tareas pendientes sin `--force`, REGISTRY no escribible): informa del fallo y **NO fuerces el cierre** sin confirmación.
 
-**Motor `engine: openspec`:**
+**Al archivar (nativo):**
 
 1. Invoca la skill `obsidian-summary` → sección `## Cambios realizados`/`## Lecciones aprendidas` **en el mismo folder note**.
 2. Invoca la skill `obsidian-tests` → sección `## Tests de regresión` **en el mismo folder note** (las tres skills escriben en el único artefacto de la spec).
@@ -65,4 +65,4 @@ No invoces ninguna skill de Obsidian ni `spec complete`. No escribas nada en el 
 
 - `obsidian-briefing`, `obsidian-summary`, `obsidian-tests` se invocan desde aquí; no cambian su comportamiento propio.
 - `spectralis notes init`/`notes sync` se orquestan desde `spectralis init`/`update` (código del CLI), no desde esta skill.
-- Esta skill NO modifica los comandos `.opencode/commands/opsx-*` (vendor-managed por OpenSpec): son *extras* del motor `openspec` y se siguen distribuyendo sin cambios.
+- Esta skill NO modifica los comandos ni las skills de terceros: el arnés solo distribuye su propio payload nativo.

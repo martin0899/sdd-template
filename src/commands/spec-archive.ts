@@ -17,8 +17,8 @@ import { parseTasksMd, readProgress, writeProgress } from '../core/progress-regi
  * `spectralis spec archive <change-id> [--force]`.
  *
  * Moves a finished change to `spec/_archived/`, completes its REGISTRY row
- * and writes the portable brain summary into the vault. The OpenSpec binary
- * is never invoked: the archive is native.
+ * and writes the portable brain summary into the vault. The archive is
+ * native: no external CLI is invoked.
  */
 export interface SpecArchiveOptions {
   /** Id of the change (the name of its folder). */

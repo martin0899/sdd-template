@@ -16,7 +16,7 @@ function blockText(): string {
 
 /**
  * Append the Spanish context block to the `context` field of a
- * openspec/config.yaml content string. APPEND semantics only: existing
+ * `spec/config.yaml` content string. APPEND semantics only: existing
  * content, comments and key order are preserved (round-trip via the yaml
  * Document API). Idempotent: an existing heading is never duplicated.
  */
@@ -45,10 +45,8 @@ export function injectSpanishContext(cfgContent: string): string {
   return out.endsWith('\n') ? out : `${out}\n`;
 }
 
-/** Config of a spec-native project (the layout the harness writes). */
+/** Config of a spec-native project (the only layout the harness writes). */
 export const NATIVE_CONFIG_REL = join('spec', 'config.yaml');
-/** Config of a legacy project (the layout of the OpenSpec CLI). */
-export const LEGACY_CONFIG_REL = join('openspec', 'config.yaml');
 
 /** Content of a config that does not exist yet. */
 const DEFAULT_CONFIG_CONTENT = 'schema: spec-driven\n';
@@ -56,29 +54,26 @@ const DEFAULT_CONFIG_CONTENT = 'schema: spec-driven\n';
 export interface ConfigTargets {
   /** Config of the native layout (`spec/config.yaml`). */
   native?: string;
-  /** Config of the legacy layout (`openspec/config.yaml`). */
-  legacy?: string;
 }
 
 /**
  * Config files of a project that must carry the Spanish context.
  *
- * A spec-native project (it has `spec/`) uses its own config; a legacy one
- * keeps `openspec/config.yaml`. A project with both layouts gets both.
+ * There is only one layout: the native one (`spec/config.yaml`). The legacy
+ * config of the external engine is never read nor written.
  */
 export function resolveConfigTargets(target: string): ConfigTargets {
   const targets: ConfigTargets = {};
   if (existsSync(join(target, 'spec'))) targets.native = join(target, NATIVE_CONFIG_REL);
-  if (existsSync(join(target, 'openspec'))) targets.legacy = join(target, LEGACY_CONFIG_REL);
   return targets;
 }
 
 /**
- * Injects the Spanish context in the config files of a project.
+ * Injects the Spanish context in the config of a project.
  *
- * The legacy config is read when it exists: its content seeds the native one,
- * so a project that migrates does not lose its configuration. The injection
- * keeps the APPEND semantics and is idempotent.
+ * The native config (`spec/config.yaml`) is the only target: the legacy config
+ * of the external engine is never read nor written. The injection keeps the
+ * APPEND semantics and is idempotent.
  *
  * It returns the files that were written; an empty list means the project
  * has no config to write.
@@ -87,24 +82,12 @@ export function injectSpanishContextInProject(target: string): string[] {
   const targets = resolveConfigTargets(target);
   const written: string[] = [];
 
-  const legacyContent = targets.legacy && existsSync(targets.legacy)
-    ? readFileSync(targets.legacy, 'utf8')
-    : '';
-
   if (targets.native) {
     const seed = existsSync(targets.native)
       ? readFileSync(targets.native, 'utf8')
-      : legacyContent || DEFAULT_CONFIG_CONTENT;
+      : DEFAULT_CONFIG_CONTENT;
     writeFileSync(targets.native, injectSpanishContext(seed), 'utf8');
     written.push(targets.native);
-  }
-
-  if (targets.legacy) {
-    const seed = existsSync(targets.legacy)
-      ? readFileSync(targets.legacy, 'utf8')
-      : DEFAULT_CONFIG_CONTENT;
-    writeFileSync(targets.legacy, injectSpanishContext(seed), 'utf8');
-    written.push(targets.legacy);
   }
 
   return written;

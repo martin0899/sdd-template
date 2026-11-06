@@ -23,13 +23,13 @@ function scratch(prefix: string): string {
 
 /** An isolated HOME: the global config of the host never leaks into the test. */
 function isolatedHome(): string {
-  const home = scratch('sp-config-engine-home-');
+  const home = scratch('sp-config-engine-removed-home-');
   process.env.HOME = home;
   return home;
 }
 
 function project(manifest: Record<string, unknown> = {}): string {
-  const dir = scratch('sp-config-engine-proj-');
+  const dir = scratch('sp-config-engine-removed-proj-');
   writeFileSync(
     join(dir, '.sdd-manifest.json'),
     JSON.stringify({ schemaVersion: 3, ...manifest }, null, 2) + '\n',
@@ -59,53 +59,51 @@ function captureLog(fn: () => Promise<number>): Promise<{ code: number; output: 
   })();
 }
 
-test('config --set engine=openspec stores the engine in the project manifest', async () => {
+test('config --set engine=native rejects the removed key', async () => {
   isolatedHome();
   const dir = project();
-  const { code } = await captureLog(() => runConfig({ set: 'engine=openspec', destino: dir }));
-  assert.equal(code, 0);
-  const manifest = JSON.parse(readFileSync(join(dir, '.sdd-manifest.json'), 'utf8')) as Record<
-    string,
-    unknown
-  >;
-  assert.equal(manifest.engine, 'openspec');
-});
-
-test('config --get engine prints the resolved engine and its origin', async () => {
-  isolatedHome();
-  const dir = project({ engine: 'openspec' });
-  const { code, output } = await captureLog(() => runConfig({ get: 'engine', destino: dir }));
-  assert.equal(code, 0);
-  assert.match(output, /openspec/);
-  assert.match(output, /manifiesto|manifest/);
-});
-
-test('config --get engine falls back to native when nothing declares an engine', async () => {
-  isolatedHome();
-  const dir = project();
-  const { code, output } = await captureLog(() => runConfig({ get: 'engine', destino: dir }));
-  assert.equal(code, 0);
-  assert.match(output, /native/);
-});
-
-test('config --set engine=invalid fails with a descriptive error', async () => {
-  isolatedHome();
-  const dir = project();
-  const { code, output } = await captureLog(() =>
-    runConfig({ set: 'engine=invalid', destino: dir })
-  );
+  const { code, output } = await captureLog(() => runConfig({ set: 'engine=native', destino: dir }));
   assert.equal(code, 1);
   assert.match(output, /engine/i);
-  assert.match(output, /openspec.*native|native.*openspec/i);
+  assert.match(output, /unknown|unrecognized|no (reconoce|soporta)|retirad/i);
   const manifest = JSON.parse(readFileSync(join(dir, '.sdd-manifest.json'), 'utf8')) as Record<
     string,
     unknown
   >;
-  assert.equal(manifest.engine, undefined, 'nothing is written when the value is invalid');
+  assert.equal(manifest.engine, undefined, 'nothing is written when the key is unknown');
 });
 
-test('a global config without engine resolves to the empty default', () => {
+test('config --get engine reports the key as unknown', async () => {
+  isolatedHome();
+  const dir = project();
+  const { code, output } = await captureLog(() => runConfig({ get: 'engine', destino: dir }));
+  assert.equal(code, 1);
+  assert.match(output, /engine/i);
+  assert.match(output, /unknown|unrecognized|no (reconoce|soporta)|retirad/i);
+});
+
+test('config list does not expose the engine key', async () => {
+  isolatedHome();
+  const dir = project();
+  const { code, output } = await captureLog(() => runConfig({ list: true, destino: dir }));
+  assert.equal(code, 0);
+  assert.doesNotMatch(output, /engine/i);
+});
+
+test('a manifest that declares an engine is ignored', async () => {
+  isolatedHome();
+  const dir = project({ engine: 'openspec' });
+  const { code, output } = await captureLog(() => runConfig({ list: true, destino: dir }));
+  assert.equal(code, 0, output);
+  assert.doesNotMatch(output, /engine/i);
+});
+
+test('the global configuration has no engine key', () => {
   isolatedHome();
   const config = readGlobalConfig();
-  assert.equal(config.engine, '');
+  assert.equal(
+    (config as unknown as Record<string, unknown>).engine,
+    undefined,
+    'the engine key no longer exists in the configuration'
+  );
 });

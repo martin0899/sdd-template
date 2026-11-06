@@ -2,7 +2,7 @@ import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, basename, relative } from 'node:path';
 import { decisionesPath, extractSpecIds } from './wiki-structure';
 import { hasSpecArtifact } from './spec-artifact';
-import { resolveChangesDirs } from './resolve-changes-dir';
+import { resolveChangesDir } from './resolve-changes-dir';
 
 export type Severity = 'error' | 'warning';
 
@@ -81,22 +81,18 @@ export interface ActiveChange {
 /**
  * Active changes of a project and the folder that holds each one.
  *
- * Both layouts are inspected during the migration window: the resolved one
- * (`spec/` by default) and the legacy one (`openspec/changes/`), so a project
- * that has not migrated yet keeps its registry checks.
+ * The changes are read from a single directory: the one `resolveChangesDir`
+ * resolves for the project. The historical layout is not inspected — a project
+ * that has not migrated yet must be migrated (`spectralis spec migrate`).
  */
 export function listActiveChangeEntries(projectRoot: string): ActiveChange[] {
   const entries: ActiveChange[] = [];
-  const seen = new Set<string>();
-  for (const changesDir of resolveChangesDirs({ projectRoot })) {
-    if (!existsSync(changesDir)) continue;
-    for (const entry of readdirSync(changesDir, { withFileTypes: true })) {
-      if (!entry.isDirectory()) continue;
-      if (entry.name === 'archive' || entry.name === '_archived') continue;
-      if (seen.has(entry.name)) continue;
-      seen.add(entry.name);
-      entries.push({ id: entry.name, dir: join(changesDir, entry.name) });
-    }
+  const changesDir = resolveChangesDir({ projectRoot });
+  if (!existsSync(changesDir)) return entries;
+  for (const entry of readdirSync(changesDir, { withFileTypes: true })) {
+    if (!entry.isDirectory()) continue;
+    if (entry.name === 'archive' || entry.name === '_archived') continue;
+    entries.push({ id: entry.name, dir: join(changesDir, entry.name) });
   }
   return entries;
 }
@@ -108,22 +104,20 @@ export function listActiveChanges(projectRoot: string): string[] {
 /**
  * Collects every change id the registry can legitimately point at.
  *
- * `openspec/changes/archive/` stores folders as `YYYY-MM-DD-<spec-id>`, while
- * REGISTRY.md references the bare `<spec-id>`. Both forms are registered so a
- * reference resolves against either naming, and consumers of this set inherit
- * that normalisation for free.
+ * The archive of the changes directory stores folders as `YYYY-MM-DD-<spec-id>`,
+ * while REGISTRY.md references the bare `<spec-id>`. Both forms are registered
+ * so a reference resolves against either naming, and consumers of this set
+ * inherit that normalisation for free.
  */
 function listKnownChanges(projectRoot: string): Set<string> {
   const known = new Set<string>(listActiveChanges(projectRoot));
-  for (const changesDir of resolveChangesDirs({ projectRoot })) {
-    const archiveDir = join(changesDir, 'archive');
-    if (!existsSync(archiveDir)) continue;
-    for (const d of readdirSync(archiveDir, { withFileTypes: true })) {
-      if (!d.isDirectory()) continue;
-      known.add(d.name);
-      const bare = d.name.replace(/^\d{4}-\d{2}-\d{2}-/, '');
-      if (bare !== d.name) known.add(bare);
-    }
+  const archiveDir = join(resolveChangesDir({ projectRoot }), 'archive');
+  if (!existsSync(archiveDir)) return known;
+  for (const d of readdirSync(archiveDir, { withFileTypes: true })) {
+    if (!d.isDirectory()) continue;
+    known.add(d.name);
+    const bare = d.name.replace(/^\d{4}-\d{2}-\d{2}-/, '');
+    if (bare !== d.name) known.add(bare);
   }
   return known;
 }
@@ -223,11 +217,11 @@ export function checkOrphanedRegistryEntries(
   const findings: VaultDoctorFinding[] = [];
   // A referenced spec-id is satisfied by any of: an active change, an archived
   // change (with or without the archive's date prefix), or a vault folder. An
-  // archived change needs no vault folder: its record is the OpenSpec archive
-  // plus the main spec. The vault-folder convention only exists from
-  // 2026-09-25, so demanding it retroactively would produce warnings that can
-  // never reach zero — and a check that never goes green is a check people
-  // learn to ignore.
+  // archived change needs no vault folder: its record is the archive of the
+  // changes directory plus the main spec. The vault-folder convention only
+  // exists from 2026-09-25, so demanding it retroactively would produce warnings
+  // that can never reach zero — and a check that never goes green is a check
+  // people learn to ignore.
   const known = listKnownChanges(projectRoot);
   for (const id of collectChangeRefs(rows)) {
     if (known.has(id)) continue;
@@ -334,8 +328,8 @@ export function checkIndexMisaligned(
   if (brainProject) {
     const updatedMs = Date.parse(entry.updated ?? '');
     let newest = 0;
-    for (const changesDir of resolveChangesDirs({ projectRoot })) {
-      if (!existsSync(changesDir)) continue;
+    const changesDir = resolveChangesDir({ projectRoot });
+    if (existsSync(changesDir)) {
       for (const d of readdirSync(changesDir, { withFileTypes: true })) {
         if (d.isDirectory() && d.name !== 'archive' && d.name !== '_archived') {
           newest = Math.max(newest, statSync(join(changesDir, d.name)).mtimeMs);

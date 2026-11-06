@@ -1,18 +1,18 @@
 ---
 name: obsidian-briefing
-description: Generate technical briefing in Obsidian for OpenSpec changes. Creates a portable technical summary for cross-machine reference. Use when a technical briefing is needed or when the user asks for a technical summary of work done.
+description: Generate technical briefing in Obsidian for spec changes. Creates a portable technical summary for cross-machine reference. Use when a technical briefing is needed or when the user asks for a technical summary of work done.
 ---
 
 # Obsidian Briefing
 
-> **Orquestada**: cuando `obsidianSync=1` (o `--obsidian`), esta skill se invoca automáticamente desde `obsidian-orchestration` al **proponer** y al **completar un apply** (`/opsx-apply`). Con el switch en `0`, se usa solo por invocación explícita.
+> **Orquestada**: cuando `obsidianSync=1` (o `--obsidian`), esta skill se invoca automáticamente desde `obsidian-orchestration` al **proponer** y al **completar un apply**. Con el switch en `0`, se usa solo por invocación explícita.
 
 ## Cuándo se dispara
 
-- **Propuesta** (SDD): rellena el briefing del folder note **antes** de crear los artefactos formales (el folder note es independiente del motor de OpenSpec).
+- **Propuesta** (SDD): rellena el briefing del folder note **antes** de crear los artefactos formales (el folder note es independiente del motor del flujo).
 - **Apply**: refresca las secciones sin duplicarlas.
 
-Genera un briefing técnico en Obsidian para cambios OpenSpec. Crea un resumen técnico portátil para referencia entre máquinas.
+Genera un briefing técnico en Obsidian para cambios de spec. Crea un resumen técnico portátil para referencia entre máquinas.
 
 ## Rutas y Configuración
 
@@ -95,10 +95,10 @@ Read the briefing file to understand:
 - Mitigation strategies
 - Open questions
 
-### Step 5: Link to OpenSpec
+### Step 5: Link to the change
 
 Add links to:
-- The OpenSpec change
+- The spec change
 - Related specs
 - Original requirement
 
@@ -190,7 +190,7 @@ tags:
 
 ## Enlaces
 
-- **OpenSpec**: `openspec/changes/<change-name>`
+- **Change**: `spec/<change-name>`
 - **Requerimiento**: <requirement-link>
 - **Specs**: <specs-link>
 ```
@@ -213,7 +213,7 @@ Document the technical context before generating test documentation.
 
 1. **Use existing briefing** - If a briefing exists in `.sdd-registry/briefings/`, use it as the source
 2. **Technical accuracy** - Ensure all technical details are accurate
-3. **Link to source** - Always link back to the OpenSpec change and requirement
+3. **Link to source** - Always link back to the spec change and requirement
 4. **Portable format** - Ensure the document is readable without repository context
 5. **Spanish content** - Write the briefing in Spanish for the user
 

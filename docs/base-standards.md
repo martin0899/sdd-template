@@ -18,7 +18,7 @@ alwaysApply: true
 ### Guiding Principle
 
 - **English** → Everything technical: code, skills, internal docs, configuration, development tools.
-- **Spanish** → Everything the user reads or reviews: Obsidian, OpenSpec, README, agent interactions.
+- **Spanish** → Everything the user reads or reviews: Obsidian, spec changes, README, agent interactions.
 
 ### Language Matrix
 
@@ -38,7 +38,7 @@ alwaysApply: true
 | **README.md** | **Spanish** | User-facing entry point |
 | **Obsidian notes** (`00_Notas/` – `03_Recursos/`) | **Spanish** | Second Brain content |
 | **Documentation exported to Obsidian** | **Spanish** | Lives in the vault, reviewed by user |
-| **OpenSpec** (specs, tasks, reports) | **Spanish** | User reviews directly |
+| **Spec changes** (specs, tasks, reports) | **Spanish** | User reviews directly |
 | **Agent prompts / responses** | **Spanish** | Agent operates in Spanish with user |
 | **Git commit messages / PR titles** | **Spanish** | User-facing, reviewed by user |
 | **Error messages shown to user** | **Spanish** | User-facing |
@@ -49,7 +49,7 @@ alwaysApply: true
 
 - **English tokens are cheaper** than Spanish in most models.
 - **Skills and docs are development tools** → English (even if user-created).
-- **What lives in Obsidian and OpenSpec is review content** → Spanish.
+- **What lives in Obsidian and in the spec changes is review content** → Spanish.
 - **README is the user's entry point** → Spanish.
 - **Commits, PRs, user errors** → Spanish because the user reads them.
 
@@ -62,7 +62,7 @@ spectralis init
   → Generates skills with SKILL.md in ENGLISH
   → Generates internal docs/ in ENGLISH
   → Creates Obsidian notes in SPANISH
-  → Generates OpenSpec specs in SPANISH
+  → Generates spec changes in SPANISH
   → Generates README in SPANISH
   → Commits and PRs in SPANISH
 ```
@@ -74,15 +74,15 @@ For detailed standards and guidelines specific to different areas of the project
 - [Backend Standards](./backend-standards.md) - API development, database patterns, testing, security and backend best practices (composed at install time from the template's stack variant: `spring-boot`, `express-node`, or `generic`)
 - [Frontend Standards](./frontend-standards.md) - UI/UX guidelines and frontend architecture (composed at install time from the template's stack variant: `react` or `generic`; omitted for backend-only projects)
 - [Documentation Standards](./documentation-standards.md) - Technical documentation structure, formatting, and maintenance guidelines, including AI standards like this document
-- [OpenSpec Tasks Mandatory Steps](./openspec-tasks-mandatory-steps.md) - Required checklist and execution rules when creating or updating OpenSpec `tasks.md` files
+- [Spec Tasks Mandatory Steps](./spec-tasks-mandatory-steps.md) - Required checklist and execution rules when creating or updating `tasks.md` files of a change
 
 ## 4. Project Skills
 
 - Skills live in `.agents/skills` (this template repository is the canonical registry).
 - When a request matches a skill, load and follow the corresponding `SKILL.md` automatically before continuing.
 - Also load any referenced files in the skill folder (for example, `references/*.md`) when the skill requires them.
-- **Vendor exemption**: OpenSpec CLI skills (`openspec-*`) are managed exclusively in `.opencode/skills/` by the OpenSpec CLI. Never keep copies, mirrors, or symlinks of them in `.agents/skills/` — duplicates already diverged once (v1.3.1 vs v1.11.0) and served stale instructions.
-- **Project-local policy**: in installed destination projects, skills, commands, plugins, `skills-lock.json` and the `openspec/` tree (main specs, changes, planning artifacts) are machine-local and never committed (the installer-managed `.gitignore` block enforces this). Only `AGENTS.md` and `docs/` are project content and remain versioned. The OpenSpec SDD workflow keeps working locally (`openspec/` stays on disk; it just travels with the local machine, not the repository).
+- **Vendor exemption**: never keep copies, mirrors, or symlinks of skills owned by third-party tools in `.agents/skills/` — duplicates diverge and serve stale instructions.
+- **Project-local policy**: in installed destination projects, skills, commands, plugins, `skills-lock.json` and the `spec/` tree (changes, planning artifacts) are machine-local and never committed (the installer-managed `.gitignore` block enforces this). Only `AGENTS.md` and `docs/` are project content and remain versioned. The SDD workflow keeps working locally (`spec/` stays on disk; it just travels with the local machine, not the repository).
 - **Promotion flow**: a skill created locally in a destination stays local until promoted — copy it into this template's `.agents/skills/`, then distribute it via `spectralis init` or `spectralis update`.
 
 ## 5. Planning Model Requirement
@@ -91,8 +91,8 @@ Planning workflows must run with Opus high reasoning.
 
 This requirement applies to:
 - `enrich-us`
-- `openspec-ff-change`
-- `openspec-continue-change`
+- `spec-from-note`
+- `exploration-briefing`
 
 ## 6. Symlink Integrity and Multi-Agent Portability
 
@@ -100,7 +100,7 @@ This requirement applies to:
 - **Update Safety**: Whenever a file is renamed, moved, or its suffix changes, verify and update all symlinks that target it before considering the change complete.
 - **New Artifact Linking**: Whenever creating a new artifact that requires multi-agent exposure (for example new agents or skills in `.agents`), create the corresponding symlinks from the expected agent-specific reference paths.
 - **External Customization Review**: Whenever customization is introduced outside `.agents`, evaluate whether it should be moved into `.agents` and replaced with symlinks from the original locations.
-- **Vendor-managed exceptions**: artifacts owned by external CLIs (for example `.opencode/skills/openspec-*`, generated and updated by the OpenSpec CLI) are exempt from `.agents` canonicalization — do not duplicate or symlink them into `.agents`.
+- **Vendor-managed exceptions**: artifacts owned by external CLIs (generated and updated by those tools) are exempt from `.agents` canonicalization — do not duplicate or symlink them into `.agents`.
 - **Completion Gate**: A change is incomplete if it leaves broken symlinks, stale targets, or duplicated canonical artifacts across agent-specific folders.
 
 ## 7. Second Brain / Obsidian Rules
@@ -110,7 +110,7 @@ This requirement applies to:
 - **Ciclo de vida**: `_Notas/ → <spec-id>/ → 04_archivado/` — las notas se promueven de inbox a proyecto, de proyecto a spec, y de spec a archivado.
 - **Artefacto de spec — folder note**: el contenido de `<spec-id>/` es un **único folder note** `01_Proyectos/<proyecto>/<spec-id>/<spec-id>.md` con `id: spec-<spec-id>`, `Tipo: Especificación` y los headings canónicos `## Contexto`, `## Decisiones técnicas`, `## Impacto`, `## Lecciones aprendidas`, `## Cambios realizados`, `## Tests de regresión`. Las tres skills de documentación escriben sus secciones **dentro** de ese archivo (nada de `briefing.md`/`tests.md`/`resumen.md` separados). El layout legacy (tres archivos) sigue siendo aceptado por los consumidores durante la transición.
 
-## 8. Mandatory OpenSpec Artifact Updates for Post-Apply Changes
+## 8. Change Artifact Updates for Post-Apply Changes
 
 When a new fix/change request appears after an apply and before an archive, agents must treat it as a spec update first, not as an informal "fix this quickly". It's the core principle of the SDD cycle: documentation is the source of truth.
 
@@ -119,7 +119,7 @@ The change artifacts live under the **resolved changes directory** (`spec/` by d
 Required order:
 
 1. Update the change artifacts that are affected (for example: scenarios, requirements/specs, and `tasks.md`) under the resolved changes dir. Don't add tasks as "bugfixes" but as part of the initial design, thus in the proper section
-2. If artifact regeneration is needed, run the corresponding step of the active engine before coding (native: `spectralis spec validate <change-id>` and `spectralis spec status <change-id>`; with `engine: openspec`, its own continue/ff commands)
+2. If artifact regeneration is needed, run `spectralis spec validate <change-id>` and `spectralis spec status <change-id>` before coding
 3. Implement code only after artifacts reflect the new request.
 4. Re-run verification against the updated artifacts before archiving.
 

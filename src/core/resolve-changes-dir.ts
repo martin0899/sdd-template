@@ -5,10 +5,10 @@ import { readGlobalConfig, type SpectralisConfig } from './config';
 /**
  * Default location of the SDD changes inside a project.
  *
- * The native layout of the harness is `spec/<id>/`: it is the default since
- * F2. Projects that keep the historical layout declare
- * `spec_dir: openspec/changes` in their configuration (manifest or global
- * config) and the cascade resolves it without any code change.
+ * The native layout of the harness is `spec/<id>/`: it is the default. Projects
+ * that keep the historical layout declare `spec_dir: openspec/changes` in their
+ * configuration (manifest or global config) and the cascade resolves it without
+ * any code change.
  */
 export const DEFAULT_CHANGES_DIR = 'spec';
 
@@ -86,32 +86,15 @@ export function resolveSpecDir(opts: ResolveChangesDirOptions): SpecDirResolutio
  *
  * Relative values are resolved against `projectRoot`; absolute values are used
  * as-is. The result is always an absolute, normalized path.
+ *
+ * There is a single changes directory per project: the dual-read window is
+ * retired. A project that still keeps its changes in the historical layout
+ * declares it with `spec_dir`; migrating it is the job of
+ * `spectralis spec migrate`.
  */
 export function resolveChangesDir(opts: ResolveChangesDirOptions): string {
   const projectRoot = resolve(opts.projectRoot);
   const { value } = resolveSpecDir(opts);
   if (value === '') return join(projectRoot, DEFAULT_CHANGES_DIR);
   return isAbsolute(value) ? resolve(value) : resolve(projectRoot, value);
-}
-
-/**
- * Historical layout of the changes, kept readable during the migration window.
- *
- * `spectralis spec migrate` moves the legacy changes into the native layout,
- * but the readers that validate the whole history of a project (the registry
- * doctor, the TDD ordering check) keep looking at both layouts for one
- * release, so a project that has not migrated yet does not lose its checks.
- */
-export const LEGACY_CHANGES_DIR = join('openspec', 'changes');
-
-/**
- * Every directory that may hold the changes of a project: the resolved one
- * (first) and the legacy layout (when it is a different directory).
- */
-export function resolveChangesDirs(opts: ResolveChangesDirOptions): string[] {
-  const projectRoot = resolve(opts.projectRoot);
-  const dirs = [resolveChangesDir(opts)];
-  const legacy = resolve(join(projectRoot, LEGACY_CHANGES_DIR));
-  if (!dirs.includes(legacy)) dirs.push(legacy);
-  return dirs;
 }

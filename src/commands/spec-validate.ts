@@ -1,6 +1,6 @@
 import { resolveTargetProjectRoot } from '../core/config';
 import { resolveChangesDir } from '../core/resolve-changes-dir';
-import { missingSddEssentials } from '../core/spec-facade';
+import { missingSddEssentials } from '../core/sdd-essentials';
 
 export interface SpecValidateOptions {
   /** Id of the change to validate. */
@@ -15,8 +15,8 @@ export interface SpecValidateOptions {
  * `spectralis spec validate <changeId>`: validation of the artifacts of a
  * native change.
  *
- * The check reuses `missingSddEssentials` (the same contract the facade
- * applies before delegating an apply) with the resolved directory of the
+ * The check reuses `missingSddEssentials` (the same contract the workflow
+ * applies before implementing a change) with the resolved directory of the
  * change: only the *presence* of the artifacts is validated, never their
  * content.
  */

@@ -18,16 +18,6 @@ const harnessVersion = (
 
 before(() => {
   fakeBin = mkdtempSync(join(tmpdir(), 'spectralis-fakebin-'));
-  const openspecStub = [
-    '#!/usr/bin/env node',
-    'const fs = require("fs");',
-    'if (process.argv[2] === "init") {',
-    '  fs.mkdirSync("openspec", { recursive: true });',
-    '  fs.writeFileSync("openspec/config.yaml", "schema: spec-driven\\n");',
-    '}',
-    'process.exit(0);'
-  ].join('\n');
-  writeFileSync(join(fakeBin, 'openspec'), openspecStub);
   writeFileSync(join(fakeBin, 'graphify'), '#!/usr/bin/env node\nprocess.exit(0);\n');
   baseEnv = {
     ...process.env,
@@ -261,7 +251,7 @@ test('update --repair-agents without --yes asks for confirmation and keeps the f
   }
 });
 
-test('update preserves AGENTS.md, openspec/config.yaml and compound standard manifest entries', () => {
+test('update preserves AGENTS.md and compound standard manifest entries', () => {
   const dst = mkdtempSync(join(tmpdir(), 'spectralis-upd-manifest-'));
   try {
     const init = runCli(['init', dst, '--yes'], 's\n');
@@ -283,7 +273,6 @@ test('update preserves AGENTS.md, openspec/config.yaml and compound standard man
     const rewritten = readManifestJson(dst) as { files: { path: string }[] };
     const paths = rewritten.files.map((f) => f.path);
     assert.ok(paths.includes('AGENTS.md'), 'AGENTS.md entry preserved');
-    assert.ok(paths.includes('openspec/config.yaml'), 'openspec/config.yaml entry preserved');
     assert.ok(paths.includes('docs/backend-standards.md'), 'compound standard entry preserved');
   } finally {
     rmSync(dst, { recursive: true, force: true });
@@ -497,6 +486,61 @@ test('update --prune without retired files reports nothing to prune and creates 
 
     assert.match(r.stdout, /no retired files to prune/i, 'the report states there is nothing to prune');
     assert.equal(backupDirs(dst).length, 0, 'no backup is created');
+  } finally {
+    rmSync(dst, { recursive: true, force: true });
+  }
+});
+
+// --- retired legacy config (openspec/config.yaml) ---
+
+const LEGACY_CONFIG_REL = 'openspec/config.yaml';
+
+test('update --prune removes the retired legacy config of an existing installation', () => {
+  const dst = mkdtempSync(join(tmpdir(), 'spectralis-upd-legacy-prune-'));
+  try {
+    const init = runCli(['init', dst, '--yes'], 's\n');
+    assert.equal(init.status, 0, init.stderr + init.stdout);
+
+    // An installation made by an older version keeps the legacy config.
+    seedRetiredFile(dst, LEGACY_CONFIG_REL, 'schema: spec-driven\n');
+
+    const r = runCli(['update', dst, '--prune', '--yes', '--no-obsidian']);
+    assert.equal(r.status, 0, r.stderr + r.stdout);
+
+    assert.ok(
+      !existsSync(join(dst, LEGACY_CONFIG_REL)),
+      'the retired legacy config is deleted from disk'
+    );
+    const rewritten = readManifestJson(dst) as { files: { path: string }[] };
+    assert.ok(
+      !rewritten.files.some((f) => f.path === LEGACY_CONFIG_REL),
+      'the manifest no longer manages the legacy config'
+    );
+  } finally {
+    rmSync(dst, { recursive: true, force: true });
+  }
+});
+
+test('update without --prune stops managing the legacy config but keeps the file', () => {
+  const dst = mkdtempSync(join(tmpdir(), 'spectralis-upd-legacy-noprune-'));
+  try {
+    const init = runCli(['init', dst, '--yes'], 's\n');
+    assert.equal(init.status, 0, init.stderr + init.stdout);
+
+    seedRetiredFile(dst, LEGACY_CONFIG_REL, 'schema: spec-driven\n');
+
+    const r = runCli(['update', dst, '--yes', '--no-obsidian']);
+    assert.equal(r.status, 0, r.stderr + r.stdout);
+
+    assert.ok(
+      existsSync(join(dst, LEGACY_CONFIG_REL)),
+      'without --prune the legacy config survives on disk'
+    );
+    const rewritten = readManifestJson(dst) as { files: { path: string }[] };
+    assert.ok(
+      !rewritten.files.some((f) => f.path === LEGACY_CONFIG_REL),
+      'the manifest no longer manages the legacy config'
+    );
   } finally {
     rmSync(dst, { recursive: true, force: true });
   }

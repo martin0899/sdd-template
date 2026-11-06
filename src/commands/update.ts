@@ -37,8 +37,11 @@ const PRUNE_REASON: Record<PruneDecision, string> = {
 };
 
 /** Special entries that must survive a manifest rewrite even when they are not
- * part of `classifyFiles` (AGENTS.md, openspec config and composed standards). */
-const MANIFEST_SPECIAL_PATHS = ['AGENTS.md', 'openspec/config.yaml'];
+ * part of `classifyFiles` (AGENTS.md and composed standards).
+ *
+ * The legacy config of the external engine (`openspec/config.yaml`) is NOT in
+ * this list: it is a retired file, so `update --prune` can delete it. */
+const MANIFEST_SPECIAL_PATHS = ['AGENTS.md'];
 
 function templateRoot(): string {
   return join(__dirname, '..', '..');

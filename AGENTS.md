@@ -5,7 +5,7 @@
 
 - TypeScript CLI on `node:test`; build to `dist`.
 - New skills live in `.agents/skills/<name>/SKILL.md` only.
-- Requirement work goes through OpenSpec (skill `openspec-gate`).
+- Requirement work goes through the native spec flow (skill `openspec-gate`).
 
 ## graphify
 For any code investigation ALWAYS use graphify first: `graphify query "<question>"`.

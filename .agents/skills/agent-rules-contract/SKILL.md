@@ -28,15 +28,11 @@ Contrato único y compartido de las reglas del ciclo SDD. Dispara con: "reglas d
 
 - Los archivos gobernados migran **por etapas**, conservando los límites de rol de `coordinador`, `planificador`, `implementador`, `gertrudis` y `documentador`.
 - Un rol aún no migrado conserva su comportamiento previo; no se fuerza la migración de golpe.
-- Las superficies vendor (`.opencode/commands/opsx-*.md`, `.opencode/skills/openspec-*`) son **referencia externa**: no se editan.
 
-## OpenSpec: backend SDD no reimplementado
+## Flujo SDD nativo: no reimplementado
 
-> Título conservado por estabilidad de navegación: el motor primario del ciclo es hoy el **nativo** (`spectralis spec ...` sobre `spec/`), y `openspec` queda como motor opcional.
-
-- La comunidad de specs **nativa** es la ruta primaria del ciclo: `spectralis spec create/status/validate/archive` sobre el directorio de changes resuelto (`spec/` por defecto, override con `spec_dir`).
-- `openspec` permanece como **motor opcional** detrás de la interfaz central de Spectralis: se activa con la clave de configuración `engine` (`native` | `openspec`; default `native`, con cascada manifiesto > configuración global > default) y aporta las rutas y comandos legacy (`openspec/changes/`, `openspec/specs/`).
-- Este contrato describe **reglas del ciclo**, no un motor SDD paralelo: no se copia la lógica interna de OpenSpec ni de ningún otro motor.
+- La comunidad de specs **nativa** es la ruta del ciclo: `spectralis spec create/status/validate/archive` sobre el directorio de changes resuelto (`spec/` por defecto, override con `spec_dir`).
+- Este contrato describe **reglas del ciclo**, no un motor SDD paralelo: no se copia la lógica interna de ninguna herramienta externa.
 
 ## Detección
 

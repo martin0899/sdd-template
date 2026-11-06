@@ -18,14 +18,13 @@ export function runPostChecks(target: string, ctx: PostChecksContext): PostCheck
   const warnings: string[] = [];
   const manualSteps: string[] = [];
 
-  // The Spanish context is accepted in the config of either layout: the
-  // native one (`spec/config.yaml`) or the legacy one (`openspec/config.yaml`).
-  const configFiles = [join(target, 'spec/config.yaml'), join(target, 'openspec/config.yaml')];
-  const hasSpanishContext = configFiles.some(
-    (file) => existsSync(file) && readFileSync(file, 'utf8').includes(SPANISH_HEADING)
-  );
+  // The Spanish context lives in the native config only (`spec/config.yaml`):
+  // the legacy config of the external engine is never read.
+  const configFile = join(target, 'spec/config.yaml');
+  const hasSpanishContext =
+    existsSync(configFile) && readFileSync(configFile, 'utf8').includes(SPANISH_HEADING);
   if (!hasSpanishContext) {
-    warnings.push('Spanish context not detected in openspec/config.yaml nor in spec/config.yaml');
+    warnings.push('Spanish context not detected in spec/config.yaml');
   }
   if (!existsSync(join(target, '.agents/skills/commit/SKILL.md'))) {
     warnings.push('Missing .agents/skills/commit/SKILL.md');

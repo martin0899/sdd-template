@@ -11,6 +11,9 @@ export const GITIGNORE_ENTRIES = [
   '.agents/',
   '.opencode/',
   'skills-lock.json',
+  // MIGRATION-ONLY: the pattern survives the retirement of the external
+  // engine so a legacy installation keeps ignoring its historical directory.
+  // A fresh install never creates it.
   'openspec/',
   '.claude/',
   '05_wiki/',

@@ -1,9 +1,9 @@
 import { existsSync, readFileSync, writeFileSync, copyFileSync, mkdirSync } from 'node:fs';
 import { join, resolve } from 'node:path';
-import { spawnSync } from 'node:child_process';
 import { checkPrereqs, realProbe, installHint } from '../core/prereqs';
 import { detectStack, StackInfo } from '../core/detect-stack';
 import { injectSpanishContextInProject } from '../core/spanish-context';
+import { writeProgress } from '../core/progress-registry';
 import { manageAgentsMd } from '../core/agents-md';
 import { manageGitignore } from '../core/gitignore';
 import {
@@ -17,7 +17,6 @@ import { writeManifest } from '../core/manifest';
 import { runPostChecks } from '../core/post-checks';
 import { installGitHooks } from '../core/git-hooks';
 import { detectVaultRoot, readGlobalConfig, writeGlobalConfig, resolveEffectivePhilosophy } from '../core/config';
-import { resolveEngine, type EngineResolution } from '../core/resolve-engine';
 import { resolveAgent } from '../agents/profiles';
 import { selectTools } from '../core/tool-selector';
 import { buildInitPlan } from './plan';
@@ -118,25 +117,15 @@ export async function runInit(opts: InitOptions = {}): Promise<number> {
     return 1;
   }
 
-  // 0. Effective philosophy: SDD is the only mode (openspec is always required).
+  // 0. Effective philosophy: SDD is the only mode.
   const philosophy = resolveEffectivePhilosophy(target);
   if (philosophy.warning) console.error(`[WARN] ${philosophy.warning}`);
 
   // 1. Prerequisites gate: nothing is written when something is missing.
-  // The external openspec CLI is only a prerequisite of the projects that
-  // declare the openspec engine (F3).
   let steps = 0;
   const step = (label: string, result: string) =>
     console.log(phaseLine(++steps, 12, label, result, pal));
-  let engine: EngineResolution;
-  try {
-    engine = resolveEngine({ projectRoot: target });
-  } catch (err: unknown) {
-    console.log(pal.bold(`[ERROR] ${err instanceof Error ? err.message : String(err)}`));
-    console.log('Aborting: nothing has been written to the destination.');
-    return 1;
-  }
-  const prereqs = checkPrereqs(realProbe, process.platform, engine.value);
+  const prereqs = checkPrereqs(realProbe, process.platform);
   if (!prereqs.ok) {
     console.log(pal.bold('Missing prerequisites:'));
     for (const r of prereqs.results.filter((r) => !r.ok)) {
@@ -177,29 +166,20 @@ export async function runInit(opts: InitOptions = {}): Promise<number> {
     return 1;
   }
 
-  // 3. openspec init (non-interactive) when the root is missing.
-  if (!existsSync(join(target, 'openspec'))) {
-    console.log('[..] Running openspec init in the destination...');
-    const result = spawnSync(
-      'openspec',
-      ['init', '--tools', profile.openspecTools, '--no-animation'],
-      { cwd: target, stdio: 'inherit', shell: process.platform === 'win32' }
-    );
-    if (result.status !== 0) {
-      console.error('[ERROR] openspec init failed. Check the CLI version and run again.');
-      return 1;
-    }
-    console.log(`  ${pal.green('✔')} openspec init ...... created (tools: ${profile.openspecTools})`);
-  } else {
-    console.log(`  ${pal.check} openspec init ...... preserved`);
+  // 3. Native scaffolding: the harness creates its own layout. No external
+  //    CLI is spawned: the changes directory, the progress registry and the
+  //    config are written by the installer itself.
+  const specDir = join(target, 'spec');
+  mkdirSync(specDir, { recursive: true });
+  if (!existsSync(join(specDir, 'progress.json'))) {
+    writeProgress(target, { change: [] });
   }
+  console.log(`  ${pal.green('✔')} native scaffolding .. spec/ created (progress.json)`);
 
-  // 4. Spanish context injection (APPEND semantics).
-  // Dual-read: a spec-native project (it has `spec/`) gets the block in its
-  // own config; a legacy one keeps it in `openspec/config.yaml`.
+  // 4. Spanish context injection (APPEND semantics) into spec/config.yaml.
   const contextFiles = injectSpanishContextInProject(target);
   if (contextFiles.length === 0) {
-    console.error('[ERROR] no config.yaml found (spec/ or openspec/); cannot inject context.');
+    console.error('[ERROR] no config.yaml found (spec/); cannot inject context.');
     return 1;
   }
   for (const file of contextFiles) {
@@ -244,7 +224,6 @@ export async function runInit(opts: InitOptions = {}): Promise<number> {
       ...listPayloadFiles(root, includeOpencode),
       ...listDocsFiles(root),
       'AGENTS.md',
-      'openspec/config.yaml',
       ...(stack.backend !== 'none' ? [COMPOSED_STANDARDS[0]] : []),
       ...(stack.frontend !== 'none' ? [COMPOSED_STANDARDS[1]] : [])
     ])

@@ -24,11 +24,11 @@ test('detectProjects finds dirs with openspec/', () => {
 test('getProjectStatus counts changes', () => {
   const base = scratch();
   const projDir = join(base, 'my-project');
-  mkdirSync(join(projDir, 'openspec', 'changes', 'change-a'), { recursive: true });
-  mkdirSync(join(projDir, 'openspec', 'changes', 'change-b'), { recursive: true });
-  mkdirSync(join(projDir, 'openspec', 'changes', 'archive'), { recursive: true });
-  writeFileSync(join(projDir, 'openspec', 'changes', 'change-a', 'tasks.md'), '- [x] done\n- [x] done2', 'utf8');
-  writeFileSync(join(projDir, 'openspec', 'changes', 'change-b', 'tasks.md'), '- [x] done\n- [ ] pending', 'utf8');
+  mkdirSync(join(projDir, 'spec', 'change-a'), { recursive: true });
+  mkdirSync(join(projDir, 'spec', 'change-b'), { recursive: true });
+  mkdirSync(join(projDir, 'spec', 'archive'), { recursive: true });
+  writeFileSync(join(projDir, 'spec', 'change-a', 'tasks.md'), '- [x] done\n- [x] done2', 'utf8');
+  writeFileSync(join(projDir, 'spec', 'change-b', 'tasks.md'), '- [x] done\n- [ ] pending', 'utf8');
   const status = getProjectStatus(projDir);
   assert.equal(status.changes, 2);
   assert.equal(status.complete, 1);

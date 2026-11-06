@@ -34,7 +34,7 @@ function note(root: string, rel: string, id?: string, tipo?: string): void {
 test('check --registry returns exit 1 when errors are present', async () => {
   const root = scratch();
   const vault = scratch();
-  mkdirSync(join(root, 'openspec', 'changes', 'add-unregistered'), { recursive: true });
+  mkdirSync(join(root, 'spec', 'add-unregistered'), { recursive: true });
   mkdirSync(join(root, '.sdd-registry', 'briefings'), { recursive: true });
   writeFileSync(
     join(root, '.sdd-registry', 'REGISTRY.md'),
@@ -50,7 +50,7 @@ test('check --registry returns exit 1 when errors are present', async () => {
 test('check without flags also runs the registry sub-check', async () => {
   const root = scratch();
   const vault = scratch();
-  mkdirSync(join(root, 'openspec', 'changes', 'add-a'), { recursive: true });
+  mkdirSync(join(root, 'spec', 'add-a'), { recursive: true });
   mkdirSync(join(root, '.sdd-registry', 'briefings'), { recursive: true });
   writeFileSync(
     join(root, '.sdd-registry', 'REGISTRY.md'),
@@ -90,7 +90,7 @@ test('check --ids returns exit 0 when all ids are conformant', async () => {
 
 test('check --tdd returns exit 1 when a task implements without a prior TDD test task', async () => {
   const root = scratch();
-  const tasksDir = join(root, 'openspec', 'changes', 'add-foo');
+  const tasksDir = join(root, 'spec', 'add-foo');
   mkdirSync(tasksDir, { recursive: true });
   writeFileSync(
     join(tasksDir, 'tasks.md'),
@@ -103,7 +103,7 @@ test('check --tdd returns exit 1 when a task implements without a prior TDD test
 
 test('check --tdd returns exit 0 when tasks follow TDD ordering', async () => {
   const root = scratch();
-  const tasksDir = join(root, 'openspec', 'changes', 'add-foo');
+  const tasksDir = join(root, 'spec', 'add-foo');
   mkdirSync(tasksDir, { recursive: true });
   writeFileSync(
     join(tasksDir, 'tasks.md'),

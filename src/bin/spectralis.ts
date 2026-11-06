@@ -123,7 +123,7 @@ program
 
 program
   .command('doctor')
-  .description('Verify prerequisites on this host (git, node, openspec, graphify)')
+  .description('Verify prerequisites on this host (git, node, graphify)')
   .action(async () => {
     const code = await runDoctor();
     process.exitCode = code;
@@ -142,10 +142,10 @@ program
 
 program
   .command('check')
-  .description('Validate SDD flow consistency (repo, REGISTRY, brain, openspec), vault note IDs and TDD ordering')
-  .option('-r, --registry', 'check repo ↔ REGISTRY ↔ brain ↔ openspec consistency')
+  .description('Validate SDD flow consistency (repo, REGISTRY, brain), vault note IDs and TDD ordering')
+  .option('-r, --registry', 'check repo ↔ REGISTRY ↔ brain consistency')
   .option('-i, --ids', 'validate vault note IDs (format, uniqueness, _INDEX_ID, tipo)')
-  .option('-t, --tdd', 'validate TDD ordering (Step K) in tasks.md of active OpenSpec changes')
+  .option('-t, --tdd', 'validate TDD ordering (Step K) in tasks.md of active changes')
   .option('--rules', 'validate the centralized agent-rules contract (duplicates/contradictions)')
   .option('--agents', 'validate the managed AGENTS.md block against the template (drift detection)')
   .option('-v, --vault-root <path>', 'vault root path (default: from config)')
@@ -235,7 +235,7 @@ program
 
 program
   .command('projects')
-  .description('Show OpenSpec status across all local projects')
+  .description('Show the status of the changes across all local projects')
   .option('--json', 'output as JSON')
   .action(async (opts: { json?: boolean }) => {
     const code = await runProjects(opts);

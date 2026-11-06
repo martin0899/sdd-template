@@ -1,9 +1,8 @@
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve, join } from 'node:path';
 import { readManifest } from '../core/manifest';
-import { readGlobalConfig, writeGlobalConfig, setRoute, resolveRoute, detectVaultRoot, resolveObsidianSync, setObsidianSync, resolvePhilosophy, setPhilosophy, setSpecDir, setEngine, type RouteConfig, type SpectralisConfig, type SpecEngine } from '../core/config';
+import { readGlobalConfig, writeGlobalConfig, setRoute, resolveRoute, detectVaultRoot, resolveObsidianSync, setObsidianSync, resolvePhilosophy, setPhilosophy, setSpecDir, type RouteConfig, type SpectralisConfig } from '../core/config';
 import { resolveSpecDir } from '../core/resolve-changes-dir';
-import { resolveEngine, SPEC_ENGINES } from '../core/resolve-engine';
 import { currentPalette, printBanner, green, dim } from '../util/ui';
 
 export interface ConfigOptions {
@@ -51,9 +50,18 @@ function getToolPaths(tool: string): string[] {
   return TOOL_PATHS[tool] || [];
 }
 
-/** The engines the harness understands. */
-function isSpecEngineValue(value: string): value is SpecEngine {
-  return (SPEC_ENGINES as readonly string[]).includes(value);
+/**
+ * Configuration keys that were retired together with the external engine.
+ *
+ * They are reported as unknown instead of being written: the harness has a
+ * single native mode, so there is nothing to select.
+ */
+const RETIRED_CONFIG_KEYS = ['engine'];
+
+/** Reports whether a configuration key was retired (and must not be used). */
+function retiredKeyMessage(key: string): string | undefined {
+  if (!RETIRED_CONFIG_KEYS.includes(key)) return undefined;
+  return `[ERROR] Unknown configuration key: "${key}". It was retired with the external engine; the harness has a single native mode.`;
 }
 
 export async function runConfig(opts: ConfigOptions = {}): Promise<number> {
@@ -87,6 +95,11 @@ export async function runConfig(opts: ConfigOptions = {}): Promise<number> {
     }
     const global = opts.global ?? false;
     const projectRoot = opts.destino ? resolve(process.cwd(), opts.destino) : process.cwd();
+    const retired = retiredKeyMessage(key);
+    if (retired) {
+      console.error(retired);
+      return 1;
+    }
     if (key === 'obsidianSync') {
       const parsed = value === '1' ? 1 : 0;
       setObsidianSync(parsed, global, projectRoot);
@@ -107,17 +120,6 @@ export async function runConfig(opts: ConfigOptions = {}): Promise<number> {
       // later, so the project keeps working when it moves.
       setSpecDir(value, global, projectRoot);
       console.log(`[OK] spec_dir set to ${value} (${global ? 'global' : 'project'})`);
-      return 0;
-    }
-    if (key === 'engine') {
-      if (!isSpecEngineValue(value)) {
-        console.error(
-          `[ERROR] Valor inválido para engine: "${value}". Valores admitidos: ${SPEC_ENGINES.join(', ')}.`
-        );
-        return 1;
-      }
-      setEngine(value, global, projectRoot);
-      console.log(`[OK] engine set to ${value} (${global ? 'global' : 'project'})`);
       return 0;
     }
     setRoute(key as keyof RouteConfig, resolve(value), global, projectRoot);
@@ -146,16 +148,10 @@ export async function runConfig(opts: ConfigOptions = {}): Promise<number> {
       console.log(`${res.value || '(not set)'} [${origin}]`);
       return 0;
     }
-    if (opts.get === 'engine') {
-      try {
-        const res = resolveEngine({ projectRoot });
-        const origin = res.origin === 'manifest' ? 'manifiesto' : res.origin;
-        console.log(`${res.value} [${origin}]`);
-      } catch (err: unknown) {
-        console.error(`[ERROR] ${err instanceof Error ? err.message : String(err)}`);
-        return 1;
-      }
-      return 0;
+    const retired = retiredKeyMessage(opts.get);
+    if (retired) {
+      console.error(retired);
+      return 1;
     }
     const value = resolveRoute(opts.get as keyof RouteConfig, projectRoot);
     console.log(value || '(not set)');
@@ -186,13 +182,6 @@ export async function runConfig(opts: ConfigOptions = {}): Promise<number> {
     const specDir = resolveSpecDir({ projectRoot: target });
     const specDirOrigin = specDir.origin === 'manifest' ? 'manifiesto' : specDir.origin;
     console.log(`  spec_dir: ${specDir.value || '(not set)'}  [${specDirOrigin}]`);
-    try {
-      const engine = resolveEngine({ projectRoot: target });
-      const engineOrigin = engine.origin === 'manifest' ? 'manifiesto' : engine.origin;
-      console.log(`  engine: ${engine.value}  [${engineOrigin}]`);
-    } catch (err: unknown) {
-      console.log(`  engine: ${dim('(invalid)', pal)}  [${err instanceof Error ? err.message : String(err)}]`);
-    }
     for (const [key, value, origin] of routes) {
       console.log(`  ${key}: ${value || '(not set)'}  [${origin}]`);
     }

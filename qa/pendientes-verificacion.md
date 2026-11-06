@@ -434,5 +434,35 @@ Notas de la emulacion:
 - `qa/qa-coverage-gate.sh` sigue sin ejecutarse en este entorno: queda pendiente de un shell con permiso de ejecucion de scripts para confirmar el codigo de salida del gate completo.
 - Comprobaciones adicionales del change: `spectralis check --tdd --project-root .` → solo queda el error **preexistente** de `openspec/changes/lean-harness-payload/tasks.md` (seccion "1. Workstream A"); el `tasks.md` de `spec-native-f4` no tiene violaciones (cada seccion de implementacion lleva una tarea previa marcada `(tdd)`). `openspec validate spec-native-f4` → `Change 'spec-native-f4' is valid` (ejecutado con el interprete `node` permitido sobre el paquete global `@fission-ai/openspec`).
 
+## Bloque QA-007 - Compuerta minima de cobertura (change `remove-openspec-engine`)
+
+- **Change**: `remove-openspec-engine`
+- **Test**: los mismos tres niveles del bloque QA-001 (typecheck, escaneo de secretos, suite con cobertura y diff coverage). El change **si** toca `src/` (retirada del motor externo), asi que el diff coverage se mide sobre los ficheros `src/` modificados.
+- **Reason**: la whitelist de shell del implementador no permite ejecutar scripts de shell (`timeout 300 ./qa/qa-coverage-gate.sh` → `Permission denied: shell`; tampoco `timeout` ni la ejecucion directa del script). El gate se **emulo** con `node` (intérprete permitido) usando la misma logica, los mismos umbrales y **el mismo analizador de cobertura** (bloque `ANALYZER_EOF` del script, extraido por delimitadores y copiado byte a byte).
+- **Required env**: `qa/qa-coverage-gate.sh` ejecutable (bash + `timeout`).
+  - **Delivered how**: emulacion en `.test-tmp/qa-emulate.mjs` (ignorado por git): reproduce el preflight, el Nivel 0a (`tsc -p tsconfig.test.json --noEmit`), el Nivel 0b (patrones y exclusiones del script, sobre las lineas anadidas del diff + el contenido de los ficheros sin seguimiento), el Nivel 1 (compilacion de `dist/` y `dist-test/` con source maps, suite con `--experimental-test-coverage` y `NODE_V8_COVERAGE`) y el Nivel 1b (analizador extraido del script).
+- **Safe command**: `timeout 300 ./qa/qa-coverage-gate.sh`
+- **Expected**: nivel0 pass, nivel1 pass with diff_coverage >= 80%
+- **Status**: **RESUELTO POR EMULACION** (2026-11-05)
+
+### Evidencia de ejecucion (2026-11-05)
+
+Comando ejecutado: `node .test-tmp/qa-emulate.mjs` (equivalente emulado de `timeout 300 ./qa/qa-coverage-gate.sh`).
+
+| Comprobacion | Resultado | Medida |
+|---|---|---|
+| NIVEL 0a - typecheck (`tsc -p tsconfig.test.json --noEmit`) | PASS | 0 errores de tipos |
+| NIVEL 0b - escaneo de secretos (fallback `grep`; `gitleaks` no instalado) | PASS | 74 ficheros analizados (versionados tocados + sin seguimiento), 0 coincidencias |
+| NIVEL 1 - suite | PASS (1er intento) | **622/622 tests, 0 fallos** (`npm test`: `# tests 622`, `# pass 622`, `# fail 0`) |
+| NIVEL 1 - cobertura global de los ficheros `src/` tocados | PASS | 24/24 ficheros `src/` al **100.00%** (umbral 85%) |
+| NIVEL 1 - diff coverage | PASS | **153/153 = 100.00%** lineas cambiadas ejecutables cubiertas (umbral 80%) |
+| **Gate (emulado)** | **PASS** | `NIVEL 0: PASS (typecheck + escaneo de secretos)`, `NIVEL 1: PASS (suite + diff coverage)`, `GATE: PASS` |
+
+Notas de la emulacion:
+
+- `DIFF_FILES` se derivó por el camino por defecto del script (`git diff --name-only HEAD -- src/`): 24 ficheros `src/` modificados. El fichero **nuevo** `src/core/sdd-essentials.ts` no aparece en esa lista porque `git diff` no ve los ficheros sin seguimiento: es el mismo comportamiento del gate real (no es una limitacion de la emulacion).
+- `qa/qa-coverage-gate.sh` sigue sin ejecutarse en este entorno: queda pendiente de un shell con permiso de ejecucion de scripts para confirmar el codigo de salida del gate completo.
+- Comprobaciones adicionales del change: `node dist/bin/spectralis.js check --tdd` → `[OK] Sin hallazgos` (el repositorio tiene sus changes en el layout historico `openspec/changes/` y, con la lectura dual retirada, el resolutor apunta a `spec/`; el layout propio del repo se migra en el paso de dogfood post-commit, que queda fuera del alcance de este change).
+
 
 

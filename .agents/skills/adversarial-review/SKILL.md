@@ -1,6 +1,6 @@
 ---
 name: adversarial-review
-description: Use when the user requests an adversarial review, red-team review, devil's advocate check, or independent verification pass before archiving a change (native spec flow by default; the external openspec CLI is an optional engine).
+description: Use when the user requests an adversarial review, red-team review, devil's advocate check, or independent verification pass before archiving a change (native spec flow).
 author: LIDR.co
 version: 1.1.0
 ---
@@ -21,7 +21,7 @@ Do **not** prescribe which agent, model, or IDE to use. That is the human's choi
   - Endpoint(s)
   - Frontend route(s)
   - **Pull request**: URL, or host owner/repo and number (for example: `https://github.com/org/repo/pull/42` or `owner/repo#42`)
-- If missing, infer from the current session (active change, branch, or change folder: `spec/` native, `openspec/changes/` with `engine: openspec`).
+- If missing, infer from the current session (active change, branch, or change folder: `spec/`).
 
 Resolve scope in this order: explicit ticket or change name → PR when given → current active work.
 
@@ -39,7 +39,7 @@ Borrowed from common red-team / adversarial practice:
 
 ### Step 1 — Load the specification side first
 
-1. Identify the change directory and read the relevant artifacts (proposal, design, specs, scenarios, `tasks.md`). Native layout: `spec/<change-id>/` (or `spec/_archived/<change-id>/` once archived). With the optional `engine: openspec`, the layout is `openspec/changes/<change-id>/` and the live requirements live in `openspec/specs/` (native counterpart: `spec/`).
+1. Identify the change directory and read the relevant artifacts (proposal, design, specs, scenarios, `tasks.md`). Layout: `spec/<change-id>/` (or `spec/_archived/<change-id>/` once archived).
 2. Extract **acceptance criteria and explicit non-goals**. List what must be true for "done."
 3. Note anything **underspecified** (ambiguous acceptance, missing error cases, missing security constraints).
 
@@ -107,7 +107,7 @@ PASS | PASS WITH GAPS | FAIL
 ## Guardrails
 
 - **Do not** praise implementation to "balance" criticism unless a strength **directly mitigates a documented risk**.
-- **Do not** skip reading the change artifacts when they exist in the repo (native `spec/<id>/`, or `openspec/changes/<id>/` with `engine: openspec`).
+- **Do not** skip reading the change artifacts when they exist in the repo (`spec/<id>/`).
 - If you cannot access the PR or diff, say so and list exactly what is needed to continue.
 
 ## Completion

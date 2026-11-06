@@ -4,7 +4,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { runSpecValidate } from '../../src/commands/spec-validate';
-import { missingSddEssentials } from '../../src/core/spec-facade';
+import { missingSddEssentials } from '../../src/core/sdd-essentials';
 import { resolveChangesDir } from '../../src/core/resolve-changes-dir';
 
 const created: string[] = [];

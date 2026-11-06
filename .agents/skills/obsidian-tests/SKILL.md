@@ -7,7 +7,7 @@ description: Review and complete the live folder-note details in Obsidian after 
 
 > **Orquestada**: cuando `obsidianSync=1` (o `--obsidian`), esta skill se invoca automáticamente desde `obsidian-orchestration` al archivar un change. Con el switch en `0`, se usa solo por invocación explícita.
 
-Revisa y completa los detalles del **folder note vivo** en Obsidian después de cerrar un change: deja la documentación de pruebas de regresión **dentro** del folder note único (`## Tests de regresión`), sin generar archivos de prueba aparte. En el flujo **nativo** el resumen portátil del wiki lo escribe directamente el archive (`spectralis spec archive`); con `engine: openspec` su comportamiento es el legacy: documentar los tests a partir de los artefactos del change.
+Revisa y completa los detalles del **folder note vivo** en Obsidian después de cerrar un change: deja la documentación de pruebas de regresión **dentro** del folder note único (`## Tests de regresión`), sin generar archivos de prueba aparte. En el flujo **nativo** el resumen portátil del wiki lo escribe directamente el archive (`spectralis spec archive`).
 
 ## Rutas y Configuración
 
@@ -45,7 +45,7 @@ Read the change artifacts to understand what was tested:
 spectralis spec status <change-id>
 ```
 
-In the native flow the archive has already written the portable summary in the brain (`05_wiki/<wiki-project>/<change-id>.md`): read it as the source of truth and complete the folder note with what is missing. With `engine: openspec`, the context comes from the external CLI's own status command.
+In the native flow the archive has already written the portable summary in the brain (`05_wiki/<wiki-project>/<change-id>.md`): read it as the source of truth and complete the folder note with what is missing.
 
 Extract:
 - What functionality was implemented

@@ -16,9 +16,9 @@ export function buildInitPlan(
   lines.push('  1. Prerequisites verified.');
   lines.push(`  -- recognition: ${target}`);
   lines.push(
-    existsSync(join(target, 'openspec'))
-      ? '     openspec/            EXISTS (preserved; openspec init skipped)'
-      : '     openspec/            missing (will be created with openspec init)'
+    existsSync(join(target, 'spec'))
+      ? '     spec/                EXISTS (preserved; native scaffolding kept)'
+      : '     spec/                missing (will be created with the native scaffolding)'
   );
   lines.push(
     existsSync(join(target, 'graphify-out/graph.json'))
@@ -28,8 +28,8 @@ export function buildInitPlan(
   lines.push(`     backend : variant ${stack.backend}${stack.framework ? ` | ${stack.framework}${stack.frameworkVersion ? ` ${stack.frameworkVersion}` : ''}` : ''}${stack.language ? ` | ${stack.language}${stack.languageVersion ? ` ${stack.languageVersion}` : ''}` : ''}`);
   lines.push(`     frontend: variant ${stack.frontend}${stack.frameworkFe ? ` | ${stack.frameworkFe}${stack.frameworkVersionFe ? ` ${stack.frameworkVersionFe}` : ''}` : ''}`);
   lines.push(`     project : ${stack.projectName}${stack.buildTool ? ` | build: ${stack.buildTool}` : ''}${stack.testFramework ? ` | tests: ${stack.testFramework}` : ''}`);
-  lines.push('  2. openspec init (non-interactive) with tools: ' + profile.openspecTools);
-  lines.push('  3. Spanish context injected by APPEND into openspec/config.yaml:');
+  lines.push('  2. Native scaffolding: spec/ + spec/progress.json (no external CLI is spawned).');
+  lines.push('  3. Spanish context injected by APPEND into spec/config.yaml:');
   for (const line of SPANISH_CONTEXT_BLOCK) lines.push(`     | ${line}`);
   lines.push('  3b. AGENTS.md managed rules block (create / append / refresh, idempotent).');
   lines.push('  3c. .gitignore managed block (graphify-out/, .sdd-backup-*/, .agents/, .opencode/, skills-lock.json, .claude/).');

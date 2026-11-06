@@ -21,11 +21,11 @@ Flujo de onboarding que ejecuta un agente sobre un proyecto recién instalado co
 - Responder preguntas de diseño o clarificación **nunca** constituye consentimiento de escritura.
 - Antes de escribir cada artefacto (regla de estructura, doc adaptado, configuración de contexto), muestra qué vas a escribir y pide confirmación directa (sí/no).
 - Si el usuario no responde afirmativamente, no escribas nada y deja la propuesta solo en la conversación.
-- Nunca modifiques código del proyecto ni archivos de configuración del proyecto (package.json, pom.xml, etc.): este flujo solo toca `openspec/config.yaml` y `docs/`.
+- Nunca modifiques código del proyecto ni archivos de configuración del proyecto (package.json, pom.xml, etc.): este flujo solo toca `spec/config.yaml` y `docs/`.
 
 ## Fase 0 — Prerrequisitos
 
-Verifica que `graphify` y `openspec` están en PATH. Si falta alguno, indica cómo instalarlo y detente (no intentes instalarlo tú).
+Verifica que `graphify` está en PATH. Si falta, indica cómo instalarlo y detente (no intentes instalarlo tú).
 
 ## Fase 1 — Indagación del código con graphify
 
@@ -48,7 +48,7 @@ Estructura del proyecto:
 
 ## Fase 2 — Persistir la estructura como regla (opt-in)
 
-Ofrece: *"¿Quieres que persista esta estructura como regla en `openspec/config.yaml` (campo `context`)?"*
+Ofrece: *"¿Quieres que persista esta estructura como regla en `spec/config.yaml` (campo `context`)?"*
 
 - **Si acepta**: añade por APPEND al campo `context` un bloque conciso (máx. ~15 líneas) con el stack, módulos y patrón observado. **Preserva íntegro** cualquier contenido previo del campo (incluida la regla de idioma español). Jamás reescribas el archivo completo.
 - **Si declina**: no escribas nada y continúa con la Fase 3.
@@ -98,10 +98,10 @@ Reglas de escritura para docs/:
 
 1. Resuelve la ruta de manuales (cerebro): `spectralis config --get resources_dir` o la cascada de detección (config → manifiesto → vault → `info/` en el proyecto). Lee el stub `notes/local-ai/manual.md` del repo plantilla: redirige a los manuales del grafo de código (`graphify-out/`) y a los manuales del cerebro (`03_Recursos/02_Sistemas_info/`).
 2. Explica la navegación: el grafo responde preguntas sobre el proyecto (`graphify query`, `graphify path`, `graphify explain`) y los manuales del cerebro documentan el sistema de información; ambos son la fuente de verdad para la IA local del proyecto.
-3. Pregunta: *"¿Quieres que el proyecto registre su ruta de manuales del cerebro como regla en `openspec/config.yaml`?"*
-4. **Si el usuario acepta**: propón añadir al `context` de `openspec/config.yaml` una línea breve con la ruta de manuales detectada y escríbela solo con confirmación (APPEND, preservando lo previo).
+3. Pregunta: *"¿Quieres que el proyecto registre su ruta de manuales del cerebro como regla en `spec/config.yaml`?"*
+4. **Si el usuario acepta**: propón añadir al `context` de `spec/config.yaml` una línea breve con la ruta de manuales detectada y escríbela solo con confirmación (APPEND, preservando lo previo).
 5. **Si no quiere registrarla**: no escribas nada; el stub y los manuales quedan disponibles para consulta.
 
 ## Cierre
 
-Resume qué se escribió (y qué no) y sugiere el siguiente paso: `/opsx:propose "<idea>"` para el primer change del proyecto.
+Resume qué se escribió (y qué no) y sugiere el siguiente paso: `requirements-discovery` para definir el primer requerimiento del proyecto.

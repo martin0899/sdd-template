@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdtempSync, rmSync, mkdirSync, writeFileSync, readFileSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { runSpecMigrate } from '../../src/commands/spec-migrate';
+import { runSpecMigrate, readLegacyChanges } from '../../src/commands/spec-migrate';
 import { readProgress } from '../../src/core/progress-registry';
 
 const created: string[] = [];
@@ -149,4 +149,36 @@ test('spec migrate warns about a change that lives in both layouts and never dup
   assert.match(`${out}${err}`, /change-a/);
   assert.match(`${out}${err}`, /ambos layouts/);
   assert.equal(readProgress(root).change.filter((c) => c.id === 'change-a').length, 0);
+});
+
+// --- the legacy reader of the migration (it lives in spec-migrate) ---
+
+test('the legacy reader lists the active legacy changes', () => {
+  const root = scratch();
+  mkdirSync(join(root, 'openspec', 'changes', 'change-a'), { recursive: true });
+  mkdirSync(join(root, 'openspec', 'changes', 'change-b'), { recursive: true });
+  const changes = readLegacyChanges(root);
+  assert.deepEqual(changes.map((c) => c.id), ['change-a', 'change-b']);
+  assert.ok(changes.every((c) => !c.archived));
+});
+
+test('the legacy reader reports the archived changes without migrating them', () => {
+  const root = scratch();
+  mkdirSync(join(root, 'openspec', 'changes', 'archive', '2026-09-29-change-old'), { recursive: true });
+  const changes = readLegacyChanges(root);
+  assert.equal(changes.length, 1);
+  assert.equal(changes[0].id, 'change-old', 'the date prefix is stripped');
+  assert.equal(changes[0].archived, true);
+});
+
+test('the legacy reader returns an empty list when there is no legacy directory', () => {
+  const root = scratch();
+  assert.deepEqual(readLegacyChanges(root), []);
+});
+
+test('the legacy reader ignores the files of the legacy directory', () => {
+  const root = scratch();
+  mkdirSync(join(root, 'openspec', 'changes'), { recursive: true });
+  const changes = readLegacyChanges(root);
+  assert.deepEqual(changes, []);
 });

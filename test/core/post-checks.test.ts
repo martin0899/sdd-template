@@ -8,10 +8,10 @@ import { runPostChecks } from '../../src/core/post-checks';
 function buildTarget(complete: boolean): string {
   const dst = mkdtempSync(join(tmpdir(), 'spectralis-pc-'));
   if (complete) {
-    for (const dir of ['openspec', 'graphify-out', '.agents/skills/commit', '.agents/skills/spec-from-note', '.opencode', 'docs']) {
+    for (const dir of ['spec', 'graphify-out', '.agents/skills/commit', '.agents/skills/spec-from-note', '.opencode', 'docs']) {
       mkdirSync(join(dst, dir), { recursive: true });
     }
-    writeFileSync(join(dst, 'openspec/config.yaml'), 'context: |\n  Language preference: All interactions\n');
+    writeFileSync(join(dst, 'spec/config.yaml'), 'context: |\n  Language preference: All interactions\n');
     writeFileSync(join(dst, '.agents/skills/commit/SKILL.md'), 'x');
     writeFileSync(join(dst, '.agents/skills/INDEX.md'), 'x');
     writeFileSync(join(dst, '.agents/skills/spec-from-note/SKILL.md'), 'x');
@@ -48,7 +48,8 @@ test('missing artifacts are reported file by file', () => {
   try {
     const r = runPostChecks(dst, completeCtx);
     const text = r.warnings.join('\n');
-    assert.match(text, /openspec\/config.yaml/);
+    assert.match(text, /spec\/config\.yaml/);
+    assert.ok(!text.includes('openspec/config.yaml'), 'the legacy config is never inspected');
     assert.match(text, /commit\/SKILL\.md/);
     assert.match(text, /INDEX\.md/);
     assert.match(text, /spec-from-note/);

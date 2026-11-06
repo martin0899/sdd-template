@@ -1,13 +1,19 @@
 export interface AgentProfile {
-  openspecTools: string;
   includeOpencode: boolean;
 }
 
+/**
+ * Profiles of the supported agents.
+ *
+ * The profile only decides which payload directories travel with the
+ * installation: the harness has a single native mode and no external tooling
+ * to configure.
+ */
 export const AGENT_PROFILES: Record<string, AgentProfile> = {
-  opencode: { openspecTools: 'opencode', includeOpencode: true },
-  antigravity: { openspecTools: 'antigravity', includeOpencode: false },
-  claude: { openspecTools: 'claude', includeOpencode: false },
-  all: { openspecTools: 'all', includeOpencode: true }
+  opencode: { includeOpencode: true },
+  antigravity: { includeOpencode: false },
+  claude: { includeOpencode: false },
+  all: { includeOpencode: true }
 };
 
 export const SUPPORTED_AGENTS = Object.keys(AGENT_PROFILES);

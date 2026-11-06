@@ -29,7 +29,9 @@ test('AGENTS.md keeps every essential routing reference', () => {
     'docs/base-standards.md',
     '.agents/skills/INDEX.md',
     'graphify',
-    'OpenSpec',
+    // The gatekeeper skill keeps its historical name (`openspec-gate`) but
+    // routes to the native spec flow: there is no external engine any more.
+    'openspec-gate',
     'obsidianSync',
     '_lessons.md',
     'ciclo spec'

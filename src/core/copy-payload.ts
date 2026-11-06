@@ -6,6 +6,23 @@ export const PAYLOAD_FILES = ['.opencode/package.json', '.opencode/package-lock.
 export const PAYLOAD_DOCS_EXCLUDE = ['graphify-out', 'manuals'];
 export const COMPOSED_STANDARDS = ['docs/backend-standards.md', 'docs/frontend-standards.md'];
 
+/**
+ * Vendor payload of the external spec engine.
+ *
+ * The harness has a single native mode: the commands (`opsx-*`) and the skills
+ * (`openspec-*`) of the external engine never travel with an installation.
+ * The prefixes are matched on the path relative to the project root.
+ */
+export const VENDOR_PAYLOAD_PREFIXES = [
+  '.opencode/commands/opsx-',
+  '.opencode/skills/openspec-'
+];
+
+/** Whether a payload path belongs to the vendor of the external spec engine. */
+export function isVendorPayload(rel: string): boolean {
+  return VENDOR_PAYLOAD_PREFIXES.some((prefix) => rel.startsWith(prefix));
+}
+
 export function isExcludedPath(rel: string): boolean {
   const segments = rel.split('/');
   const last = segments[segments.length - 1];
@@ -51,7 +68,9 @@ export function listPayloadFiles(templateRoot: string, includeOpencode: boolean)
     if (file.startsWith('.opencode') && !includeOpencode) continue;
     if (existsSync(join(templateRoot, file))) rels.push(file);
   }
-  return rels.filter((r) => !isExcludedPath(r) && !COMPOSED_STANDARDS.includes(r));
+  return rels.filter(
+    (r) => !isExcludedPath(r) && !isVendorPayload(r) && !COMPOSED_STANDARDS.includes(r)
+  );
 }
 
 export function listDocsFiles(templateRoot: string): string[] {

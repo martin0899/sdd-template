@@ -1,6 +1,6 @@
 # Spectralis Architecture
 
-Spectralis is the canonical source of the **SDD (Spec-Driven Development)** harness — OpenSpec + skills + commands + documentation standards — distributed as a pure Node CLI (>= 22) with no platform dependencies.
+Spectralis is the canonical source of the **SDD (Spec-Driven Development)** harness — native spec changes + skills + commands + documentation standards — distributed as a pure Node CLI (>= 22) with no platform dependencies.
 
 This document describes how the repository is organized and how the pieces fit together. It is the architecture reference for the **template repository itself** (the arnés), not for the projects it installs into.
 
@@ -52,14 +52,14 @@ The rule: **commands orchestrate, core implements**. A `src/commands/*.ts` file 
 |---|---|---|---|
 | `init [destino]` | `src/commands/init.ts` | Install the SDD harness into a destination project | `0` ok, `1` error, `2` blocked |
 | `update [destino]` | `src/commands/update.ts` | Sync an installed destination with the template | `0` ok, `1` changes available (`--check`), `2` error |
-| `doctor` | `src/commands/doctor.ts` | Verify host prerequisites (git, node, openspec, graphify) | `0` ready, `1` missing tools |
+| `doctor` | `src/commands/doctor.ts` | Verify host prerequisites (git, node, graphify) | `0` ready, `1` missing tools |
 | `check` | `src/commands/check.ts` | Validate SDD flow consistency and vault note IDs | `0` ok, `1` findings with errors |
 | `status [destino]` | `src/commands/status.ts` | Show installed harness state (version, tools, health) | `0` ok, `2` not installed |
 | `config [destino]` | `src/commands/config.ts` | Show/modify harness configuration (routes, obsidianSync) | `0` ok |
 | `notes init/sync` | `src/commands/notes.ts` | Create/sync manual folders in the second brain | `0` ok, `1` error |
 | `seed` | `src/commands/seed.ts` | Initial load: populate `05_wiki/` from discovered projects | `0` ok, `1` error |
 | `distill <project>` | `src/commands/distill.ts` | Extract knowledge from specs into `05_wiki/` | `0` ok, `1` error |
-| `projects` | `src/commands/projects.ts` | Show OpenSpec status across local projects | `0` ok |
+| `projects` | `src/commands/projects.ts` | Show the status of the changes across local projects | `0` ok |
 | `spec init/complete` | `src/commands/spec.ts` | Create/validate a spec folder in the brain | `0` ok, `1` error |
 | `skills [destino]` | `src/commands/skills.ts` | Detect skills, write `_INDEX_SKILLS.json` + system-reminder | `0` ok |
 
@@ -71,12 +71,12 @@ The rule: **commands orchestrate, core implements**. A `src/commands/*.ts` file 
 
 Read → ask → write. Nothing is written before explicit confirmation.
 
-1. **Prerequisites gate** (`src/core/prereqs.ts`) — probe `git`, `node`, `openspec`, `graphify`; abort without writing if any is missing.
+1. **Prerequisites gate** (`src/core/prereqs.ts`) — probe `git`, `node`, `graphify`; abort without writing if any is missing.
 2. **Recognition (read-only)** (`src/core/detect-stack.ts`) — scan the target for backend/frontend indicators (`pom.xml`, `package.json`, `go.mod`, …), depth-2 in known monorepo dirs, excluding cache/build dirs. Result is persisted in `stack.json` with a mtime-based cache (`detected_at`).
 3. **Plan** (`src/commands/plan.ts`) — build the install plan (files to copy, compose, append).
 4. **Confirmation** — interactive unless `--yes`.
-5. **OpenSpec init** — create `openspec/` if missing (`--tools` from the agent matrix).
-6. **Spanish context** (`src/core/spanish-context.ts`) — APPEND a Spanish-language context block to `openspec/config.yaml`, preserving user content and comments.
+5. **Native scaffolding** — create `spec/` with `spec/progress.json` seeded empty (no external CLI is spawned).
+6. **Spanish context** (`src/core/spanish-context.ts`) — APPEND a Spanish-language context block to `spec/config.yaml`, preserving user content and comments.
 7. **Managed blocks** — `AGENTS.md` (`src/core/agents-md.ts`) and `.gitignore` (`src/core/gitignore.ts`) get sentinel-marked blocks, idempotent and non-destructive.
 8. **Payload copy** (`src/core/copy-payload.ts`) — copy `.agents/`, `.opencode/`, `docs/` per the agent matrix; conflict → backup + ask; identical → skip.
 9. **Composed standards** (`src/core/compose-standards.ts`) — compose `docs/backend-standards.md` and `docs/frontend-standards.md` from the detected stack variant, filling placeholders; unresolved ones are reported for onboarding.
@@ -122,11 +122,11 @@ Machine-local registry of requirements and briefings (never versioned or distrib
 
 The doctor is a deterministic, LLM-free validator of the SDD flow. It has two sub-checks, run together (no flags) or separately:
 
-- `--registry` (`src/core/vault-doctor.ts`) — consistency of the triangle **repo ↔ `.sdd-registry/REGISTRY.md` ↔ brain ↔ openspec**:
-  - change without registry row (in `openspec/changes/` or the brain but not in REGISTRY) → error;
+- `--registry` (`src/core/vault-doctor.ts`) — consistency of the triangle **repo ↔ `.sdd-registry/REGISTRY.md` ↔ brain**:
+  - change without registry row (in the resolved changes dir or the brain but not in REGISTRY) → error;
   - registered change with no folder (orphan) → warning;
   - registered change without `briefing.md` → error;
-  - `05_wiki/_INDEX.json` misaligned with `01_Proyectos/` + `openspec/changes/` (missing projects, stale `changes`, stale `updated`) → warning;
+  - `05_wiki/_INDEX.json` misaligned with `01_Proyectos/` + the resolved changes dir (missing projects, stale `changes`, stale `updated`) → warning;
   - completed change without a `### <spec-id>` block in `05_wiki/<project>/decisiones.md` → warning (correlated by spec-id against the `changes` column of REGISTRY, not by requirement id).
 - `--ids` (`src/core/vault-ids.ts`) — vault note ID convention (`docs/base-standards.md` §4, extended with the harness-generated prefixes `res-`/`brief-`/`test-`):
   - missing `id` in frontmatter → error;
@@ -159,8 +159,8 @@ Fixtures are **read-only from the tests' perspective**: tests that need to write
 ## 8. Conventions and invariants
 
 - **English**: all code, comments, and `docs/` content.
-- **Spanish**: everything the user reads — README, Obsidian notes, OpenSpec artifacts, CLI user-facing messages.
-- **Read-only where it matters**: install/update never touch the destination before confirmation; the doctor never modifies the vault, `.sdd-registry/`, `05_wiki/`, or `openspec/`.
+- **Spanish**: everything the user reads — README, Obsidian notes, spec artifacts, CLI user-facing messages.
+- **Read-only where it matters**: install/update never touch the destination before confirmation; the doctor never modifies the vault, `.sdd-registry/`, `05_wiki/`, or `spec/`.
 - **Idempotence**: managed blocks, payload copies, note syncs, and validations are safe to re-run.
-- **Machine-local policy**: `openspec/`, `.sdd-registry/`, `graphify-out/`, `05_wiki/`, and `.spectralis/` are never versioned or distributed (managed `.gitignore` block).
+- **Machine-local policy**: `spec/`, `.sdd-registry/`, `graphify-out/`, `05_wiki/`, and `.spectralis/` are never versioned or distributed (managed `.gitignore` block).
 - **Exit codes are the contract**: commands return an integer that the CLI maps to `process.exitCode`; automation (e.g., `update --check`, `check`) relies on them.

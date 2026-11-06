@@ -5,7 +5,7 @@ description: Use when defining a project requirement from a conversation, docume
 
 # Requirements Discovery
 
-Build a solid Spanish requirement before producing implementation specifications. The requirement is the source of truth for scope; OpenSpec or work specifications are downstream artifacts and must not be created prematurely.
+Build a solid Spanish requirement before producing implementation specifications. The requirement is the source of truth for scope; the spec changes or work specifications are downstream artifacts and must not be created prematurely.
 
 ## Rutas y Configuración
 
@@ -39,11 +39,11 @@ Build a solid Spanish requirement before producing implementation specifications
 
 ## Hard Gates
 
-1. Do not write a requirement, derived note, OpenSpec change, or work specification before reviewing the available templates and the source material.
+1. Do not write a requirement, derived note, spec change, or work specification before reviewing the available templates and the source material.
 2. Do not invent technical names, routes, tables, packages, procedures, colors, roles, or deadlines. Mark them `Confirmado`, `Propuesto`, `Por analizar`, or `Por confirmar`.
 3. Separate facts extracted from the source, findings from repository/code investigation, proposals, assumptions, and open questions.
 4. Present the template audit, segmented findings, proposed scope, and blocking questions before writing artifacts. Wait for explicit confirmation.
-5. After the requirement is confirmed, writing the requirement is allowed. Creating OpenSpec changes or implementation specifications still requires a separate explicit request or confirmation.
+5. After the requirement is confirmed, writing the requirement is allowed. Creating spec changes or implementation specifications still requires a separate explicit request or confirmation.
 
 ## Workflow
 
@@ -157,9 +157,9 @@ If the file already exists, append a new row. If the dirs are not yet registered
 
 After the requirement is written and registered, present a summary of unresolved decisions and ask:
 
-> El requerimiento está listo en `<ruta>`. ¿Quieres que invoque `spec-from-note` para generar las especificaciones OpenSpec a partir de esta nota?
+> El requerimiento está listo en `<ruta>`. ¿Quieres que invoque `spec-from-note` para generar las especificaciones a partir de esta nota?
 
-If the user confirms, invoke `spec-from-note` with the requirement path. Do not create OpenSpec artifacts during requirements-discovery — that is the responsibility of `spec-from-note`.
+If the user confirms, invoke `spec-from-note` with the requirement path. Do not create spec artifacts during requirements-discovery — that is the responsibility of `spec-from-note`.
 
 ## Required Requirement Detail
 

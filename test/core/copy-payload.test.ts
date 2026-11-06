@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdtempSync, writeFileSync, mkdirSync, existsSync, readFileSync, rmSync, readdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { copyPayload, isExcludedPath } from '../../src/core/copy-payload';
+import { copyPayload, isExcludedPath, listPayloadFiles } from '../../src/core/copy-payload';
 import { writeManifest, readManifest } from '../../src/core/manifest';
 
 function scratch(prefix: string): string {
@@ -152,6 +152,44 @@ test('includeOpencode=false never touches .opencode', () => {
     rmSync(tpl, { recursive: true, force: true });
     rmSync(dst, { recursive: true, force: true });
   }
+});
+
+test('the vendor payload of the external engine is never copied', () => {
+  const tpl = makeTemplate();
+  const dst = scratch('dst');
+  try {
+    mkdirSync(join(tpl, '.opencode/commands'), { recursive: true });
+    writeFileSync(join(tpl, '.opencode/commands/opsx-apply.md'), 'opsx command\n');
+    mkdirSync(join(tpl, '.opencode/skills/openspec-apply-change'), { recursive: true });
+    writeFileSync(join(tpl, '.opencode/skills/openspec-apply-change/SKILL.md'), 'vendor skill\n');
+
+    const rels = listPayloadFiles(tpl, true);
+    assert.ok(
+      !rels.some((r) => r.startsWith('.opencode/commands/opsx-')),
+      'the commands of the external engine are excluded'
+    );
+    assert.ok(
+      !rels.some((r) => r.startsWith('.opencode/skills/openspec-')),
+      'the skills of the external engine are excluded'
+    );
+
+    copyPayload({ templateRoot: tpl, target: dst, includeOpencode: true, confirmFn: () => true });
+    assert.ok(!existsSync(join(dst, '.opencode/commands/opsx-apply.md')));
+    assert.ok(!existsSync(join(dst, '.opencode/skills/openspec-apply-change')));
+  } finally {
+    rmSync(tpl, { recursive: true, force: true });
+    rmSync(dst, { recursive: true, force: true });
+  }
+});
+
+test('the payload of this repo ships no vendor content of the external engine', () => {
+  const repo = join(__dirname, '..', '..', '..');
+  const rels = listPayloadFiles(repo, true);
+  assert.deepEqual(
+    rels.filter((r) => r.startsWith('.opencode/commands/opsx-') || r.startsWith('.opencode/skills/openspec-')),
+    [],
+    'the payload of the harness has no vendor content of the external engine'
+  );
 });
 
 test('isExcludedPath blocks sensitive and generated paths', () => {

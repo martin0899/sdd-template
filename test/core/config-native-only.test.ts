@@ -17,7 +17,7 @@ afterEach(() => {
 });
 
 function scratch(): string {
-  const dir = mkdtempSync(join(tmpdir(), 'sp-config-dual-'));
+  const dir = mkdtempSync(join(tmpdir(), 'sp-config-native-'));
   created.push(dir);
   return dir;
 }
@@ -33,29 +33,34 @@ test('a spec-native project gets the Spanish context in its own config', () => {
   assert.match(content, /All interactions/);
 });
 
-test('a legacy project keeps the Spanish context in openspec/config.yaml', () => {
+test('the legacy config is never written', () => {
   const root = scratch();
   mkdirSync(join(root, 'openspec'), { recursive: true });
-  writeFileSync(join(root, 'openspec', 'config.yaml'), 'schema: spec-driven\n', 'utf8');
   const written = injectSpanishContextInProject(root);
-  assert.deepEqual(written, [join(root, 'openspec', 'config.yaml')]);
-  const content = readFileSync(join(root, 'openspec', 'config.yaml'), 'utf8');
-  assert.match(content, /All interactions/);
-  assert.equal(existsSync(join(root, 'spec', 'config.yaml')), false, 'the native config is not created');
+  assert.deepEqual(written, [], 'a project without spec/ has no config to write');
+  assert.equal(
+    existsSync(join(root, 'openspec', 'config.yaml')),
+    false,
+    'the legacy config is never created'
+  );
 });
 
-test('a project with both layouts gets the context in both configs', () => {
+test('a project with both layouts gets the context in the native config only', () => {
   const root = scratch();
   mkdirSync(join(root, 'spec'), { recursive: true });
   mkdirSync(join(root, 'openspec'), { recursive: true });
   writeFileSync(join(root, 'openspec', 'config.yaml'), 'schema: spec-driven\n', 'utf8');
   const written = injectSpanishContextInProject(root);
-  assert.equal(written.length, 2);
+  assert.deepEqual(written, [join(root, 'spec', 'config.yaml')]);
   assert.match(readFileSync(join(root, 'spec', 'config.yaml'), 'utf8'), /All interactions/);
-  assert.match(readFileSync(join(root, 'openspec', 'config.yaml'), 'utf8'), /All interactions/);
+  assert.equal(
+    readFileSync(join(root, 'openspec', 'config.yaml'), 'utf8'),
+    'schema: spec-driven\n',
+    'the legacy config is left untouched'
+  );
 });
 
-test('the native config is seeded with the content of the legacy config', () => {
+test('the native config is never seeded with the content of the legacy config', () => {
   const root = scratch();
   mkdirSync(join(root, 'spec'), { recursive: true });
   mkdirSync(join(root, 'openspec'), { recursive: true });
@@ -63,7 +68,7 @@ test('the native config is seeded with the content of the legacy config', () => 
   injectSpanishContextInProject(root);
   const content = readFileSync(join(root, 'spec', 'config.yaml'), 'utf8');
   assert.match(content, /schema: spec-driven/);
-  assert.match(content, /proyecto: demo/);
+  assert.ok(!content.includes('proyecto: demo'), 'the legacy config is never read');
 });
 
 test('the injection is idempotent', () => {
@@ -75,15 +80,12 @@ test('the injection is idempotent', () => {
   assert.equal(readFileSync(join(root, 'spec', 'config.yaml'), 'utf8'), first);
 });
 
-test('resolveConfigTargets reports the config of each layout', () => {
+test('resolveConfigTargets reports the native config only', () => {
   const root = scratch();
   mkdirSync(join(root, 'spec'), { recursive: true });
   assert.deepEqual(resolveConfigTargets(root), { native: join(root, 'spec', 'config.yaml') });
   mkdirSync(join(root, 'openspec'), { recursive: true });
-  assert.deepEqual(resolveConfigTargets(root), {
-    native: join(root, 'spec', 'config.yaml'),
-    legacy: join(root, 'openspec', 'config.yaml')
-  });
+  assert.deepEqual(resolveConfigTargets(root), { native: join(root, 'spec', 'config.yaml') });
 });
 
 const postCheckCtx = {
@@ -100,12 +102,12 @@ test('post-checks accepts the Spanish context in the native config', () => {
   assert.equal(warnings.filter((w) => w.includes('Spanish context')).length, 0);
 });
 
-test('post-checks accepts the Spanish context in the legacy config', () => {
+test('post-checks does not accept the Spanish context of the legacy config', () => {
   const root = scratch();
   mkdirSync(join(root, 'openspec'), { recursive: true });
   writeFileSync(join(root, 'openspec', 'config.yaml'), 'context: |\n  Language preference: All interactions\n', 'utf8');
   const warnings = runPostChecks(root, postCheckCtx).warnings;
-  assert.equal(warnings.filter((w) => w.includes('Spanish context')).length, 0);
+  assert.equal(warnings.filter((w) => w.includes('Spanish context')).length, 1);
 });
 
 test('post-checks warns when no config carries the Spanish context', () => {

@@ -8,12 +8,11 @@ import type { VaultDoctorFinding } from './vault-doctor';
  * The contract is the single source for cycle rules; governed files
  * (project skills under `.agents/skills`) must reference it instead of
  * redefining the rule text. `spectralis check --rules` reports duplicates
- * (warning) and same-phase contradictions (error). Vendor surfaces
- * (`.opencode/commands/opsx-*.md`, `.opencode/skills/openspec-*`) are
- * external references and are never treated as editable sources.
+ * (warning) and same-phase contradictions (error). The harness has a single
+ * native mode: there is no vendor surface of an external engine any more.
  *
- * OpenSpec stays a non-re-implemented SDD backend: this contract describes
- * cycle rules, not an SDD engine.
+ * This contract describes cycle rules, not an SDD engine: the harness never
+ * re-implements the workflow of any external tool.
  */
 export interface CycleRule {
   id: string;

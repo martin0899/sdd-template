@@ -9,7 +9,7 @@ version: 1.2.0
 
 Convierte una nota de requerimiento (Obsidian) en changes y especificaciones por capa, ancladas a la realidad del código mediante un briefing investigado. **Nunca escribe specs sin confirmación explícita del usuario para las decisiones no definidas en la nota.**
 
-> **Motor del flujo**: el flujo **nativo** es el primario (`spectralis spec ...` sobre el directorio de changes resuelto, `spec/` por defecto). El CLI externo `openspec` queda como **motor opcional** (`engine: openspec`): en ese caso, la creación de changes y la lectura de specs vigentes se hacen con sus comandos y sus rutas (`openspec/changes/`, `openspec/specs/`). Todo lo demás de esta skill es neutral respecto al motor.
+> **Motor del flujo**: el flujo es **nativo** (`spectralis spec ...` sobre el directorio de changes resuelto, `spec/` por defecto). No hay motor externo: la creación de changes y la lectura de specs vigentes se hacen con los comandos del harness y sus rutas (`spec/`).
 
 ## Rutas y Configuración
 
@@ -58,7 +58,7 @@ La nota puede estar en `{requirements_dir}` (vault de Obsidian) o en cualquier o
 
 ### 2. Investigar el repo
 - Si existe graphify en el proyecto (`graphify-out/graph.json`): usa `graphify query` para módulos y patrones relacionados con cada actividad, `graphify path` para relaciones y `graphify explain` para conceptos.
-- Lee `spec/` (layout nativo) para detectar capabilities vigentes que la nota evoluciona o reutiliza (ej. una API-01 que ya tiene spec). Con `engine: openspec`, el equivalente es `openspec/specs/` (y `openspec/changes/<id>/` para los changes en curso).
+- Lee `spec/` (layout nativo) para detectar capabilities vigentes que la nota evoluciona o reutiliza (ej. una API-01 que ya tiene spec).
 - Revisa el esquema de BD real (migraciones, modelos) para detectar conflictos de nombres o cambios destructivos.
 - Si no hay graphify montado: investigación directa de código y specs. El briefing pierde profundidad pero el flujo funciona.
 
@@ -84,7 +84,6 @@ Si la nota trae **Mapa de Impacto Técnico**, úsalo como input para las seccion
 
 ### 6. Crear los changes
 - Por cada actividad confirmada: `spectralis spec create <id> --nombre "<nombre legible>"` (nunca crear carpetas a mano; el comando crea el change en el directorio de changes resuelto y su `change.json`).
-- Con `engine: openspec`, la alternativa legacy es crear el change con el CLI externo (`openspec` + su comando de creación de change); no se mezclan: cada motor usa el suyo.
 - Cada change incluye:
   - `proposal.md` con línea de trazabilidad: `Fuente: <ruta de la nota> · Actividad: ID-xx` y sección **Impact** con áreas y archivos afectados (del briefing)
   - `design.md` con **Risks / Trade-offs** y **Migration Plan** con rollback concreto (queries inversas o reverts; el SELECT de verificación de la nota alimenta la tarea de verificación previa)
@@ -135,10 +134,10 @@ Lo que el agente **nunca** inventa: intención de negocio ambigua (pregunta) y f
 ## Contratos de API compartidos
 
 - Los contratos viven en la nota que los introduce (sección 7) y **evolucionan por copia**: una nota posterior que modifica API-01 lleva el bloque actualizado (v2).
-- El briefing detecta si un bloque es reuso (idéntico a la spec vigente) o evolución (difiere) comparando contra `openspec/specs/` (motor `openspec`) o contra `spec/` (motor nativo).
-- El historial de evolución lo guarda el archive del change (nativo: `spectralis spec archive`; `engine: openspec`: el archive de OpenSpec), no Obsidian.
+- El briefing detecta si un bloque es reuso (idéntico a la spec vigente) o evolución (difiere) comparando contra `spec/`.
+- El historial de evolución lo guarda el archive del change (`spectralis spec archive`), no Obsidian.
 
 ## Notas
 
-- Esta skill termina en los artefactos del change (nativo: `spec/<id>/`; `engine: openspec`: `openspec/changes/<id>/`); la implementación es territorio del ciclo de apply.
+- Esta skill termina en los artefactos del change (`spec/<id>/`); la implementación es territorio del ciclo de apply.
 - Para updates posteriores de una misma nota, re-invoca la skill con la misma ruta; el registro detecta que ya fue procesada.

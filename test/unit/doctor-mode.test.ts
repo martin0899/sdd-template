@@ -30,7 +30,7 @@ function writeStub(dir: string, name: string, content: string): void {
   chmodSync(path, 0o755);
 }
 
-/** A PATH without the openspec binary: it simulates a host without OpenSpec. */
+/** A PATH with the tools of the harness and without any external spec engine. */
 function fakeBinWithoutOpenspec(): string {
   const bin = scratch('spectralis-doctor-mode-bin-');
   writeStub(bin, 'git', '#!/bin/sh\necho "git version 2.40.0"\nexit 0\n');
@@ -67,17 +67,16 @@ function runDoctor(cwd: string): { ok: boolean; output: string } {
   }
 }
 
-test('doctor sin openspec no bloquea con el engine nativo (openspec es opcional)', () => {
+test('doctor sin openspec no bloquea: el host nativo esta listo', () => {
   const proj = makeProject({});
   const { ok, output } = runDoctor(proj);
   assert.equal(ok, true, 'sin openspec el host nativo esta listo');
-  assert.match(output, /openspec \(optional\)/);
-  assert.match(output, /si usas engine: openspec, instala openspec/i);
+  assert.doesNotMatch(output, /openspec/i);
 });
 
-test('doctor con un manifiesto legado tampoco marca openspec como requerido', () => {
+test('doctor con un manifiesto legado tampoco menciona openspec', () => {
   const proj = makeProject({ philosophy: 'odd' });
   const { ok, output } = runDoctor(proj);
   assert.equal(ok, true);
-  assert.doesNotMatch(output, /openspec \(required\)/);
+  assert.doesNotMatch(output, /openspec/i);
 });

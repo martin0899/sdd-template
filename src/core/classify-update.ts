@@ -12,10 +12,12 @@ export interface ClassifiedFile {
 }
 
 /** Files managed outside the template payload: they are neither compared nor
- * retired, so update can preserve their manifest entries (see update.ts). */
+ * retired, so update can preserve their manifest entries (see update.ts).
+ *
+ * The legacy config of the external engine (`openspec/config.yaml`) is NOT in
+ * this list: it is a retired file, so `update --prune` can clean it up. */
 const SPECIAL_MANAGED_PATHS = new Set([
   'AGENTS.md',
-  'openspec/config.yaml',
   ...COMPOSED_STANDARDS
 ]);
 
