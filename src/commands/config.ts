@@ -3,7 +3,7 @@ import { resolve, join } from 'node:path';
 import { readManifest } from '../core/manifest';
 import { readGlobalConfig, writeGlobalConfig, setRoute, resolveRoute, detectVaultRoot, resolveObsidianSync, setObsidianSync, resolvePhilosophy, setPhilosophy, setSpecDir, type RouteConfig, type SpectralisConfig } from '../core/config';
 import { resolveSpecDir } from '../core/resolve-changes-dir';
-import { currentPalette, printBanner, green, dim } from '../util/ui';
+import { currentPalette, printLogo, green, dim } from '../util/ui';
 
 export interface ConfigOptions {
   destino?: string;
@@ -159,7 +159,7 @@ export async function runConfig(opts: ConfigOptions = {}): Promise<number> {
     return 0;
   }
 
-  console.log(printBanner(version, version, pal));
+  console.log(printLogo('init', pal));
   const target = resolve(process.cwd(), opts.destino ?? '.');
 
   // Handle --list (routes)
