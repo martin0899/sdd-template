@@ -1,8 +1,7 @@
 # Skill Index
 
-Before invoking any skill, check this list. Load ONLY the chosen skill's SKILL.md.
-
-Destination rule: new skills go in `.agents/skills/<name>/SKILL.md`. NEVER in `.opencode/skills/`.
+Match the task to one trigger, then load ONLY that skill's `SKILL.md`.
+New skills: `.agents/skills/<name>/SKILL.md` — never `.opencode/skills/`.
 
 adversarial-review: adversarial/red-team/independent verification before archiving a spec change → .agents/skills/adversarial-review/SKILL.md
 agent-rules-contract: cycle rules/agent contract; define once, reference instead of redefining → .agents/skills/agent-rules-contract/SKILL.md
@@ -35,4 +34,3 @@ update-docs: identify and update required technical docs after changes → .agen
 using-git-worktrees: isolate workspace when starting feature work → .agents/skills/using-git-worktrees/SKILL.md
 web-design-guidelines: review UI code against Web Interface Guidelines → .agents/skills/web-design-guidelines/SKILL.md
 writing-skills: create/edit/verify skills before deployment → .agents/skills/writing-skills/SKILL.md
-`
