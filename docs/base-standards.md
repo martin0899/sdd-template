@@ -160,4 +160,5 @@ Secret handling for every agent and subagent / Política de secretos para todos 
 - **No duplicate context**: do not paste the same file, diff or log twice in one reply; reference the earlier excerpt.
 - **Prefer targeted edits**: use `edit` with a unique `oldString` instead of rewriting whole files; reserve `write` for new files or full replacements.
 - **Delegate research**: when the task needs more than 3 file reads, dispatch `investigador`/`explore` instead of doing it inline.
+- **Graph first**: for any code investigation, always use `graphify query`/`path`/`explain` before reading files; skip only if the user says so or the graph is stale/incorrect.
 - **Keep replies lean**: no restating of the plan, no filler; one short status line after a batch of tool calls.
