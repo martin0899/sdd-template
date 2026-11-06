@@ -35,6 +35,13 @@ function formatTimestamp(iso: string): string {
   )}:${pad(date.getUTCMinutes())}`;
 }
 
+/** Render a compact ASCII progress bar for a 0-100 percent value. */
+function progressBar(percent: number, width = 18): string {
+  const clamped = Math.max(0, Math.min(100, percent));
+  const filled = Math.round((clamped / 100) * width);
+  return `[${'#'.repeat(filled)}${'.'.repeat(width - filled)}]`;
+}
+
 function renderList(projectRoot: string, changesDir: string): number {
   const changes = listChanges(changesDir);
   if (changes.length === 0) {
@@ -43,15 +50,17 @@ function renderList(projectRoot: string, changesDir: string): number {
   }
   const registry = readProgress(projectRoot);
   console.log('\n  spectralis view · changes activos\n');
-  console.log('  Change              | Percent | Estado      | Updated');
-  console.log('  --------------------|---------|-------------|-------------------');
+  console.log('  Change              | Progreso             | Estado      | Updated');
+  console.log('  --------------------|----------------------|-------------|-------------------');
   for (const id of changes) {
     const entry: ProgressChange | undefined = registry.change.find((change) => change.id === id);
-    const percent = entry ? `${entry.porcentaje}%` : '—';
+    const percent = entry ? entry.porcentaje : 0;
+    const percentText = entry ? `${percent}%` : '—';
+    const bar = entry ? progressBar(percent) : `[${'.'.repeat(18)}]`;
     const estado = entry ? entry.estado : NO_REGISTRY;
     const updated = entry && entry.updatedAt ? formatTimestamp(entry.updatedAt) : '—';
     console.log(
-      `  ${id.padEnd(20)}| ${percent.padStart(7)} | ${estado.padEnd(11)} | ${updated}`
+      `  ${id.padEnd(20)}| ${bar} ${percentText.padStart(4)} | ${estado.padEnd(11)} | ${updated}`
     );
   }
   console.log('');
@@ -69,11 +78,12 @@ function renderDetail(projectRoot: string, changesDir: string, change: string): 
 
   console.log(`\n  spectralis view · ${change}\n`);
   if (entry) {
-    console.log(`  Estado: ${entry.estado} (${entry.porcentaje}%)`);
+    console.log(`  Estado: ${entry.estado} ${progressBar(entry.porcentaje)} ${entry.porcentaje}%`);
     console.log(`  Updated: ${entry.updatedAt ? formatTimestamp(entry.updatedAt) : '—'}`);
-    console.log('\n  Tasks:');
+    console.log('\\n  Tasks:');
     for (const task of entry.task) {
-      console.log(`  [${task.estatus === 'done' ? 'x' : ' '}] ${task.id} ${task.descripcion}`.trimEnd());
+      const pct = typeof task.porcentaje === 'number' ? task.porcentaje : task.estatus === 'done' ? 100 : task.estatus === 'in-progress' ? 50 : 0;
+      console.log(`  ${progressBar(pct, 12)} ${String(pct).padStart(3)}% [${task.estatus === 'done' ? 'x' : ' '}] ${task.id} ${task.descripcion}`.trimEnd());
     }
   } else {
     console.log(`  Estado: ${NO_REGISTRY}`);
