@@ -170,3 +170,4 @@ Conteo de especificaciones: **34**.
 ## v1.0.0 — 2026-09-21
 
 - Implementación inicial del CLI spectralis: instalador SDD multiplataforma con `doctor` y matriz de agentes.
+- **context-hygiene-dcp** — nueva sección `## 11. Context hygiene (DCP)` en `docs/base-standards.md` (leer antes de re-leer, grep antes de read, sumarizar salidas largas, sin duplicar contexto, edits puntuales, delegar investigación >3 lecturas, respuestas lean) + puntero en `AGENTS.md` §11.

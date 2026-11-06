@@ -151,3 +151,13 @@ Secret handling for every agent and subagent / Política de secretos para todos 
 - **Secret received by mistake**: do not repeat it.
 - Mask it (last 4 + `****`) and tell the user where it appeared (config, log, message).
 
+
+## 11. Context hygiene (DCP — Dynamic Context Pruning)
+
+- **Read before re-reading**: if a file is already in your context, do not re-read it; cite the line you already have.
+- **Grep before read**: locate symbols with `grep`/`rg` first, then read only the relevant slice with `offset`/`limit`.
+- **Summarize tool output**: when a tool returns more than ~40 lines, summarize the relevant part instead of echoing it verbatim.
+- **No duplicate context**: do not paste the same file, diff or log twice in one reply; reference the earlier excerpt.
+- **Prefer targeted edits**: use `edit` with a unique `oldString` instead of rewriting whole files; reserve `write` for new files or full replacements.
+- **Delegate research**: when the task needs more than 3 file reads, dispatch `investigador`/`explore` instead of doing it inline.
+- **Keep replies lean**: no restating of the plan, no filler; one short status line after a batch of tool calls.
