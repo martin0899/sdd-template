@@ -415,6 +415,14 @@
           "estatus": "done"
         }
       ]
+    },
+    {
+      "id": "view-archived",
+      "nombre": "view --archived: listar changes archivados",
+      "porcentaje": 0,
+      "estado": "todo",
+      "updatedAt": "2026-11-06T07:31:23.487Z",
+      "task": []
     }
   ]
 }

@@ -1,0 +1,10 @@
+{
+  "id": "view-archived",
+  "nombre": "view --archived: listar changes archivados",
+  "fecha": "2026-11-06",
+  "estado": "open",
+  "resumen": {
+    "abstracto": ""
+  },
+  "enlaces": []
+}

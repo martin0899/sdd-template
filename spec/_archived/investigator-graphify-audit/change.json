@@ -1,0 +1,10 @@
+{
+  "id": "investigator-graphify-audit",
+  "nombre": "investigator-graphify-audit",
+  "fecha": "2026-11-06",
+  "estado": "done",
+  "resumen": {
+    "abstracto": "Garantiza la trazabilidad del uso de graphify por el investigador mediante la cita literal de los comandos ejecutados y sus respuestas en el Estado, e instruye al coordinador a copiar el hallazgo completo del investigador a la nota del change para auditoría…"
+  },
+  "enlaces": []
+}

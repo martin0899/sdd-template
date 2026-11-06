@@ -1,0 +1,10 @@
+{
+  "id": "skill-index",
+  "nombre": "skill-index",
+  "fecha": "2026-11-06",
+  "estado": "done",
+  "resumen": {
+    "abstracto": "Proporcionar un índice de enrutado de skills del proyecto que permita al orquestador decidir qué skill invocar consultando una representación ligera del catálogo de skills, sin cargar el contenido completo de los SKILL.md."
+  },
+  "enlaces": []
+}

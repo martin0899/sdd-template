@@ -1,0 +1,10 @@
+{
+  "id": "sdd-config-sync",
+  "nombre": "sdd-config-sync",
+  "fecha": "2026-11-06",
+  "estado": "done",
+  "resumen": {
+    "abstracto": "Permite mantener actualizada la configuración SDD de proyectos existentes a partir de una plantilla más reciente, con comparación previa, protección de personalizaciones y confirmación explícita de cada operación con riesgo."
+  },
+  "enlaces": []
+}

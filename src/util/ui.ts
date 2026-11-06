@@ -111,3 +111,27 @@ export function phaseLine(
 export function promptMark(s: string, p: Palette = currentPalette()): string {
   return p.prompt(s);
 }
+
+/** Box-drawing logo variants for the spectralis CLI commands. */
+export const LOGO_VARIANTS: Record<string, string[]> = {
+  init: [
+    '╔══════════════════════════════╗',
+    '║                              ║',
+    '║          SPECTRALIS          ║',
+    '║                              ║',
+    '╚══════════════════════════════╝',
+  ],
+  view: [
+    '╔════════════════════╗',
+    '║     SPECTRALIS     ║',
+    '╚════════════════════╝',
+  ],
+  doctor: [
+    '╔═ S P E C T R A L I S ═╗',
+    '╚═══════════════════════╝',
+  ],
+};
+
+export function printLogo(variant: keyof typeof LOGO_VARIANTS = 'init', p: Palette = currentPalette()): string {
+  return LOGO_VARIANTS[variant].map((line) => p.bold(line)).join('\n');
+}

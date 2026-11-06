@@ -1,0 +1,10 @@
+{
+  "id": "sdd-installer-gitignore-sync",
+  "nombre": "sdd-installer-gitignore-sync",
+  "fecha": "2026-11-06",
+  "estado": "done",
+  "resumen": {
+    "abstracto": "Mantener el bloque gestionado de `.gitignore` del destino sincronizado con la lista vigente de entradas del instalador, de modo que los artefactos locales de agente (incluida `.claude/`) queden descartados del versionado también en proyectos ya instalados."
+  },
+  "enlaces": []
+}

@@ -1,0 +1,10 @@
+{
+  "id": "commit-workflow",
+  "nombre": "commit-workflow",
+  "fecha": "2026-11-06",
+  "estado": "done",
+  "resumen": {
+    "abstracto": "Define el comportamiento del flujo de commit y Pull Request ejecutado por agentes de IA en proyectos con esta plantilla: idioma de los mensajes, revisión obligatoria de archivos antes de commitear y confirmación explícita del usuario antes de cualquier…"
+  },
+  "enlaces": []
+}

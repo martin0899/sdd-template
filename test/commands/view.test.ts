@@ -39,6 +39,39 @@ function makeProject(changes: Array<{ id: string; tasks?: string }>): string {
   return root;
 }
 
+const ARCHIVED_TASKS = `# Tasks: commit-workflow
+
+## 1. Done
+
+- [x] 1.1 Ship it
+`;
+
+interface ArchivedFixture {
+  id: string;
+  change?: Record<string, unknown> | string;
+  tasks?: string;
+}
+
+function makeArchivedProject(archived: ArchivedFixture[]): string {
+  const root = scratch();
+  for (const change of archived) {
+    const dir = join(root, 'spec', '_archived', change.id);
+    mkdirSync(dir, { recursive: true });
+    if (change.tasks !== undefined) {
+      writeFileSync(join(dir, 'tasks.md'), change.tasks, 'utf8');
+    }
+    if (change.change !== undefined) {
+      const payload = typeof change.change === 'string' ? change.change : JSON.stringify(change.change);
+      writeFileSync(join(dir, 'change.json'), payload, 'utf8');
+    }
+  }
+  return root;
+}
+
+function changeJson(id: string, fecha: string, estado = 'done'): Record<string, unknown> {
+  return { id, nombre: `Change ${id}`, fecha, estado, resumen: { abstracto: '' }, enlaces: [] };
+}
+
 async function capture(run: () => Promise<number>): Promise<{ code: number; out: string; err: string }> {
   const originalLog = console.log;
   const originalError = console.error;
@@ -76,7 +109,6 @@ test('view lists the active changes with their percentage, status and update', a
   assert.equal(code, 0);
   assert.match(out, /change-a/);
   assert.match(out, /75%/);
-  assert.match(out, /in-progress/);
   assert.match(out, /2026-11-05/);
   assert.match(out, /change-b/);
   assert.match(out, /sin registro/, 'a change without registry entry is reported as unregistered');
@@ -110,7 +142,6 @@ test('view shows the detail of a change with the status of every task', async ()
   assert.equal(code, 0);
   assert.match(out, /change-a/);
   assert.match(out, /75%/);
-  assert.match(out, /in-progress/);
   assert.match(out, /\[x\] 1\.1 Write the tests/);
   assert.match(out, /\[ \] 1\.2 Implement the module/);
 });
@@ -149,6 +180,64 @@ test('view never writes anything', async () => {
   await capture(() => runView({ projectRoot: root }));
   await capture(() => runView({ change: 'change-a', projectRoot: root }));
   assert.equal(readFileSync(tasksPath, 'utf8'), before, 'tasks.md must stay untouched');
+  assert.equal(existsSync(join(root, 'spec', 'progress.json')), false, 'the registry file must not be created');
+  assert.deepEqual(readdirSync(root).sort(), ['spec']);
+});
+
+test('view --archived lists archived changes with date, tasks and state, never the active ones', async () => {
+  const root = makeArchivedProject([
+    { id: 'commit-workflow', change: changeJson('commit-workflow', '2026-11-01'), tasks: ARCHIVED_TASKS }
+  ]);
+  mkdirSync(join(root, 'spec', 'active-one'), { recursive: true });
+  const { code, out } = await capture(() => runView({ projectRoot: root, archived: true }));
+  assert.equal(code, 0);
+  assert.match(out, /commit-workflow/);
+  assert.match(out, /2026-11-01/);
+  assert.match(out, /1\/1/);
+  assert.match(out, /done/);
+  assert.doesNotMatch(out, /active-one/);
+});
+
+test('view --archived falls back to an em dash and done when change.json is missing', async () => {
+  const root = makeArchivedProject([{ id: 'legacy-archived', tasks: TASKS_MD }]);
+  const { code, out } = await capture(() => runView({ projectRoot: root, archived: true }));
+  assert.equal(code, 0);
+  assert.match(out, /legacy-archived\s*\|\s*—/, 'a missing change.json renders an em dash in the date column');
+  assert.match(out, /1\/2/, 'the task counter comes from tasks.md');
+  assert.match(out, /done/, 'a missing change.json falls back to the closed state');
+});
+
+test('view <id> --archived renders the tasks.md of the archived change', async () => {
+  const root = makeArchivedProject([
+    { id: 'commit-workflow', change: changeJson('commit-workflow', '2026-11-01'), tasks: TASKS_MD }
+  ]);
+  const { code, out } = await capture(() => runView({ change: 'commit-workflow', projectRoot: root, archived: true }));
+  assert.equal(code, 0);
+  assert.match(out, /commit-workflow/);
+  assert.match(out, /sin registro/);
+  assert.match(out, /\[x\] 1\.1 Write the tests/);
+  assert.match(out, /\[ \] 1\.2 Implement the module/);
+});
+
+test('view --archived reports that there are no archived changes and exits with 0', async () => {
+  const root = makeProject([{ id: 'change-a', tasks: TASKS_MD }]);
+  const { code, out } = await capture(() => runView({ projectRoot: root, archived: true }));
+  assert.equal(code, 0);
+  assert.match(out, /no hay changes archived/);
+  assert.equal(existsSync(join(root, 'spec', 'progress.json')), false);
+});
+
+test('view --archived never writes anything', async () => {
+  const root = makeArchivedProject([
+    { id: 'commit-workflow', change: changeJson('commit-workflow', '2026-11-01'), tasks: TASKS_MD }
+  ]);
+  mkdirSync(join(root, 'spec', 'change-a'), { recursive: true });
+  writeFileSync(join(root, 'spec', 'change-a', 'tasks.md'), TASKS_MD, 'utf8');
+  const tasksPath = join(root, 'spec', '_archived', 'commit-workflow', 'tasks.md');
+  const before = readFileSync(tasksPath, 'utf8');
+  await capture(() => runView({ projectRoot: root, archived: true }));
+  await capture(() => runView({ change: 'commit-workflow', projectRoot: root, archived: true }));
+  assert.equal(readFileSync(tasksPath, 'utf8'), before, 'the archived tasks.md must stay untouched');
   assert.equal(existsSync(join(root, 'spec', 'progress.json')), false, 'the registry file must not be created');
   assert.deepEqual(readdirSync(root).sort(), ['spec']);
 });

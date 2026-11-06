@@ -1,0 +1,10 @@
+{
+  "id": "eliminate-ollama-flow",
+  "nombre": "eliminate-ollama-flow",
+  "fecha": "2026-11-06",
+  "estado": "done",
+  "resumen": {
+    "abstracto": "Eliminar el flujo redundante de Ollama (detección, configuración y clasificación LLM en distill) para simplificar `init.ts`, `update.ts` y `distill.ts`, y sustituir la clasificación por heurísticas deterministas."
+  },
+  "enlaces": []
+}

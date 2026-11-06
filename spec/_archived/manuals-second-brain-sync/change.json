@@ -1,0 +1,10 @@
+{
+  "id": "manuals-second-brain-sync",
+  "nombre": "manuals-second-brain-sync",
+  "fecha": "2026-11-06",
+  "estado": "done",
+  "resumen": {
+    "abstracto": "Capacidad que mantiene actualizado el conjunto de manuales canónicos del arnés SDD distribuidos al segundo cerebro."
+  },
+  "enlaces": []
+}

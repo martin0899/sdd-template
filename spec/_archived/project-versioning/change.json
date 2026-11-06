@@ -1,0 +1,10 @@
+{
+  "id": "project-versioning",
+  "nombre": "project-versioning",
+  "fecha": "2026-11-06",
+  "estado": "done",
+  "resumen": {
+    "abstracto": "Gestión de la versión del proyecto destino en `.sdd-manifest.json` con reglas deterministas: PATCH auto-incrementa con cada spec archivada, MINOR sube al crear una versión release, MAJOR solo por ruptura de compatibilidad explícita, cada componente topa en 99…"
+  },
+  "enlaces": []
+}

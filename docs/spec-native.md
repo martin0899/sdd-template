@@ -164,6 +164,29 @@ and the state of a change are always derived from its tasks. `tasks.md` is the
 detailed worklist and the mirror of the checkboxes (`spectralis task` keeps
 both in sync).
 
+## `view`
+
+```bash
+spectralis view                       # active changes (read-only)
+spectralis view mi-cambio             # detail of an active change
+spectralis view --archived            # archived changes under spec/_archived/
+spectralis view mi-cambio --archived  # detail of an archived change
+```
+
+Without a flag, `view` lists the active changes of the resolved directory and
+excludes `_archived/` and `archive/`. With `--archived` it lists the folders of
+`spec/_archived/` with `Change | Fecha | Tareas | Estado | Nombre`: the date,
+state and name come from the `change.json` that travels with the change, the
+task counter is derived from the checkboxes of `tasks.md`, and a change with no
+`change.json` falls back to `—` (date and name) and `done` (state). With an id,
+`--archived` renders the detail of the archived change from its own `tasks.md`
+(the progress registry no longer holds it, so the detail is labelled
+`sin registro`).
+
+`view` is always read-only: it never writes `progress.json`, `tasks.md` nor the
+REGISTRY. When `spec/_archived/` is missing or empty it reports
+`no hay changes archived` and exits with `0`.
+
 ## `spec status`
 
 ```bash

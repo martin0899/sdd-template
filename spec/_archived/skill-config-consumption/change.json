@@ -1,0 +1,10 @@
+{
+  "id": "skill-config-consumption",
+  "nombre": "skill-config-consumption",
+  "fecha": "2026-11-06",
+  "estado": "done",
+  "resumen": {
+    "abstracto": "Capacidad que obliga a las skills del arnés SDD a resolver las rutas del vault de Obsidian y sus subcarpetas a través de la configuración centralizada (`spectralis config --get <key>`) en lugar de declarar rutas absolutas como valores por defecto."
+  },
+  "enlaces": []
+}

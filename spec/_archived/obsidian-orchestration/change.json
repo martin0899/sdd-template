@@ -1,0 +1,10 @@
+{
+  "id": "obsidian-orchestration",
+  "nombre": "obsidian-orchestration",
+  "fecha": "2026-11-06",
+  "estado": "done",
+  "resumen": {
+    "abstracto": "Orquestación opcional entre el flujo OpenSpec y el segundo cerebro, controlada por el switch `obsidianSync` (o flags `--obsidian`/`--no-obsidian`), que dispara las skills `obsidian-briefing`, `obsidian-summary`, `obsidian-tests` y `spectralis spec complete`…"
+  },
+  "enlaces": []
+}

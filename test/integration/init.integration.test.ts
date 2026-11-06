@@ -72,7 +72,7 @@ test('fresh install into clean destination matches the anti-corruption contract'
     const manifest = JSON.parse(readFileSync(join(dst, '.sdd-manifest.json'), 'utf8'));
     assert.equal(manifest.schemaVersion, 3);
     assert.equal(manifest.spectralisVersion, harnessVersion, 'arnés version recorded separately');
-    assert.equal(manifest.projectVersion, '1.0.0', 'project version defaults to 1.0.0');
+    assert.equal(manifest.projectVersion, '0.0.0', 'project version defaults to 0.0.0');
     assert.ok(manifest.files.length > 0);
   } finally {
     rmSync(dst, { recursive: true, force: true });
@@ -99,8 +99,8 @@ test('conflict keeps the destination version when declined, with backup', () => 
     runCli(['init', dst, '--yes'], 's\n');
     const skillPath = join(dst, '.agents/skills/commit/SKILL.md');
     writeFileSync(skillPath, 'customized destination\n');
-    // answers: project version -> 1.0.0 ; continue install -> s ; replace conflict -> n
-    const r = runCli(['init', dst], '1.0.0\ns\nn\n');
+    // answers: project version -> 0.0.0 ; continue install -> s ; replace conflict -> n
+    const r = runCli(['init', dst], '0.0.0\ns\nn\n');
     assert.equal(r.status, 0);
     assert.equal(readFileSync(skillPath, 'utf8'), 'customized destination\n');
     const backups = readdirSync(dst).filter((d) => d.startsWith('.sdd-backup-'));

@@ -34,12 +34,16 @@ import { runBump } from '../commands/bump';
 import { runView } from '../commands/view';
 import { runTask } from '../commands/task';
 import { maybePrintUpdateNotice } from '../core/version-check';
+import { currentPalette, printLogo } from '../util/ui';
 
 const pkg = require('../../package.json') as { version: string };
 
 // Handle --v alias before commander processes arguments
 if (process.argv.includes('--v')) {
-  console.log(pkg.version);
+  const v = pkg.version;
+  console.log('╔════════════════╗');
+  console.log(`║   v${v.padEnd(12)}║`);
+  console.log('╚════════════════╝');
   process.exit(0);
 }
 
@@ -53,6 +57,8 @@ program
   .name('spectralis')
   .description('SDD template installer CLI (init, update, doctor)')
   .version(pkg.version);
+
+program.addHelpText('before', printLogo('doctor', currentPalette()) + '\n');
 
 program.addHelpText('after', `
 Examples:
@@ -75,7 +81,15 @@ Examples:
   $ spectralis wiki search Spectralis arquitectura  # Search in wiki
   $ spectralis view                     # Show the state of the active changes (read-only)
   $ spectralis view spec-native-f1       # Show the detail of one change
+  $ spectralis view --archived           # List archived changes (spec/_archived)
   $ spectralis task spec-native-f1 1.1 --done  # Mark a task as done
+  $ spectralis spec create my-change --nombre \"My change\"  # Create a native change
+  $ spectralis spec migrate              # Import legacy openspec/changes into spec/
+  $ spectralis spec archive my-change    # Archive a completed native change (writes brain summary)
+  $ spectralis spec status               # Native status of all changes
+  $ spectralis spec validate my-change   # Validate a native change
+  $ spectralis init --all               # Select every available tool without interactive menu
+  $ spectralis update --prune           # Delete retired files (backup first)
   $ spectralis --v                      # Show version (alias for --version)
 `);
 

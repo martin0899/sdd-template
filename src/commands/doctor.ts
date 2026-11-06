@@ -1,5 +1,5 @@
 import { checkPrereqs, realProbe, installHint } from '../core/prereqs';
-import { currentPalette, dim, green, red } from '../util/ui';
+import { currentPalette, dim, green, printLogo, red } from '../util/ui';
 import { resolveEffectivePhilosophy, detectProjectFromCwd } from '../core/config';
 
 /**
@@ -15,6 +15,7 @@ export function printDoctorReport(): boolean {
   const philosophy = resolveEffectivePhilosophy(projectRoot);
 
   const report = checkPrereqs(realProbe, process.platform);
+  console.log(printLogo('doctor', pal));
   console.log(
     `  ${pal.bold('spectralis doctor')} · host prerequisites (mode: ${philosophy.value})`
   );

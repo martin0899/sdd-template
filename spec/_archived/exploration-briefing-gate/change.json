@@ -1,0 +1,10 @@
+{
+  "id": "exploration-briefing-gate",
+  "nombre": "exploration-briefing-gate",
+  "fecha": "2026-11-06",
+  "estado": "done",
+  "resumen": {
+    "abstracto": "Puerta de briefing obligatoria antes de convertir una exploración OpenSpec en un change: al cristalizar una exploración o pedir proceder, el agente devuelve un briefing proactivo (decisiones cerradas, hallazgos anclados al código, preguntas abiertas y alcance…"
+  },
+  "enlaces": []
+}

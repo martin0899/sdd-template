@@ -1,0 +1,10 @@
+{
+  "id": "spec-facade",
+  "nombre": "spec-facade",
+  "fecha": "2026-11-06",
+  "estado": "done",
+  "resumen": {
+    "abstracto": "Fachada única y consciente del modo para iniciar, consultar, validar, completar y cerrar un cambio, delegando en OpenSpec cuando el modo es SDD y operando sobre `odd/changes/<id>/feature.md` cuando es ODD."
+  },
+  "enlaces": []
+}

@@ -1,0 +1,10 @@
+{
+  "id": "agent-rules-contract",
+  "nombre": "agent-rules-contract",
+  "fecha": "2026-11-06",
+  "estado": "done",
+  "resumen": {
+    "abstracto": "Centraliza en un contrato compartido las reglas del ciclo SDD/ODD para eliminar la duplicación entre `AGENTS.md`, los comandos `opsx-*`, las skills vendor `openspec-*` y las skills de proyecto, de modo que los agentes invoquen la interfaz central de…"
+  },
+  "enlaces": []
+}

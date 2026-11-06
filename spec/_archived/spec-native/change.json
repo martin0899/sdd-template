@@ -1,0 +1,10 @@
+{
+  "id": "spec-native",
+  "nombre": "spec-native",
+  "fecha": "2026-11-06",
+  "estado": "done",
+  "resumen": {
+    "abstracto": "Capability **spec-native**: comandos nativos del arnés para operar sobre changes OpenSpec sin invocar el CLI externo."
+  },
+  "enlaces": []
+}

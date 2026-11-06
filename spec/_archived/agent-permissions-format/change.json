@@ -1,0 +1,10 @@
+{
+  "id": "agent-permissions-format",
+  "nombre": "agent-permissions-format",
+  "fecha": "2026-11-06",
+  "estado": "done",
+  "resumen": {
+    "abstracto": "Formato V2 para permisos de agentes: Los agentes SDD deben tener sus permisos en formato V2 de OpenCode (array de objetos con action, resource, effect) para ser reconocidos en el catálogo de subagentes."
+  },
+  "enlaces": []
+}

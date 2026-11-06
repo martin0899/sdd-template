@@ -7,7 +7,7 @@ import { COMPOSED_STANDARDS } from '../core/copy-payload';
 import { mirrorCodexSkills, type MirrorResult } from '../core/codex-mirror';
 import { makeConfirm } from '../util/prompt';
 import { readGlobalConfig } from '../core/config';
-import { currentPalette, printBanner, promptMark } from '../util/ui';
+import { currentPalette, printBanner, printLogo, promptMark } from '../util/ui';
 import { runNotesInit, runNotesSync, isObsidianActive } from './notes';
 
 export interface UpdateOptions {
@@ -208,7 +208,7 @@ export async function runUpdate(opts: UpdateOptions = {}): Promise<number> {
   const root = templateRoot();
   const version = pkgVersion();
   const pal = currentPalette();
-  console.log(printBanner(version, version, pal));
+  console.log(printLogo('init', pal));
 
   const target = resolve(process.cwd(), opts.destino ?? '.');
   if (!existsSync(target)) {
@@ -259,6 +259,7 @@ export async function runUpdate(opts: UpdateOptions = {}): Promise<number> {
 
   // Check mode: only report status, never write.
   if (opts.check) {
+    console.log(printLogo('init', pal));
     console.log('\n  spectralis update · check\n');
     console.log(`  tools: ${(manifest.tools || []).join(', ') || 'none registered'}`);
     console.log('');

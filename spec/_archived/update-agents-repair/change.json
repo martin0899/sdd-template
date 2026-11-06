@@ -1,0 +1,10 @@
+{
+  "id": "update-agents-repair",
+  "nombre": "update-agents-repair",
+  "fecha": "2026-11-06",
+  "estado": "done",
+  "resumen": {
+    "abstracto": "Permite al comando `spectralis update` reparar y mantener el bloque gestionado de `AGENTS.md` incluso cuando el árbol de archivos está actualizado o cuando el bloque presenta inconsistencias (duplicados, incompleto, legacy sin marcadores)."
+  },
+  "enlaces": []
+}

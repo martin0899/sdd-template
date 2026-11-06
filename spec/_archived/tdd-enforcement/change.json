@@ -1,0 +1,10 @@
+{
+  "id": "tdd-enforcement",
+  "nombre": "tdd-enforcement",
+  "fecha": "2026-11-06",
+  "estado": "done",
+  "resumen": {
+    "abstracto": "Capacidad que adopta TDD de forma enforceable: obliga a escribir pruebas antes del código en los `tasks.md` de los changes OpenSpec y lo valida mecánicamente con `spectralis check --tdd`."
+  },
+  "enlaces": []
+}

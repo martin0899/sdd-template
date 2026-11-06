@@ -1,0 +1,10 @@
+{
+  "id": "agent-communication-protocol",
+  "nombre": "agent-communication-protocol",
+  "fecha": "2026-11-06",
+  "estado": "done",
+  "resumen": {
+    "abstracto": "Establece un protocolo de comunicación interna en inglés entre coordinador y subagentes con output telegráfico estructurado (JSON/template fija), eliminando rehash del contexto recibido y limitando reportes de fallos a 2-3 líneas."
+  },
+  "enlaces": []
+}

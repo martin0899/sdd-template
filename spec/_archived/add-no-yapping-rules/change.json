@@ -1,0 +1,10 @@
+{
+  "id": "add-no-yapping-rules",
+  "nombre": "add-no-yapping-rules",
+  "fecha": "2026-11-06",
+  "estado": "done",
+  "resumen": {
+    "abstracto": "Añadir una sección \"No Yapping\" a docs/base-standards.md que instruya a los agentes a evitar salida redundante, ir directo al punto y no repetir contexto ya conocido, reduciendo el consumo de tokens en la salida."
+  },
+  "enlaces": []
+}

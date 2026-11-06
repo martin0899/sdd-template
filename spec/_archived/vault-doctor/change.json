@@ -1,0 +1,10 @@
+{
+  "id": "vault-doctor",
+  "nombre": "vault-doctor",
+  "fecha": "2026-11-06",
+  "estado": "done",
+  "resumen": {
+    "abstracto": "Motor de validación determinista (`spectralis check`) del flujo SDD."
+  },
+  "enlaces": []
+}

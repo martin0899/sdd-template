@@ -1,0 +1,10 @@
+{
+  "id": "common-rules-consolidation",
+  "nombre": "common-rules-consolidation",
+  "fecha": "2026-11-06",
+  "estado": "done",
+  "resumen": {
+    "abstracto": "Consolida las reglas de seguridad duplicadas en `_common.md`, reduce su tamaño a ~30 líneas moviendo reglas específicas a los agentes que las consumen, y elimina la duplicación de reglas \"No hacer commits\" y \"No editar archivos\" entre `_common.md` y las…"
+  },
+  "enlaces": []
+}

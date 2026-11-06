@@ -1,0 +1,10 @@
+{
+  "id": "mode-selection",
+  "nombre": "mode-selection",
+  "fecha": "2026-11-06",
+  "estado": "done",
+  "resumen": {
+    "abstracto": "Seleccionar la filosofía de trabajo (SDD formal u ODD orgánica) por proyecto mediante un campo persistente y una cascada determinista de precedencia, sin romper los proyectos ya instalados."
+  },
+  "enlaces": []
+}

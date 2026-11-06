@@ -1,0 +1,10 @@
+{
+  "id": "vault-ids-exclusion-filter",
+  "nombre": "vault-ids-exclusion-filter",
+  "fecha": "2026-11-06",
+  "estado": "done",
+  "resumen": {
+    "abstracto": "`vault-ids.ts` escanea el vault buscando IDs en frontmatter."
+  },
+  "enlaces": []
+}

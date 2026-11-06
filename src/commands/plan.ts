@@ -13,7 +13,7 @@ export function buildInitPlan(
   selectedTools: string[] = []
 ): string[] {
   const lines: string[] = [];
-  lines.push('== PLAN (dry-run; nothing written yet) ==');
+  lines.push('  PLAN (dry-run; nothing written yet)');
   lines.push('  1. Prerequisites verified.');
   lines.push(`  -- recognition: ${target}`);
   lines.push(

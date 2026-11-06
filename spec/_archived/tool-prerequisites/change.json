@@ -1,0 +1,10 @@
+{
+  "id": "tool-prerequisites",
+  "nombre": "tool-prerequisites",
+  "fecha": "2026-11-06",
+  "estado": "done",
+  "resumen": {
+    "abstracto": "Determinar qué herramientas externas son prerequisito según la filosofía del proyecto, de modo que el ciclo ODD funcione sin OpenSpec y el modo SDD lo exija de forma explícita."
+  },
+  "enlaces": []
+}

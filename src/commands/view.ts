@@ -1,6 +1,7 @@
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { resolveTargetProjectRoot } from '../core/config';
+import { printLogo, currentPalette } from '../util/ui';
 import { resolveChangesDir } from '../core/resolve-changes-dir';
 import { parseTasksMd, readProgress, type ProgressChange } from '../core/progress-registry';
 import { readChangeJson } from '../core/change-json';
@@ -170,6 +171,7 @@ function renderDetail(projectRoot: string, changesDir: string, change: string, b
  * registry directory.
  */
 export async function runView(opts: ViewOptions = {}): Promise<number> {
+  console.log(printLogo('view', currentPalette()));
   const projectRoot = resolveTargetProjectRoot(opts.projectRoot);
   const changesDir = resolveChangesDir({ projectRoot, specDir: opts.specDir });
   if (opts.archived && !opts.change) return renderArchivedList(projectRoot);

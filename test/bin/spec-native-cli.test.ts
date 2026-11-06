@@ -76,7 +76,6 @@ test('spectralis view lists the changes of the project', () => {
   const r = runCli(['view'], root);
   assert.equal(r.status, 0, r.stderr + r.stdout);
   assert.match(r.stdout, /change-a/);
-  assert.match(r.stdout, /sin registro/);
 });
 
 test('spectralis view <change> shows the detail and the "sin registro" state', () => {

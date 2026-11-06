@@ -1,0 +1,10 @@
+{
+  "id": "wiki-structure",
+  "nombre": "wiki-structure",
+  "fecha": "2026-11-06",
+  "estado": "done",
+  "resumen": {
+    "abstracto": "Define la convención de estructura de `05_wiki/<Proyecto>/`: los cuatro documentos agregados planos (`arquitectura.md`, `decisiones.md`, `operacion.md`, `historial.md`) como único esquema de contenido generado por `seed` y `distill`, y el formato del índice…"
+  },
+  "enlaces": []
+}

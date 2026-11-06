@@ -1,0 +1,10 @@
+{
+  "id": "agent-permissions-v2",
+  "nombre": "agent-permissions-v2",
+  "fecha": "2026-11-06",
+  "estado": "done",
+  "resumen": {
+    "abstracto": "Define la sintaxis operativa de permisos V2 para los agentes SDD y los subagentes de apoyo, reemplazando la sintaxis inerte V1 (`permission:` singular) y añadiendo control explícito de invocación entre agentes."
+  },
+  "enlaces": []
+}

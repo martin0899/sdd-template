@@ -1,0 +1,10 @@
+{
+  "id": "spec-from-note",
+  "nombre": "spec-from-note",
+  "fecha": "2026-11-06",
+  "estado": "done",
+  "resumen": {
+    "abstracto": "Convertir notas de requerimiento escritas en Obsidian en changes y especificaciones OpenSpec por capa (frontend, backend, db), ancladas a la realidad del código mediante un briefing investigado, con confirmación obligatoria de decisiones no definidas en la…"
+  },
+  "enlaces": []
+}

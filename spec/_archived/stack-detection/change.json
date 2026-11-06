@@ -1,0 +1,10 @@
+{
+  "id": "stack-detection",
+  "nombre": "stack-detection",
+  "fecha": "2026-11-06",
+  "estado": "done",
+  "resumen": {
+    "abstracto": "Detección reproducible del stack de un proyecto: escaneo a profundidad 2 en directorios conocidos, exclusión de carpetas de archivo/caché, caché persistente en `stack.json` con invalidación por mtime, y degradación controlada a `generic` con el stack real…"
+  },
+  "enlaces": []
+}

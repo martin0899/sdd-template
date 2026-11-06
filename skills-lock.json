@@ -30,6 +30,12 @@
       "skillPath": "skills/systematic-debugging/SKILL.md",
       "computedHash": "3589907ee34dc8b1b7223a33fac98ab841a9e42f9960ab4433a832f0c6f00be0"
     },
+    "tui-design": {
+      "source": "hyperb1iss/hyperskills",
+      "sourceType": "github",
+      "skillPath": "skills/tui-design/SKILL.md",
+      "computedHash": "df5eb80ddb1b62b27a53eacf24634a62754ea40a655cf74eb5299b26f3e5cebe"
+    },
     "web-design-guidelines": {
       "source": "vercel-labs/agent-skills",
       "sourceType": "github",

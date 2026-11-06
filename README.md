@@ -172,6 +172,8 @@ spectralis check --tdd      # Solo validación del orden TDD (Step K) en tasks.m
 ```bash
 spectralis view                      # Lista los changes activos con % y estado (solo lectura)
 spectralis view spec-native-f1       # Detalle de un change: estado y tareas
+spectralis view --archived                  # Lista los changes archivados en spec/_archived/ (solo lectura)
+spectralis view spec-native --archived      # Detalle de un change archivado
 spectralis task spec-native-f1 1.1 --done   # Marca la tarea 1.1 como completada
 spectralis spec create mi-cambio --nombre "Mi cambio"   # Crea spec/mi-cambio/ con los seeds y su change.json
 spectralis spec migrate              # Migra los changes de openspec/changes/ al layout nativo spec/
@@ -183,6 +185,7 @@ spectralis spec validate mi-cambio   # Comprueba que existen proposal.md, design
 ```
 
 - `spectralis view` **no escribe nada**: ni el registro, ni `tasks.md`, ni la carpeta `spec/`.
+- `spectralis view --archived` recorre `spec/_archived/` y muestra `Change | Fecha | Tareas | Estado | Nombre`: fecha, estado y nombre salen del `change.json` del change (si falta: `—`, `done`, `—`) y el contador `done/total` de los checkboxes de `tasks.md`. Sin `spec/_archived/` responde `no hay changes archived` con exit `0`; con un id renderiza el detalle del change archivado.
 - `spectralis task` actualiza el registro `spec/progress.json` (fuente de verdad, con escritura atómica) y refresca el checkbox de `tasks.md` (espejo): `done` → `[x]`, el resto → `[ ]`.
 - Códigos de salida de `task`: `0` ok, `2` change o task inexistente, `3` prefijo de task-id ambiguo.
 - El directorio de changes se resuelve con `resolveChangesDir`: valor explícito > `spec_dir` del manifiesto > `spec_dir` de la config global > **`spec/`** (layout nativo). Se puede fijar con `spectralis config --set spec_dir=<ruta>`; los proyectos que conserven el layout antiguo fijan `spec_dir=openspec/changes` o migran con `spectralis spec migrate`.

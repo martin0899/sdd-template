@@ -1,0 +1,10 @@
+{
+  "id": "sdd-installer-agents-sync",
+  "nombre": "sdd-installer-agents-sync",
+  "fecha": "2026-11-06",
+  "estado": "done",
+  "resumen": {
+    "abstracto": "Garantizar que las reglas SDD gestionadas en `AGENTS.md` del destino se sincronicen con la plantilla durante la actualización (incluida la regla de enrutado de skills), y que la verificación final cubra los archivos del sistema de enrutado."
+  },
+  "enlaces": []
+}

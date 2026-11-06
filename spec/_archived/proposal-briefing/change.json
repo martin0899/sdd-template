@@ -1,0 +1,10 @@
+{
+  "id": "proposal-briefing",
+  "nombre": "proposal-briefing",
+  "fecha": "2026-11-06",
+  "estado": "done",
+  "resumen": {
+    "abstracto": "Garantizar que el coordinador genera el briefing técnico al **proponer** un cambio —tanto en SDD como en ODD— rellenando las secciones del folder note **antes** de crear los artefactos formales de la propuesta."
+  },
+  "enlaces": []
+}

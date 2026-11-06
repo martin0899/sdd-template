@@ -1,0 +1,10 @@
+{
+  "id": "documenter-delegation",
+  "nombre": "documenter-delegation",
+  "fecha": "2026-11-06",
+  "estado": "done",
+  "resumen": {
+    "abstracto": "Define el contrato de delegación documental: los subagentes entregan una solicitud estructurada al `coordinador`, este la consolida y la despacha al rol lógico `documentador`, que ejecuta con un perfil configurado y credenciales resueltas fuera del proyecto."
+  },
+  "enlaces": []
+}

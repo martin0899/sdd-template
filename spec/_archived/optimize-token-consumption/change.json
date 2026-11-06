@@ -1,0 +1,10 @@
+{
+  "id": "optimize-token-consumption",
+  "nombre": "optimize-token-consumption",
+  "fecha": "2026-11-06",
+  "estado": "done",
+  "resumen": {
+    "abstracto": "Reducir el consumo de tokens por conversación mediante un AGENTS.md mínimo como enrutador, la creación de skills enfocadas (subagent-contract, graphify-usage, lessons) y la consolidación de skills duplicadas, manteniendo el índice de skills actualizado."
+  },
+  "enlaces": []
+}

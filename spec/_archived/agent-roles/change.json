@@ -1,0 +1,10 @@
+{
+  "id": "agent-roles",
+  "nombre": "agent-roles",
+  "fecha": "2026-11-06",
+  "estado": "done",
+  "resumen": {
+    "abstracto": "Definir el contrato de entradas y salidas de los roles del flujo, reutilizando los agentes existentes, y la compuerta de revisión de `gertrudis` condicionada por riesgo, con veredicto y hallazgos reproducibles."
+  },
+  "enlaces": []
+}

@@ -23,7 +23,7 @@ import { selectTools } from '../core/tool-selector';
 import { buildInitPlan } from './plan';
 import { runNotesInit, runNotesSync, isObsidianActive } from './notes';
 import { makeConfirm, makeTextPrompt } from '../util/prompt';
-import { currentPalette, phaseLine, printBanner, promptMark, red as uiRed } from '../util/ui';
+import { currentPalette, phaseLine, printBanner, printLogo, promptMark, red as uiRed } from '../util/ui';
 
 export interface InitOptions {
   destino?: string;
@@ -95,6 +95,7 @@ export async function runInit(opts: InitOptions = {}): Promise<number> {
   const root = templateRoot();
   const version = pkgVersion();
   const pal = currentPalette();
+  console.log(printLogo('init', pal));
   console.log(printBanner(version, version, pal));
   const profile = resolveAgent(opts.agent);
   const confirmFn = (opts.confirmFactory ?? makeConfirm)(Boolean(opts.yes));

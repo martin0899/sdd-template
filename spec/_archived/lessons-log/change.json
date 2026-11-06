@@ -1,0 +1,10 @@
+{
+  "id": "lessons-log",
+  "nombre": "lessons-log",
+  "fecha": "2026-11-06",
+  "estado": "done",
+  "resumen": {
+    "abstracto": "Registrar de forma portable las correcciones del usuario como lecciones accionables (`Cuando X, haz Y`) que el agente carga para no repetir errores."
+  },
+  "enlaces": []
+}
