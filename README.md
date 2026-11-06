@@ -53,6 +53,44 @@ Los manuales técnicos del arnés viven en `notes/` (se sincronizan al cerebro c
 
 ---
 
+## Skills
+
+Portable skills live in `.agents/skills/` (Agent Skills standard). Full index: `.agents/skills/INDEX.md`. Each skill is loaded on demand; load only the one selected.
+
+| Skill | Purpose |
+|-------|---------|
+| adversarial-review | Independent red-team review before archiving a spec change |
+| agent-rules-contract | Define cycle rules once and reference them instead of redefining |
+| brainstorming | Explore intent, requirements and design before any creative work |
+| code-auditing | Code quality, security and tech-debt audit |
+| commit | Focused commits and pull requests per repo standards |
+| documenter-delegation | Structured documentation requests to the coordinator |
+| enrich-us | Enrich user stories with technical detail (ticket/Jira) |
+| explain | Teach underlying concepts with clear mental models |
+| exploration-briefing | Verified briefing before turning an exploration into a change |
+| find-skills | Discover and install ecosystem skills |
+| frontend-design | Distinctive, intentional UI visual direction |
+| graphify-usage | Investigate code with graphify (query/path/explain) |
+| grilling | Relentless interview to stress-test a plan or idea |
+| lessons | Manage learned lessons and anti-repetition log |
+| meta-prompt | Rewrite prompts with prompt-engineering best practices |
+| obsidian-briefing | Technical briefing in Obsidian for spec changes |
+| obsidian-orchestration | Orchestrate brain-spec sync (obsidianSync switch) |
+| obsidian-summary | Summary in Obsidian after completing a spec |
+| obsidian-tests | Test documentation in Obsidian for regression |
+| requirements-discovery | Define a requirement from conversation/document/ticket/note |
+| sdd-onboard-project | SDD onboarding post-install with graphify and docs adaptation |
+| second-brain | Obsidian vault as Second Brain (CODE+PARA) |
+| show-spec-working | Live demo of a spec/feature/ticket |
+| spec-from-note | Convert an Obsidian requirement note into layered specs |
+| subagent-contract | Subagent contract (coordinator/planner/implementer/reviewer) |
+| systematic-debugging | Before proposing fixes for bugs/test failures |
+| tui-design | Terminal UI (TUI) design |
+| update-docs | Identify and update required technical docs after changes |
+| using-git-worktrees | Isolate workspace when starting feature work |
+| web-design-guidelines | Review UI code against Web Interface Guidelines |
+| writing-skills | Create/edit/verify skills before deployment |
+
 ## Prerrequisitos
 
 | Herramienta | Verificación | Notas |
