@@ -78,6 +78,7 @@ program
   .command('init [destino]')
   .description('Install the SDD template into a destination project')
   .option('--agent <agente>', 'target agent (opencode | antigravity | claude | codex | all)')
+  .option('--all', 'select every available tool without interactive menu')
   .option('-d, --dry-run', 'show the full plan without writing anything')
   .option('--demo', 'alias for --dry-run')
   .option('--dd', 'alias for --dry-run')
@@ -87,11 +88,11 @@ program
   .action(
     async (
       destino: string | undefined,
-      opts: { agent?: string; dryRun?: boolean; demo?: boolean; dd?: boolean; yes?: boolean; obsidian?: boolean; noObsidian?: boolean }
+      opts: { agent?: string; dryRun?: boolean; demo?: boolean; dd?: boolean; yes?: boolean; obsidian?: boolean; noObsidian?: boolean; all?: boolean }
     ) => {
       // Agent validation happens before any write-capable action.
       resolveAgent(opts.agent);
-      const code = await runInit({ destino, agent: opts.agent, dryRun: opts.dryRun || opts.demo || opts.dd, yes: opts.yes, obsidian: opts.obsidian, noObsidian: opts.noObsidian });
+      const code = await runInit({ destino, agent: opts.agent, dryRun: opts.dryRun || opts.demo || opts.dd, yes: opts.yes, obsidian: opts.obsidian, noObsidian: opts.noObsidian, all: opts.all });
       process.exitCode = code;
     }
   );

@@ -7,11 +7,13 @@ export interface ToolSelectorOptions {
   catalog?: ToolDef[];
   agentFlag?: string;
   yes?: boolean;
+  /** Select every tool in the catalog without interactive menu. */
+  all?: boolean;
 }
 
 export interface ToolSelection {
   selected: string[];
-  source: 'menu' | 'flag' | 'detection' | 'default';
+  source: 'menu' | 'flag' | 'detection' | 'default' | 'all';
 }
 
 function defaultSelection(target: string, catalog: ToolDef[]): string[] {
@@ -25,6 +27,9 @@ export function resolveTools(opts: ToolSelectorOptions): ToolSelection {
   if (opts.agentFlag) {
     return { selected: [opts.agentFlag], source: 'flag' };
   }
+  if (opts.all) {
+    return { selected: catalog.map((t) => t.id), source: 'all' };
+  }
   if (opts.yes || !process.stdin.isTTY) {
     const selected = defaultSelection(opts.target, catalog);
     return { selected, source: 'detection' };
@@ -37,6 +42,10 @@ export async function selectTools(opts: ToolSelectorOptions): Promise<ToolSelect
 
   if (opts.agentFlag) {
     return { selected: [opts.agentFlag], source: 'flag' };
+  }
+
+  if (opts.all) {
+    return { selected: catalog.map((t) => t.id), source: 'all' };
   }
 
   if (opts.yes || !process.stdin.isTTY) {

@@ -32,6 +32,7 @@ export interface InitOptions {
   yes?: boolean;
   obsidian?: boolean;
   noObsidian?: boolean;
+  all?: boolean;
   confirmFactory?: typeof makeConfirm;
   projectVersion?: string;
 }
@@ -150,7 +151,7 @@ export async function runInit(opts: InitOptions = {}): Promise<number> {
   projectVersion = projectVersion || suggested;
 
   // 3. Tool selection (interactive menu or flag-based).
-  const toolSelection = await selectTools({ target, agentFlag: opts.agent, yes: opts.yes });
+  const toolSelection = await selectTools({ target, agentFlag: opts.agent, yes: opts.yes, all: opts.all });
   const includeOpencode = toolSelection.selected.includes('opencode');
 
   if (opts.dryRun) {
