@@ -104,7 +104,7 @@ function planPrune(
 
 /** Prints the prune plan (report only: it never writes anything). */
 function reportPrunePlan(plan: PruneCandidate[]): void {
-  console.log('\n== prune plan (--prune) ==');
+  console.log('\n  spectralis update · prune plan\n');
   if (plan.length === 0) {
     console.log('  No retired files to prune.');
     return;
@@ -259,7 +259,7 @@ export async function runUpdate(opts: UpdateOptions = {}): Promise<number> {
 
   // Check mode: only report status, never write.
   if (opts.check) {
-    console.log('\n== spectralis update --check ==');
+    console.log('\n  spectralis update · check\n');
     console.log(`  tools: ${(manifest.tools || []).join(', ') || 'none registered'}`);
     console.log('');
 
@@ -294,7 +294,7 @@ export async function runUpdate(opts: UpdateOptions = {}): Promise<number> {
 
   // Show plan when there are classified changes to apply.
   if (changes) {
-    console.log('\n== spectralis update plan ==');
+    console.log('\n  spectralis update · plan\n');
     console.log(`  unchanged: ${counts.unchanged}`);
     console.log(`  updatable: ${counts.updatable}`);
     console.log(`  new:       ${counts.new}`);
