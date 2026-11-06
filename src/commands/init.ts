@@ -142,7 +142,9 @@ export async function runInit(opts: InitOptions = {}): Promise<number> {
   const stack = detectStack(target);
 
   // 2.1 Project version: flag > prompt (with detected suggestion) > 1.0.0.
-  const suggested = stack.projectVersion || '1.0.0';
+  // Never inherit Spectralis's own version as the project's initial version.
+  const spectralisVersion = pkgVersion();
+  const suggested = (stack.projectVersion && stack.projectVersion !== spectralisVersion) ? stack.projectVersion : '0.0.0';
   let projectVersion = opts.projectVersion;
   if (!projectVersion && !opts.dryRun) {
     const textPrompt = makeTextPrompt(Boolean(opts.yes));
@@ -160,7 +162,7 @@ export async function runInit(opts: InitOptions = {}): Promise<number> {
     return 0;
   }
 
-  console.log(`== spectralis init: ${target} ==`);
+  console.log(`  spectralis init · ${target}`);
   console.log(`   tools: ${toolSelection.selected.join(', ')} (via ${toolSelection.source})`);
   console.log(`   backend: ${stack.backend}${stack.framework ? ` | ${stack.framework}` : ''} | frontend: ${stack.frontend}${stack.frameworkFe ? ` | ${stack.frameworkFe}` : ''}`);
   if (!confirmFn(promptMark('Continue with the installation?'))) {
