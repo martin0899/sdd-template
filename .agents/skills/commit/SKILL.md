@@ -44,7 +44,7 @@ Project version bump rules (deterministic, managed by the arnés):
 - **PATCH** increments by 1 for changes **without a spec** (docs, refactor, minor fixes, tooling). Carry: `1.2.99` + patch → `1.3.0`.
 - **MINOR** increments by 1 (and PATCH resets to 0) for changes **with a spec** (an archived change in `spec/_archived/`). Carry: `1.99.5` → `2.0.0` when a spec change lands.
 - **MAJOR** increments only on explicit compatibility-breaking decisions.
-- **Always bump the version before every commit and push** (patch if no spec, minor if spec, major if breaking). Never commit/push without updating the version first.
+- **Always bump the version before every commit and push** (patch if no spec, minor if spec, major if breaking). Never commit/push without updating the version first. Prefer the CLI: `spectralis bump --spectralis -l <patch|minor|major>` (or `--project` for the destination's `.sdd-manifest.json`).
 - Each component is capped at `99`; the bump carries to the next component instead of exceeding it.
 - The arnés exposes these bumps (`bumpPatch`/`bumpMinor`/`bumpMajor` in `src/core/project-version.ts`); after archiving a spec or creating a release, update the destination's `.sdd-manifest.json` `projectVersion` accordingly.
 - **Description-only / no-git mode (explicit user override)**: If the user **explicitly** says something like "no PR", "only commit" (meaning only produce the commit text), "only description", "don't touch git", "just the message", or "dry run", then do **not** run any git commands or create a PR. Produce directly the handoff artifact defined in step 4 (staging list + copy-pasteable message) and stop; the user can run the git commands themselves.
